@@ -1,0 +1,285 @@
+import { supabase } from '../config/supabase.js';
+import { generateOperation } from '../engine/OperationGenerator.js';
+
+class GameMaster {
+
+  constructor() {
+
+    this.activeSessions = new Map();
+
+    // Weighted distribution
+    this.operationWeights = [
+      {
+        type: 'ADD CREDITS',
+        weight: 30
+      },
+      {
+        type: 'WITHDRAW CREDITS',
+        weight: 15
+      },
+      {
+        type: 'RESET PASSWORD',
+        weight: 35
+      },
+      {
+        type: 'REFRESH BALANCE',
+        weight: 15
+      },
+      {
+        type: 'CREATE ACCOUNT',
+        weight: 5
+      }
+    ];
+  }
+
+  //
+  // START SESSION
+  //
+  async startSession(sessionId) {
+
+    if (
+      this.activeSessions.has(sessionId)
+    ) {
+      return;
+    }
+
+    console.log(
+      `GameMaster started for ${sessionId}`
+    );
+
+    // Generate initial operations immediately
+    await this.generateOperations(sessionId);
+
+    // Realistic pacing:
+    // every 30 seconds
+    const interval = setInterval(async () => {
+
+      await this.generateOperations(
+        sessionId
+      );
+
+    }, 30000);
+
+    this.activeSessions.set(
+      sessionId,
+      interval
+    );
+  }
+
+  //
+  // STOP SESSION
+  //
+  stopSession(sessionId) {
+
+    const interval =
+      this.activeSessions.get(sessionId);
+
+    if (interval) {
+
+      clearInterval(interval);
+
+      this.activeSessions.delete(
+        sessionId
+      );
+
+      console.log(
+        `GameMaster stopped for ${sessionId}`
+      );
+    }
+  }
+
+  //
+  // WEIGHTED OPERATION GENERATOR
+  //
+  generateWeightedOperationType() {
+
+    const random =
+      Math.random() * 100;
+
+    let cumulative = 0;
+
+    for (const operation of this.operationWeights) {
+
+      cumulative += operation.weight;
+
+      if (random < cumulative) {
+        return operation.type;
+      }
+    }
+
+    // fallback
+    return 'RESET PASSWORD';
+  }
+
+  //
+  // GENERATE OPERATIONS
+  //
+  async generateOperations(sessionId) {
+
+    try {
+
+      // =========================
+      // CHECK CURRENT PENDING
+      // =========================
+
+      const {
+        data: pendingOperations
+      } = await supabase
+        .from('sandbox_operations')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('status', 'PENDING');
+
+      const pendingCount =
+        pendingOperations?.length || 0;
+
+      // Queue protection
+      // Prevent impossible workloads
+      if (pendingCount >= 15) {
+
+        console.log(
+          `Session ${sessionId} queue full (${pendingCount})`
+        );
+
+        return;
+      }
+
+      // =========================
+      // GET CUSTOMERS
+      // =========================
+
+      const { data: customers } =
+        await supabase
+          .from('sandbox_customers')
+          .select('*')
+          .eq('session_id', sessionId);
+
+      // =========================
+      // GET GAME ACCOUNTS
+      // =========================
+
+      const { data: gameAccounts } =
+        await supabase
+          .from('sandbox_game_accounts')
+          .select('*')
+          .eq('session_id', sessionId);
+
+      if (
+        !customers?.length ||
+        !gameAccounts?.length
+      ) {
+        return;
+      }
+
+      // =========================
+      // GENERATION VOLUME
+      // =========================
+
+      // Realistic generation:
+      // 1-2 operations every 30s
+      const numberOfOperations =
+        Math.floor(Math.random() * 2) + 1;
+
+      const operations = [];
+
+      // =========================
+      // CREATE OPERATIONS
+      // =========================
+
+      for (
+        let i = 0;
+        i < numberOfOperations;
+        i++
+      ) {
+
+        const customer =
+          customers[
+            Math.floor(
+              Math.random() *
+              customers.length
+            )
+          ];
+
+        const customerGames =
+          gameAccounts.filter(
+            game =>
+              game.customer_id ===
+              customer.id
+          );
+
+        if (!customerGames.length) {
+          continue;
+        }
+
+        const selectedGame =
+          customerGames[
+            Math.floor(
+              Math.random() *
+              customerGames.length
+            )
+          ];
+
+        // Weighted operation type
+        const operationType =
+          this.generateWeightedOperationType();
+
+        operations.push(
+          generateOperation(
+            customer,
+            selectedGame,
+            sessionId,
+            operationType
+          )
+        );
+      }
+
+      // =========================
+      // INSERT OPERATIONS
+      // =========================
+
+      if (operations.length > 0) {
+
+        const { error } =
+          await supabase
+            .from('sandbox_operations')
+            .insert(operations);
+
+        if (error) {
+
+          console.error(
+            'Operation generation error:',
+            error
+          );
+
+        } else {
+
+          console.log(
+            `${operations.length} operations generated for ${sessionId}`
+          );
+        }
+      }
+      const { count } = await supabase
+        .from('sandbox_operations')
+        .select('*', {
+          count: 'exact',
+          head: true
+        })
+        .eq('session_id', sessionId)
+        .eq('status', 'PENDING');
+
+      if (count >= 25) {
+        return;
+      }
+
+
+    } catch (err) {
+
+      console.error(
+        'GameMaster error:',
+        err
+      );
+    }
+  }
+}
+
+export default new GameMaster();
