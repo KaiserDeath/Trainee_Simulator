@@ -18,5 +18,88 @@ export const processOperation = async (
   );
 };
 
+export const getCustomers = async (
+  sessionId,
+  query = ''
+) => {
+  return api.get(
+    `/customers/${sessionId}`,
+    {
+      params: { q: query }
+    }
+  );
+};
+
+export const getCustomerHistory = async (
+  sessionId,
+  customerId
+) => {
+  return api.get(
+    `/customers/${sessionId}/${customerId}/history`
+  );
+};
+
+export const searchGameAccounts = async (
+  sessionId,
+  game,
+  query = ''
+) => {
+  return api.get(
+    `/games/${sessionId}/${game}/accounts`,
+    {
+      params: { q: query }
+    }
+  );
+};
+
+export const rechargeGameAccount = async (
+  accountId,
+  amount
+) => {
+  return api.post(
+    `/games/accounts/${accountId}/recharge`,
+    { amount }
+  );
+};
+
+export const redeemGameAccount = async (
+  accountId,
+  amount
+) => {
+  return api.post(
+    `/games/accounts/${accountId}/redeem`,
+    { amount }
+  );
+};
+
+export const resetGamePassword = async (
+  accountId,
+  newPassword
+) => {
+  return api.post(
+    `/games/accounts/${accountId}/reset-password`,
+    { newPassword }
+  );
+};
+
+export const createGameAccount = async (
+  sessionId,
+  game,
+  payload
+) => {
+  return api.post(
+    `/games/${sessionId}/${game}/accounts`,
+    payload
+  );
+};
+
+export const getGameAccountHistory = async (
+  sessionId,
+  customerId
+) => {
+  return api.get(
+    `/games/${sessionId}/customers/${customerId}/history`
+  );
+};
 
 export default api

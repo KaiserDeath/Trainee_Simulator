@@ -7,6 +7,8 @@ import { createSandboxSession }
 
 import GameMaster
   from '../engine/GameMaster.js';
+import { completeSession }
+  from '../engine/SessionEngine.js';
 
 const router = Router();
 
@@ -69,26 +71,23 @@ router.post('/:id/stop', async (req, res) => {
   // STOP GAMEMASTER
   GameMaster.stopSession(id);
 
-  const { data, error } = await supabase
-    .from('trainee_sessions')
-    .update({
-      status: 'completed',
-      ended_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  try {
+    const session =
+      await completeSession(id);
 
-  if (error) {
-    return res.status(500).json({
-      error: error.message
+    res.json({
+      message: 'Session ended',
+      session
     });
-  }
+  } catch (err) {
+    console.error(err);
 
-  res.json({
-    message: 'Session ended',
-    session: data
-  });
+    res
+      .status(err.statusCode || 500)
+      .json({
+        error: err.message
+      });
+  }
 });
 
 export default router;

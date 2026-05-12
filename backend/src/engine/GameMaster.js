@@ -1,5 +1,11 @@
 import { supabase } from '../config/supabase.js';
 import { generateOperation } from '../engine/OperationGenerator.js';
+import {
+  canGenerateOperations,
+  getGenerationVolume,
+  getPendingCount,
+  QUEUE_LIMITS
+} from './QueueManager.js';
 
 class GameMaster {
 
@@ -50,15 +56,13 @@ class GameMaster {
     // Generate initial operations immediately
     await this.generateOperations(sessionId);
 
-    // Realistic pacing:
-    // every 30 seconds
     const interval = setInterval(async () => {
 
       await this.generateOperations(
         sessionId
       );
 
-    }, 30000);
+    }, QUEUE_LIMITS.generationIntervalMs);
 
     this.activeSessions.set(
       sessionId,
@@ -122,20 +126,16 @@ class GameMaster {
       // CHECK CURRENT PENDING
       // =========================
 
-      const {
-        data: pendingOperations
-      } = await supabase
-        .from('sandbox_operations')
-        .select('id')
-        .eq('session_id', sessionId)
-        .eq('status', 'PENDING');
-
       const pendingCount =
-        pendingOperations?.length || 0;
+        await getPendingCount(sessionId);
 
       // Queue protection
       // Prevent impossible workloads
-      if (pendingCount >= 15) {
+      if (
+        !canGenerateOperations(
+          pendingCount
+        )
+      ) {
 
         console.log(
           `Session ${sessionId} queue full (${pendingCount})`
@@ -175,10 +175,8 @@ class GameMaster {
       // GENERATION VOLUME
       // =========================
 
-      // Realistic generation:
-      // 1-2 operations every 30s
       const numberOfOperations =
-        Math.floor(Math.random() * 2) + 1;
+        getGenerationVolume();
 
       const operations = [];
 
@@ -258,20 +256,6 @@ class GameMaster {
           );
         }
       }
-      const { count } = await supabase
-        .from('sandbox_operations')
-        .select('*', {
-          count: 'exact',
-          head: true
-        })
-        .eq('session_id', sessionId)
-        .eq('status', 'PENDING');
-
-      if (count >= 25) {
-        return;
-      }
-
-
     } catch (err) {
 
       console.error(

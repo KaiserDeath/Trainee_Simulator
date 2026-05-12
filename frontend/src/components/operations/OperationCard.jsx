@@ -9,7 +9,7 @@ export default function OperationCard({
   const handleAction = async action => {
     try {
       await client.post(
-        `/operations/process/${operation.id}`,
+        `/operations/${operation.id}/process`,
         {
           action,
           traineeName:
@@ -89,12 +89,12 @@ export default function OperationCard({
           <button
             onClick={() =>
               handleAction(
-                "REJECTED"
+                "CANCELLED"
               )
             }
             className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded"
           >
-            Reject
+            Cancel
           </button>
         </div>
       )}

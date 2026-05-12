@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState
 } from 'react';
@@ -18,7 +19,8 @@ export default function PerformancePanel({
   //
   // FETCH REPORT
   //
-  const fetchReport = async () => {
+  const fetchReport =
+    useCallback(async () => {
 
     try {
 
@@ -38,14 +40,16 @@ export default function PerformancePanel({
       setLoading(false);
 
     }
-  };
+  }, [session.id]);
 
   //
   // AUTO REFRESH
   //
   useEffect(() => {
 
-    fetchReport();
+    const timeout = setTimeout(() => {
+      fetchReport();
+    }, 0);
 
     const interval = setInterval(() => {
 
@@ -53,10 +57,12 @@ export default function PerformancePanel({
 
     }, 5000);
 
-    return () =>
+    return () => {
+      clearTimeout(timeout);
       clearInterval(interval);
+    };
 
-  }, []);
+  }, [fetchReport]);
 
   //
   // LOADING

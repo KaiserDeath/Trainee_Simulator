@@ -4,6 +4,7 @@ import cors from 'cors';
 import sessionRoutes from './routes/sessionRoutes.js';
 import operationRoutes from './routes/operationRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
+import gameRoutes from './routes/gameRoutes.js';
 import trainerRoutes from './routes/trainerRoutes.js';
 
 const app = express();
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/operations', operationRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/games', gameRoutes);
 app.use('/api/trainer', trainerRoutes);
 
 export default app;

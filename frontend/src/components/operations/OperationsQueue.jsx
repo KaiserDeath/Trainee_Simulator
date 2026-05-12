@@ -1,7 +1,65 @@
-import { useEffect, useMemo, useState }
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState
+}
   from 'react';
 
 import api from '../../api/client';
+
+const requestTitles = {
+  'CREATE ACCOUNT': 'Create Account',
+  'RESET PASSWORD': 'Reset Password',
+  'REFRESH BALANCE': 'Refresh Balance'
+};
+
+const kioskByGame = {
+  'Orion Stars': 'OrionStars',
+  Vblink: 'Vblink',
+  'Golden Dragon': 'GoldenDragon'
+};
+
+function getInitialRequestForm(
+  operation
+) {
+  const gameId =
+    operation?.game_account
+      ?.game_username || '';
+
+  const kiosk =
+    kioskByGame[
+      operation?.game_account?.game
+    ] || '';
+
+  if (
+    operation?.type ===
+    'CREATE ACCOUNT'
+  ) {
+    return {
+      gameId: '',
+      newPassword: '',
+      kiosk
+    };
+  }
+
+  if (
+    operation?.type ===
+    'REFRESH BALANCE'
+  ) {
+    return {
+      gameId,
+      kiosk,
+      amount: ''
+    };
+  }
+
+  return {
+    gameId,
+    newPassword: '',
+    kiosk
+  };
+}
 
 export default function OperationsQueue({
   session
@@ -16,10 +74,19 @@ export default function OperationsQueue({
   const [activeTab, setActiveTab] =
     useState('movements');
 
+  const [
+    selectedRequest,
+    setSelectedRequest
+  ] = useState(null);
+
+  const [requestForm, setRequestForm] =
+    useState({});
+
   //
   // LOAD OPERATIONS
   //
-  const fetchOperations = async () => {
+  const fetchOperations =
+    useCallback(async () => {
 
     try {
 
@@ -34,30 +101,35 @@ export default function OperationsQueue({
     } finally {
       setLoading(false);
     }
-  };
+  }, [session.id]);
 
   //
   // AUTO REFRESH
   //
   useEffect(() => {
 
-    fetchOperations();
+    const timeout = setTimeout(() => {
+      fetchOperations();
+    }, 0);
 
     const interval = setInterval(() => {
       fetchOperations();
     }, 5000);
 
-    return () =>
+    return () => {
+      clearTimeout(timeout);
       clearInterval(interval);
+    };
 
-  }, []);
+  }, [fetchOperations]);
 
   //
   // PROCESS OPERATION
   //
   const processOperation = async (
     operationId,
-    action
+    action,
+    requestData
   ) => {
 
     try {
@@ -67,16 +139,56 @@ export default function OperationsQueue({
         {
           action,
           traineeName:
-            session.trainee_name
+            session.trainee_name,
+          requestData
         }
       );
 
       fetchOperations();
+      setSelectedRequest(null);
+      setRequestForm({});
 
     } catch (err) {
       console.error(err);
     }
   };
+
+  const openRequestModal = operation => {
+    setSelectedRequest(operation);
+    setRequestForm(
+      getInitialRequestForm(operation)
+    );
+  };
+
+  const updateRequestForm = (
+    field,
+    value
+  ) => {
+    setRequestForm(current => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  const confirmRequest = () => {
+    if (!selectedRequest) return;
+
+    processOperation(
+      selectedRequest.id,
+      'APPROVED',
+      requestForm
+    );
+  };
+
+  const isRequestFormComplete =
+    selectedRequest?.type ===
+    'REFRESH BALANCE'
+      ? requestForm.gameId &&
+        requestForm.kiosk &&
+        requestForm.amount !== ''
+      : requestForm.gameId &&
+        requestForm.newPassword &&
+        requestForm.kiosk;
 
   //
   // FILTERS
@@ -229,17 +341,30 @@ export default function OperationsQueue({
             {/* ACTIONS */}
             <div className="flex gap-3 mt-5">
 
-              <button
-                onClick={() =>
-                  processOperation(
-                    operation.id,
-                    'APPROVED'
-                  )
-                }
-                className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
-              >
-                Approve
-              </button>
+              {activeTab === 'requests' ? (
+                <button
+                  onClick={() =>
+                    openRequestModal(
+                      operation
+                    )
+                  }
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+                >
+                  Action
+                </button>
+              ) : (
+                <button
+                  onClick={() =>
+                    processOperation(
+                      operation.id,
+                      'APPROVED'
+                    )
+                  }
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition"
+                >
+                  Approve
+                </button>
+              )}
 
               <button
                 onClick={() =>
@@ -260,6 +385,151 @@ export default function OperationsQueue({
         ))}
 
       </div>
+
+      {selectedRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-[520px] rounded-lg bg-white shadow-xl">
+
+            <div className="flex items-center justify-between border-b px-6 py-4">
+              <div />
+
+              <button
+                onClick={() =>
+                  setSelectedRequest(null)
+                }
+                className="text-2xl leading-none text-slate-900"
+                aria-label="Close request form"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-8 py-6">
+              <h2 className="mb-6 text-center text-xl font-bold text-slate-800">
+                {
+                  requestTitles[
+                    selectedRequest.type
+                  ]
+                }
+              </h2>
+
+              <div className="grid grid-cols-2 gap-5">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">
+                    New Game ID
+                  </span>
+
+                  <input
+                    value={
+                      requestForm.gameId ||
+                      ''
+                    }
+                    onChange={event =>
+                      updateRequestForm(
+                        'gameId',
+                        event.target.value
+                      )
+                    }
+                    placeholder="New Game ID"
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  />
+                </label>
+
+                {selectedRequest.type !==
+                  'REFRESH BALANCE' && (
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-slate-700">
+                      New Password
+                    </span>
+
+                    <input
+                      value={
+                        requestForm
+                          .newPassword ||
+                        ''
+                      }
+                      onChange={event =>
+                        updateRequestForm(
+                          'newPassword',
+                          event.target.value
+                        )
+                      }
+                      placeholder="New Password"
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                    />
+                  </label>
+                )}
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">
+                    Kiosk
+                  </span>
+
+                  <input
+                    value={
+                      requestForm.kiosk || ''
+                    }
+                    onChange={event =>
+                      updateRequestForm(
+                        'kiosk',
+                        event.target.value
+                      )
+                    }
+                    placeholder="Kiosk"
+                    className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                  />
+                </label>
+
+                {selectedRequest.type ===
+                  'REFRESH BALANCE' && (
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-medium text-slate-700">
+                      Amount
+                    </span>
+
+                    <input
+                      type="number"
+                      value={
+                        requestForm.amount ||
+                        ''
+                      }
+                      onChange={event =>
+                        updateRequestForm(
+                          'amount',
+                          event.target.value
+                        )
+                      }
+                      placeholder="Amount"
+                      className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 border-t">
+              <button
+                onClick={() =>
+                  setSelectedRequest(null)
+                }
+                className="py-4 font-semibold text-red-500 hover:bg-slate-50"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={confirmRequest}
+                disabled={
+                  !isRequestFormComplete
+                }
+                className="border-l py-4 font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
