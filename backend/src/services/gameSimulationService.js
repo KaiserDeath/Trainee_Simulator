@@ -17,6 +17,87 @@ const gameMatches = (
   );
 };
 
+function parseHistoryDetails(description) {
+  try {
+    const parsed =
+      JSON.parse(description || '{}');
+
+    if (
+      parsed.kind ===
+        'MOVEMENT_HISTORY' ||
+      parsed.kind ===
+        'GAME_HISTORY'    
+      ) {
+    }
+  } catch {
+    // Existing action rows use plain-text descriptions.
+  }
+
+  return {};
+}
+
+
+function normalizeHistoryItem(item) {
+  const details =
+    parseHistoryDetails(
+      item.description
+    );
+
+  return {
+    id: item.id,
+    type: item.type,
+    amount: item.amount,
+    description:
+      details.kind
+        ? ''
+        : item.description,
+    created_at: item.created_at,
+    operationCode:
+      details.operationCode ||
+      String(item.id).slice(0, 8)
+        .toUpperCase(),
+    game:
+      details.game ||
+      inferGameFromDescription(
+        item.description
+      ),
+    requestedAt:
+      details.requestedAt ||
+      details.executedAt ||
+      item.created_at,
+    acceptedAt:
+      details.acceptedAt ||
+      details.executedAt ||
+      item.created_at,
+    manager:
+      details.manager || 'TrainingStore',
+    status:
+      details.status || 'Approved'
+  };
+}
+
+function inferGameFromDescription(
+  description = ''
+) {
+  const value = String(description);
+
+  if (value.includes('Orion Stars')) {
+    return 'Orion Stars';
+  }
+
+  if (value.includes('Vblink')) {
+    return 'Vblink';
+  }
+
+  if (
+    value.includes('Golden Dragon')
+  ) {
+    return 'Golden Dragon';
+  }
+
+  return 'Sandbox';
+}
+
 export async function searchGameAccounts({
   sessionId,
   game,
@@ -135,6 +216,25 @@ async function insertGameHistory({
   }
 }
 
+function buildGameHistoryDescription({
+  account,
+  action,
+  amount
+}) {
+  return JSON.stringify({
+    kind: 'GAME_HISTORY',
+    game: account.game,
+    mobileId:
+      account.game_username,
+    action,
+    amount,
+    executedAt:
+      new Date().toISOString(),
+    manager: 'TrainingStore',
+    status: 'Approved'
+  });
+}
+
 export async function rechargeAccount({
   accountId,
   amount
@@ -165,7 +265,11 @@ export async function rechargeAccount({
     type: 'GAME ADD CREDITS',
     amount: value,
     description:
-      `${account.game} recharge for ${account.game_username}`
+      buildGameHistoryDescription({
+        account,
+        action: 'Purchase',
+        amount: value
+      })
   });
 
   return updated;
@@ -210,7 +314,11 @@ export async function redeemAccount({
     type: 'GAME WITHDRAW CREDITS',
     amount: value,
     description:
-      `${account.game} redeem for ${account.game_username}`
+      buildGameHistoryDescription({
+        account,
+        action: 'Redeem',
+        amount: value
+      })
   });
 
   return updated;
@@ -264,7 +372,8 @@ export async function createGameAccount({
   customerId,
   game,
   gameUsername,
-  password
+  password,
+  customerName
 }) {
   const username =
     String(gameUsername ?? '').trim();
@@ -286,6 +395,19 @@ export async function createGameAccount({
 
   let resolvedCustomerId =
     customerId;
+
+  if (!resolvedCustomerId) {
+      const name =
+      String(customerName ?? '').trim();
+
+    if (name) {
+      resolvedCustomerId =
+        await resolveOrCreateSandboxCustomer({
+          sessionId,
+          name
+        });
+    }
+  }
 
   if (!resolvedCustomerId) {
     const { data: customer, error } =
@@ -340,6 +462,66 @@ export async function createGameAccount({
   return data;
 }
 
+async function resolveOrCreateSandboxCustomer({
+  sessionId,
+  name
+}) {
+  const { data: existing, error } =
+    await supabase
+      .from('sandbox_customers')
+      .select('id')
+      .eq('session_id', sessionId)
+      .or(
+        [
+          `first_name.ilike.${name}`,
+          `username.ilike.${name}`
+        ].join(',')
+      )
+      .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  if (existing.length > 0) {
+    return existing[0].id;
+  }
+
+  const normalized =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') ||
+    'golden_customer';
+
+  const suffix =
+    Math.floor(
+      1000 + Math.random() * 9000
+    );
+
+  const { data, error: insertError } =
+    await supabase
+      .from('sandbox_customers')
+      .insert({
+        session_id: sessionId,
+        username:
+          `${normalized}_${suffix}`,
+        first_name: name,
+        last_name: '',
+        email:
+          `${normalized}_${suffix}@sandbox.local`,
+        balance: 0
+      })
+      .select('id')
+      .single();
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  return data.id;
+}
+
 export async function getGameAccountHistory({
   sessionId,
   customerId
@@ -357,7 +539,7 @@ export async function getGameAccountHistory({
     throw error;
   }
 
-  return data;
+  return data.map(normalizeHistoryItem);
 }
 
 export async function hasMatchingGameAction({

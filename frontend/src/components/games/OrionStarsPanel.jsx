@@ -15,6 +15,25 @@ import {
 
 const GAME = 'Orion Stars';
 
+const formatDateTime = value => {
+  if (!value) return '-';
+
+  return new Intl.DateTimeFormat(
+    'en-CA',
+    {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }
+  )
+    .format(new Date(value))
+    .replace(',', '');
+};
+
 export default function OrionStarsPanel({
   session,
   sessionId
@@ -42,6 +61,12 @@ export default function OrionStarsPanel({
 
   const selectedCustomerId =
     selected?.customer_id;
+
+  const orionHistory =
+    history.filter(item =>
+      item.game === GAME ||
+      item.description?.includes(GAME)
+    );
 
   const fetchAccounts =
     useCallback(async () => {
@@ -418,7 +443,7 @@ export default function OrionStarsPanel({
 
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-xl rounded bg-white shadow-xl">
+          <div className="w-full max-w-4xl rounded bg-white shadow-xl">
             <div className="flex justify-end border-b px-5 py-3">
               <button
                 onClick={closeModal}
@@ -443,19 +468,32 @@ export default function OrionStarsPanel({
               </h3>
 
               {modal === 'records' ? (
-                <div className="max-h-80 overflow-auto">
-                  <table className="w-full text-left text-sm">
+                <div className="max-h-96 overflow-auto rounded border border-slate-200">
+                  <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="bg-sky-600 text-white">
                       <tr>
                         <th className="px-3 py-2">
                           Type
                         </th>
-                        <th>Amount</th>
-                        <th>Description</th>
+                        <th className="px-3 py-2">
+                          Amount
+                        </th>
+                        <th className="px-3 py-2">
+                          Game
+                        </th>
+                        <th className="px-3 py-2">
+                          Date
+                        </th>
+                        <th className="px-3 py-2">
+                          Manager
+                        </th>
+                        <th className="px-3 py-2">
+                          Status
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {history.map(item => (
+                      {orionHistory.map(item => (
                         <tr
                           key={item.id}
                           className="border-b"
@@ -463,14 +501,39 @@ export default function OrionStarsPanel({
                           <td className="px-3 py-2">
                             {item.type}
                           </td>
-                          <td>
+                          <td className="px-3 py-2 font-semibold">
                             {item.amount ?? '-'}
                           </td>
-                          <td>
-                            {item.description}
+                          <td className="px-3 py-2">
+                            {item.game}
+                          </td>
+                          <td className="px-3 py-2">
+                            {formatDateTime(
+                              item.acceptedAt ||
+                              item.created_at
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {item.manager}
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className="rounded-full border border-green-500 px-3 py-1 font-semibold text-green-600">
+                              {item.status}
+                            </span>
                           </td>
                         </tr>
                       ))}
+
+                      {orionHistory.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan="6"
+                            className="px-3 py-6 text-center text-slate-500"
+                          >
+                            No transaction records available
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

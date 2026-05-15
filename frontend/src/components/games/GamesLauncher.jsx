@@ -11,6 +11,9 @@ export default function GamesLauncher({
 
   const orionUrl =
     `/games/orion-stars/${session.id}`;
+  const goldenDragonUrl =
+    `/games/golden-dragon/${session.id}`;
+
 
   return (
     <div className="bg-white rounded-2xl shadow p-5">
@@ -50,15 +53,20 @@ export default function GamesLauncher({
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 opacity-60">
+        <button
+          onClick={() =>
+            openGame(goldenDragonUrl)
+          }
+          className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-left hover:border-blue-500 hover:bg-blue-50"
+        >
           <p className="text-lg font-bold text-slate-800">
             Golden Dragon
           </p>
 
           <p className="mt-2 text-sm text-slate-500">
-            Coming next.
+            Customer Account, Mobile ID, Purchase, Redeem, Game History.
           </p>
-        </div>
+        </button>
       </div>
     </div>
   );

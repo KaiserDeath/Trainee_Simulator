@@ -140,7 +140,9 @@ router.post(
           gameUsername:
             req.body.gameUsername,
           password:
-            req.body.password
+            req.body.password,
+          customerName:
+            req.body.customerName
         });
 
       res.json(account);
