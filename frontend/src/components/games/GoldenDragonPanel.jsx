@@ -484,7 +484,7 @@ export default function GoldenDragonPanel({
 
       <div className="grid grid-cols-[210px_1fr] gap-2 px-2">
         <aside className="border border-slate-300 bg-slate-100">
-          <SidebarItem label="Drawer" />
+          <SidebarItem label="Drawer" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
           <SidebarItem
             label="Customer Account"
             active={
@@ -504,8 +504,8 @@ export default function GoldenDragonPanel({
               setActiveView('customer')
             }
           />
-          <SidebarItem label="Customer Info" child />
-          <SidebarItem label="Machine" />
+          <SidebarItem label="Customer Info" child onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
+          <SidebarItem label="Machine" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
           <SidebarItem
             label="Reports"
             active={
@@ -525,12 +525,12 @@ export default function GoldenDragonPanel({
               setActiveView('reports')
             }
           />
-          <SidebarItem label="Shift Report" child />
-          <SidebarItem label="System Setup" />
-          <SidebarItem label="Account Management" />
-          <SidebarItem label="Logout" />
-          <SidebarItem label="GD platform news" />
-          <SidebarItem label="OnlineWalletSetup" />
+          <SidebarItem label="Shift Report" child onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
+          <SidebarItem label="System Setup" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
+          <SidebarItem label="Account Management" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
+          <SidebarItem label="Logout" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
+          <SidebarItem label="GD platform news" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
+          <SidebarItem label="OnlineWalletSetup" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
         </aside>
 
         <main className="rounded border border-slate-300 bg-white shadow">
@@ -658,18 +658,22 @@ export default function GoldenDragonPanel({
 
             <div className="mt-3 flex items-center justify-between">
               <div className="flex gap-2">
-                <button className="rounded bg-[#0084bd] px-4 py-2 font-bold text-white">
+                <button
+                  onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })}
+                  className="rounded bg-[#0084bd] px-4 py-2 font-bold text-white"
+                >
                   Gift History
                 </button>
                 <button
-                  onClick={() =>
-                    setActiveView('reports')
-                  }
+                  onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })}
                   className="rounded bg-[#0084bd] px-4 py-2 font-bold text-white"
                 >
                   Game History
                 </button>
-                <button className="rounded bg-[#0084bd] px-4 py-2 font-bold text-white">
+                <button
+                  onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })}
+                  className="rounded bg-[#0084bd] px-4 py-2 font-bold text-white"
+                >
                   Edit Customer
                 </button>
               </div>
@@ -693,7 +697,10 @@ export default function GoldenDragonPanel({
                 >
                   Purchase
                 </button>
-                <button className="rounded bg-slate-500 px-5 py-2 font-bold text-white">
+                <button
+                  onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })}
+                  className="rounded bg-slate-500 px-5 py-2 font-bold text-white"
+                >
                   Revert Purchase
                 </button>
               </div>

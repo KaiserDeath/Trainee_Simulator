@@ -28,6 +28,22 @@ function createOperationCode(index) {
     .padStart(5, '0')}`;
 }
 
+function createMobileId() {
+  const part = () =>
+    Math.floor(
+      100 + Math.random() * 900
+    );
+  return `M-${part()}-${part()}-${part()}`;
+}
+
+function createGoldenDragonPassword() {
+  return String(
+    Math.floor(
+      1000000 + Math.random() * 9000000
+    )
+  );
+}
+
 function minutesAgo(minutes) {
   return new Date(
     Date.now() - minutes * 60 * 1000
@@ -206,8 +222,8 @@ export async function createSandboxSession(traineeName) {
         session_id: session.id,
         customer_id: customer.id,
         game: 'Golden Dragon',
-        game_username: `${customer.username}_gd`,
-        password: '123456',
+        game_username: createMobileId(),
+        password: createGoldenDragonPassword(),
         balance: 300
       }
     );

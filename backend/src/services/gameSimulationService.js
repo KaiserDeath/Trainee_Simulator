@@ -254,10 +254,15 @@ export async function rechargeAccount({
     throw error;
   }
 
+  const newBalance =
+    account.game === 'Golden Dragon'
+      ? Number(account.balance)
+      : Number(account.balance) + value;
+
   const updated =
     await updateGameBalance(
       account,
-      Number(account.balance) + value
+      newBalance
     );
 
   await insertGameHistory({
@@ -593,11 +598,7 @@ export async function hasCreatedAccount({
       'session_id',
       operation.session_id
     )
-    .eq(
-      'customer_id',
-      operation.customer_id
-    )
-    .eq('game', operation.game_account.game)
+    .eq('game', operation.game_account?.game || '')
     .eq('game_username', gameUsername)
     .limit(1);
 

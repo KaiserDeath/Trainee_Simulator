@@ -315,8 +315,10 @@ export default function OperationsQueue({
                   {operation.type}
                 </h4>
 
-                <p className="text-sm text-slate-500">
-                  {operation.customer.username}
+                <p className="text-sm text-slate-500 font-medium">
+                  {operation.type === 'CREATE ACCOUNT'
+                    ? operation.customer?.username
+                    : operation.game_account?.game_username}
                 </p>
 
                 <p className="text-sm text-slate-500">
