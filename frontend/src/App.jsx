@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import SessionStartPage from "./pages/SessionStartPage";
 import TrainerPage from "./pages/TrainerPage";
@@ -7,65 +7,59 @@ import OrionStarsPanel from "./components/games/OrionStarsPanel";
 import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
 import VblinkPanel from "./components/games/VblinkPanel";
 
+const SESSION_KEY = "casino_trainer_session";
+
 export default function App() {
-  const [session, setSession] =
-    useState(null);
+  // Try to restore session from localStorage on first load
+  const [session, setSession] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SESSION_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
-  const gameMatch =
-    window.location.pathname.match(
-      /^\/games\/orion-stars\/([^/]+)$/
-    );
+  // Persist session to localStorage whenever it changes
+  useEffect(() => {
+    if (session) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  }, [session]);
 
-  const goldenDragonMatch =
-    window.location.pathname.match(
-      /^\/games\/golden-dragon\/([^/]+)$/
-    );
+  const handleSessionCreated = (newSession) => {
+    setSession(newSession);
+  };
 
-  const vblinkMatch =
-    window.location.pathname.match(
-      /^\/games\/vblink\/([^/]+)$/
-    );
+  const handleSessionEnded = () => {
+    setSession(null);
+  };
 
-  const isTrainer =
-    window.location.pathname === "/trainer";
+  // ── Route matching ──────────────────────────────────────────────────────────
+  const path = window.location.pathname;
 
-  if (gameMatch) {
-    return (
-      <OrionStarsPanel
-        sessionId={gameMatch[1]}
-      />
-    );
-  }
+  const gameMatch = path.match(/^\/games\/orion-stars\/([^/]+)$/);
+  const goldenDragonMatch = path.match(/^\/games\/golden-dragon\/([^/]+)$/);
+  const vblinkMatch = path.match(/^\/games\/vblink\/([^/]+)$/);
+  const isTrainer = path === "/trainer";
 
-  if (goldenDragonMatch) {
-    return (
-      <GoldenDragonPanel
-        sessionId={goldenDragonMatch[1]}
-      />
-    );
-  }
-
-  if (vblinkMatch) {
-    return (
-      <VblinkPanel
-        sessionId={vblinkMatch[1]}
-      />
-    );
-  }
-
-  if (isTrainer) {
-    return <DashboardPage />;
-  }
+  if (gameMatch) return <OrionStarsPanel sessionId={gameMatch[1]} />;
+  if (goldenDragonMatch) return <GoldenDragonPanel sessionId={goldenDragonMatch[1]} />;
+  if (vblinkMatch) return <VblinkPanel sessionId={vblinkMatch[1]} />;
+  if (isTrainer) return <DashboardPage />;
 
   if (!session) {
     return (
-      <SessionStartPage
-        onSessionCreated={setSession}
-      />
+      <SessionStartPage onSessionCreated={handleSessionCreated} />
     );
   }
 
   return (
-    <TrainerPage session={session} />
+    <TrainerPage
+      session={session}
+      onSessionEnded={handleSessionEnded}
+    />
   );
 }

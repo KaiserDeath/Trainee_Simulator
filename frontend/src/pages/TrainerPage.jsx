@@ -8,11 +8,8 @@ import PerformancePanel from '../components/performance/PerformancePanel';
 import CustomerPanel from '../components/customers/CustomerPanel';
 import GamesLauncher from '../components/games/GamesLauncher';
 
-export default function TrainerPage({
-  session
-}) {
-  const [activeView, setActiveView] =
-    useState('operations');
+export default function TrainerPage({ session, onSessionEnded }) {
+  const [activeView, setActiveView] = useState('operations');
 
   return (
     <MainLayout
@@ -24,59 +21,37 @@ export default function TrainerPage({
       }
       header={
         <Header
-          traineeName={
-            session?.trainee_name
-          }
+          session={session}
+          traineeName={session?.trainee_name}
+          onSessionEnded={onSessionEnded}
         />
       }
     >
-
       {activeView === 'operations' && (
         <div className="grid grid-cols-3 gap-6">
-
-          {/* OPERATIONS */}
           <div className="col-span-2 bg-white rounded-2xl shadow p-5">
-
-            <h3 className="text-lg font-semibold mb-4">
-              Live Operations Queue
-            </h3>
-
-            <OperationsQueue
-              session={session}
-              />
+            <h3 className="text-lg font-semibold mb-4">Live Operations Queue</h3>
+            <OperationsQueue session={session} />
           </div>
-
-          {/* PERFORMANCE */}
           <div className="bg-white rounded-2xl shadow p-5">
-
-            <PerformancePanel
-              session={session}
-              />
-
+            <PerformancePanel session={session} />
           </div>
         </div>
       )}
 
       {activeView === 'customers' && (
-        <CustomerPanel
-          session={session}
-        />
+        <CustomerPanel session={session} />
       )}
 
       {activeView === 'games' && (
-        <GamesLauncher
-          session={session}
-        />
+        <GamesLauncher session={session} />
       )}
 
       {activeView === 'reports' && (
         <div className="bg-white rounded-2xl shadow p-5">
-          <PerformancePanel
-            session={session}
-          />
+          <PerformancePanel session={session} />
         </div>
       )}
-
     </MainLayout>
   );
 }

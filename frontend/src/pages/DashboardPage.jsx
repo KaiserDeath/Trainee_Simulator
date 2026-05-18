@@ -79,7 +79,6 @@ export default function DashboardPage() {
 
       {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col h-full bg-[#0a0f18] relative overflow-hidden">
-        {/* Background glow effects */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
         
@@ -218,30 +217,32 @@ function CompletedSessionReport({ sessionId }) {
     fetchReport();
   }, [sessionId]);
 
-  if (loading) {
-    return <div className="text-slate-500 animate-pulse mt-8">Generating performance report...</div>;
-  }
+  if (loading) return <div className="text-slate-500 animate-pulse mt-8">Generating performance report...</div>;
+  if (!report) return <div className="text-red-400 mt-8 bg-red-500/10 p-4 rounded-xl border border-red-500/20">Failed to load report data.</div>;
 
-  if (!report) {
-    return <div className="text-red-400 mt-8 bg-red-500/10 p-4 rounded-xl border border-red-500/20">Failed to load report data.</div>;
-  }
+  // Desestructuración segura con valores por defecto para evitar errores de undefined
+  const { 
+    overallScore = 0, 
+    accuracy = 0, 
+    completedOperations = 0, 
+    initialOperationsCount = 0 
+  } = report;
 
-  const { overallScore, accuracy, completedOperations, initialOperationsCount } = report;
+  // Aseguramos que accuracy sea un número antes de usar toFixed
+  const accValue = Number(accuracy) || 0;
   
-  // Calculate a grade
   let grade = 'F';
   let gradeColor = 'text-red-500';
-  if (accuracy >= 95) { grade = 'S'; gradeColor = 'text-purple-400'; }
-  else if (accuracy >= 90) { grade = 'A'; gradeColor = 'text-emerald-400'; }
-  else if (accuracy >= 80) { grade = 'B'; gradeColor = 'text-blue-400'; }
-  else if (accuracy >= 70) { grade = 'C'; gradeColor = 'text-amber-400'; }
+  if (accValue >= 95) { grade = 'S'; gradeColor = 'text-purple-400'; }
+  else if (accValue >= 90) { grade = 'A'; gradeColor = 'text-emerald-400'; }
+  else if (accValue >= 80) { grade = 'B'; gradeColor = 'text-blue-400'; }
+  else if (accValue >= 70) { grade = 'C'; gradeColor = 'text-amber-400'; }
 
   return (
     <div className="space-y-8 animate-fade-in-up">
-      {/* Top Level Stats */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Overall Score" value={overallScore} suffix="/ 100" />
-        <StatCard title="Accuracy" value={`${accuracy.toFixed(1)}%`} />
+        <StatCard title="Accuracy" value={`${accValue.toFixed(1)}%`} />
         <StatCard title="Processed" value={`${completedOperations} / ${initialOperationsCount}`} />
         <div className="bg-slate-800/40 border border-slate-700/50 p-6 rounded-2xl flex flex-col justify-center items-center backdrop-blur-sm relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -250,7 +251,6 @@ function CompletedSessionReport({ sessionId }) {
         </div>
       </div>
       
-      {/* Detailed Operations Report */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
         <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
           <h3 className="font-semibold text-lg">Transaction History Breakdown</h3>
@@ -275,18 +275,18 @@ function CompletedSessionReport({ sessionId }) {
               {report.operations?.map((op, idx) => (
                 <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                    {new Date(op.createdAt).toLocaleTimeString()}
+                    {op.createdAt ? new Date(op.createdAt).toLocaleTimeString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-slate-300 font-medium">{op.type}</span>
                   </td>
                   <td className="px-6 py-4 text-slate-400">{op.customerName}</td>
                   <td className="px-6 py-4 text-right font-mono text-slate-300">
-                    ${op.targetBalance?.toFixed(2) || '0.00'}
+                    ${(op.targetBalance || 0).toFixed(2)}
                   </td>
                   <td className="px-6 py-4 text-right font-mono">
                     <span className={op.status === 'success' ? 'text-emerald-400' : op.status === 'pending' ? 'text-slate-500' : 'text-red-400'}>
-                      ${op.actualBalance?.toFixed(2) || '0.00'}
+                      ${(op.actualBalance || 0).toFixed(2)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -296,7 +296,7 @@ function CompletedSessionReport({ sessionId }) {
                   </td>
                   <td className="px-6 py-4 text-right font-semibold">
                     <span className={op.score > 0 ? 'text-emerald-400' : 'text-slate-500'}>
-                      +{op.score}
+                      +{op.score || 0}
                     </span>
                   </td>
                 </tr>
