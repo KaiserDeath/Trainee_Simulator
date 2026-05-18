@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getCustomers, getCustomerHistory } from '../../api/client';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -12,19 +12,19 @@ function OperationBadge({ type, amount }) {
   const isAdd = type === 'ADD CREDITS' || type === 'ADD_CREDITS';
   const isWithdraw = type === 'WITHDRAW CREDITS' || type === 'WITHDRAW_CREDITS';
   if (isAdd) return (
-    <div className="inline-flex flex-col items-center rounded-lg bg-purple-100 px-3 py-1 min-w-[100px]">
+    <div className="inline-flex flex-col items-center rounded-lg bg-purple-100 px-3 py-1 min-w-25">
       <span className="text-[10px] font-bold uppercase text-purple-700 tracking-wide">Add Credits</span>
       <span className="text-base font-bold text-purple-700">{amount ?? '—'}</span>
     </div>
   );
   if (isWithdraw) return (
-    <div className="inline-flex flex-col items-center rounded-lg bg-orange-100 px-3 py-1 min-w-[100px]">
+    <div className="inline-flex flex-col items-center rounded-lg bg-orange-100 px-3 py-1 min-w-25">
       <span className="text-[10px] font-bold uppercase text-orange-700 tracking-wide">Withdraw Credits</span>
       <span className="text-base font-bold text-orange-700">{amount ?? '—'}</span>
     </div>
   );
   return (
-    <div className="inline-flex flex-col items-center rounded-lg bg-slate-100 px-3 py-1 min-w-[100px]">
+    <div className="inline-flex flex-col items-center rounded-lg bg-slate-100 px-3 py-1 min-w-25">
       <span className="text-[10px] font-bold uppercase text-slate-600">{type}</span>
       <span className="text-base font-bold text-slate-600">{amount ?? '—'}</span>
     </div>
@@ -249,7 +249,34 @@ export default function CustomerPanel({ session }) {
   const [historyCustomer, setHistoryCustomer] = useState(null);
   const [gamesCustomer, setGamesCustomer] = useState(null);
 
-  // If viewing history, show that view instead
+  const needsInput = searchType !== 'All';
+
+  const fetchCustomers = useCallback(async (searchQuery = '') => {
+    try {
+      setLoading(true);
+      setSearched(true);
+      const res = await getCustomers(session.id, searchQuery);
+      setCustomers(res.data || []);
+    } catch (err) {
+      console.error(err);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [session.id]);
+
+  useEffect(() => {
+    if (searchType === 'All') {
+      Promise.resolve().then(() => {
+        void fetchCustomers('');
+      });
+    }
+  }, [fetchCustomers, searchType]);
+
+  const handleSearch = async () => {
+    await fetchCustomers(needsInput ? query.trim() : '');
+  };
+
   if (historyCustomer) {
     return (
       <HistoryView
@@ -259,22 +286,6 @@ export default function CustomerPanel({ session }) {
       />
     );
   }
-
-  const needsInput = searchType !== 'All';
-
-  const handleSearch = async () => {
-    try {
-      setLoading(true);
-      setSearched(true);
-      const res = await getCustomers(session.id, needsInput ? query.trim() : '');
-      setCustomers(res.data || []);
-    } catch (err) {
-      console.error(err);
-      setCustomers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="space-y-5">
@@ -289,7 +300,7 @@ export default function CustomerPanel({ session }) {
               setSearchType(e.target.value);
               setQuery('');
             }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white outline-none focus:border-blue-500 min-w-[150px]"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white outline-none focus:border-blue-500 min-w-37.5"
           >
             <option value="All">All</option>
             <option value="Username">Username</option>

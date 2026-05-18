@@ -325,6 +325,26 @@ export default function OperationsQueue({
                   {operation.game_account.game}
                 </p>
 
+                <p className="text-xs text-slate-500 mt-2 font-medium">
+                  Requested:
+                  {' '}
+                  {operation.created_at
+                    ? new Date(operation.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : 'N/A'}
+                  {operation.processed_at && (
+                    <> · Processed:
+                    {' '}
+                    {new Date(operation.processed_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </>
+                  )}
+                </p>
+
               </div>
 
               <div className="text-right">

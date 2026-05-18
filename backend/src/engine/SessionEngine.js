@@ -102,3 +102,87 @@ export async function completeSession(
 
   return data;
 }
+
+export async function deleteSession(
+  sessionId
+) {
+  const { error: historyError } = await supabase
+    .from('sandbox_transaction_history')
+    .delete()
+    .eq('session_id', sessionId);
+
+  if (historyError) {
+    throw historyError;
+  }
+
+  const { error: operationsError } = await supabase
+    .from('sandbox_operations')
+    .delete()
+    .eq('session_id', sessionId);
+
+  if (operationsError) {
+    throw operationsError;
+  }
+
+  const { error: accountsError } = await supabase
+    .from('sandbox_game_accounts')
+    .delete()
+    .eq('session_id', sessionId);
+
+  if (accountsError) {
+    throw accountsError;
+  }
+
+  const { error: customersError } = await supabase
+    .from('sandbox_customers')
+    .delete()
+    .eq('session_id', sessionId);
+
+  if (customersError) {
+    throw customersError;
+  }
+
+  const { data, error } = await supabase
+    .from('trainee_sessions')
+    .delete()
+    .eq('id', sessionId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteSessionsWithoutActivity() {
+  const { data: sessions, error } = await supabase
+    .from('trainee_sessions')
+    .select('id');
+
+  if (error) {
+    throw error;
+  }
+
+  const deletedIds = [];
+
+  for (const session of sessions) {
+    const { data: operations, error: opError } = await supabase
+      .from('sandbox_operations')
+      .select('id')
+      .eq('session_id', session.id)
+      .limit(1);
+
+    if (opError) {
+      throw opError;
+    }
+
+    if (!operations || operations.length === 0) {
+      await deleteSession(session.id);
+      deletedIds.push(session.id);
+    }
+  }
+
+  return deletedIds;
+}

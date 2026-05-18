@@ -1125,19 +1125,21 @@ function GoldenDragonModal({
   runMoneyAction,
   resetPasswordToDefault
 }) {
-  const redeemAmount =
-    Number(form.amount || 0);
-
   const winningsDollars =
     Number(selected?.balance || 0);
 
-  const addRedeemAmount = value => {
+  const addAmount = value => {
+    const next =
+      Number(form.amount || 0) + value;
+
     updateForm(
       'amount',
-      Math.min(
-        winningsDollars,
-        redeemAmount + value
-      )
+      modal === 'redeem'
+        ? Math.min(
+            winningsDollars,
+            next
+          )
+        : next
     );
   };
 
@@ -1242,46 +1244,7 @@ function GoldenDragonModal({
           </div>
         )}
 
-        {modal === 'purchase' && (
-          <div className="p-8">
-            <label className="mx-auto grid max-w-sm grid-cols-[90px_1fr] items-center gap-3">
-              <span className="font-bold">
-                Amount
-              </span>
-              <input
-                type="number"
-                value={form.amount || ''}
-                onChange={event =>
-                  updateForm(
-                    'amount',
-                    event.target.value
-                  )
-                }
-                className="rounded border border-slate-300 px-3 py-2"
-              />
-            </label>
-
-            <div className="mt-6 flex justify-center gap-5">
-              <button
-                onClick={runMoneyAction}
-                disabled={
-                  !Number(form.amount || 0)
-                }
-                className="rounded bg-[#0084bd] px-10 py-3 font-bold text-white disabled:bg-slate-300"
-              >
-                Save
-              </button>
-              <button
-                onClick={closeModal}
-                className="rounded bg-[#0084bd] px-10 py-3 font-bold text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {modal === 'redeem' && (
+        {(modal === 'purchase' || modal === 'redeem') && (
           <div className="space-y-5 p-8">
             <RedeemRow
               label="Customer ID"
@@ -1304,22 +1267,21 @@ function GoldenDragonModal({
 
             <div className="grid grid-cols-[140px_1fr] items-center border-b border-dashed border-slate-300 pb-4">
               <span className="text-right font-bold">
-                Redeem Amount
+                {modal === 'redeem'
+                  ? 'Redeem Amount'
+                  : 'Purchase Amount'}
               </span>
               <div className="flex items-center gap-4 pl-4">
                 <span className="font-bold text-cyan-600">
                   $
                   {' '}
                   {toCurrency(
-                    redeemAmount
+                    Number(form.amount || 0)
                   )}
                 </span>
                 <button
                   onClick={() =>
-                    updateForm(
-                      'amount',
-                      0
-                    )
+                    updateForm('amount', 0)
                   }
                   className="rounded bg-red-600 px-5 py-2 font-bold text-white"
                 >
@@ -1330,18 +1292,21 @@ function GoldenDragonModal({
 
             <div className="grid grid-cols-[140px_1fr] items-center border-b border-dashed border-slate-300 pb-4">
               <span className="text-right font-bold">
-                Redeem Select
+                {modal === 'redeem'
+                  ? 'Redeem Select'
+                  : 'Purchase Select'}
               </span>
               <div className="flex flex-wrap gap-2 pl-4">
                 {[1, 5, 10, 20, 50, 100].map(value => (
                   <button
                     key={value}
                     onClick={() =>
-                      addRedeemAmount(value)
+                      addAmount(value)
                     }
                     disabled={
-                      redeemAmount + value >
-                      winningsDollars
+                      modal === 'redeem' &&
+                      Number(form.amount || 0) + value >
+                        winningsDollars
                     }
                     className="rounded bg-[#0084bd] px-7 py-2 font-bold text-white disabled:bg-slate-300"
                   >
@@ -1349,20 +1314,22 @@ function GoldenDragonModal({
                     {value}
                   </button>
                 ))}
-                <button
-                  onClick={() =>
-                    updateForm(
-                      'amount',
-                      winningsDollars
-                    )
-                  }
-                  disabled={
-                    winningsDollars <= 0
-                  }
-                  className="rounded bg-[#0084bd] px-7 py-2 font-bold text-white disabled:bg-slate-300"
-                >
-                  Max
-                </button>
+                {modal === 'redeem' && (
+                  <button
+                    onClick={() =>
+                      updateForm(
+                        'amount',
+                        winningsDollars
+                      )
+                    }
+                    disabled={
+                      winningsDollars <= 0
+                    }
+                    className="rounded bg-[#0084bd] px-7 py-2 font-bold text-white disabled:bg-slate-300"
+                  >
+                    Max
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1370,9 +1337,10 @@ function GoldenDragonModal({
               <button
                 onClick={runMoneyAction}
                 disabled={
-                  redeemAmount <= 0 ||
-                  redeemAmount >
-                    winningsDollars
+                  Number(form.amount || 0) <= 0 ||
+                  (modal === 'redeem' &&
+                    Number(form.amount || 0) >
+                      winningsDollars)
                 }
                 className="rounded bg-[#0084bd] px-10 py-3 font-bold text-white disabled:bg-slate-300"
               >
@@ -1413,7 +1381,7 @@ function GoldenDragonModal({
         )}
 
         {modal === 'history' && (
-          <div className="max-h-[520px] overflow-auto p-5">
+          <div className="max-h-130 overflow-auto p-5">
             <table className="w-full text-left">
               <thead className="bg-[#0084bd] text-white">
                 <tr>
@@ -1491,7 +1459,7 @@ function MessageDialog({
   onClose
 }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 pt-16">
+    <div className="fixed inset-0 z-60 flex items-start justify-center bg-black/50 pt-16">
       <div className="w-full max-w-lg rounded bg-white shadow-xl">
         <div className="flex items-center justify-between border-b px-5 py-4">
           <h2 className="text-lg">

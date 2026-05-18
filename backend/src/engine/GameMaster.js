@@ -6,12 +6,14 @@ import {
   getPendingCount,
   QUEUE_LIMITS
 } from './QueueManager.js';
+import { completeSession } from './SessionEngine.js';
 
 class GameMaster {
 
   constructor() {
 
     this.activeSessions = new Map();
+    this.autoCloseMs = 30 * 60 * 1000; // 30 minutes
 
     // Weighted distribution
     this.operationWeights = [
@@ -57,16 +59,34 @@ class GameMaster {
     await this.generateOperations(sessionId);
 
     const interval = setInterval(async () => {
-
       await this.generateOperations(
         sessionId
       );
-
     }, QUEUE_LIMITS.generationIntervalMs);
+
+    const timeout = setTimeout(async () => {
+      console.log(
+        `Auto-closing session ${sessionId} after 30 minutes`
+      );
+
+      this.stopSession(sessionId);
+
+      try {
+        await completeSession(sessionId);
+      } catch (err) {
+        console.error(
+          `Failed to auto-complete session ${sessionId}:`,
+          err
+        );
+      }
+    }, this.autoCloseMs);
 
     this.activeSessions.set(
       sessionId,
-      interval
+      {
+        interval,
+        timeout
+      }
     );
   }
 
@@ -75,12 +95,13 @@ class GameMaster {
   //
   stopSession(sessionId) {
 
-    const interval =
+    const timers =
       this.activeSessions.get(sessionId);
 
-    if (interval) {
+    if (timers) {
 
-      clearInterval(interval);
+      clearInterval(timers.interval);
+      clearTimeout(timers.timeout);
 
       this.activeSessions.delete(
         sessionId

@@ -312,6 +312,50 @@ async function createAuditHistory({
   }
 }
 
+async function saveRequestPayload(
+  operationId,
+  requestData
+) {
+  if (
+    !requestData ||
+    Object.keys(requestData).length === 0
+  ) {
+    return;
+  }
+
+  const trySave = async (fieldName) => {
+    const payload = {};
+    payload[fieldName] = requestData;
+
+    const { error } = await supabase
+      .from('sandbox_operations')
+      .update(payload)
+      .eq('id', operationId);
+
+    return error;
+  };
+
+  const fieldNames = ['request_data', 'requestData'];
+
+  for (const fieldName of fieldNames) {
+    const error = await trySave(fieldName);
+    if (!error) {
+      return;
+    }
+
+    const isMissingField = /column .* does not exist|no such column|invalid input|field .* not found/i.test(error.message);
+    if (isMissingField) {
+      continue;
+    }
+
+    if (/request_data/i.test(error.message) || /requestData/i.test(error.message)) {
+      continue;
+    }
+
+    throw error;
+  }
+}
+
 export async function processOperation(
   operationId,
   payload
@@ -367,6 +411,11 @@ export async function processOperation(
       isCorrect,
       processingSeconds
     });
+
+  await saveRequestPayload(
+    operation.id,
+    requestData
+  );
 
   await createAuditHistory({
     operation,

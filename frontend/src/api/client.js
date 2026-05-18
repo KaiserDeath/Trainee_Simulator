@@ -93,6 +93,10 @@ export const createGameAccount = async (
   );
 };
 
+export const deleteSession = async (sessionId) => {
+  return api.delete(`/trainer/sessions/${sessionId}`);
+};
+
 export const getGameAccountHistory = async (
   sessionId,
   customerId

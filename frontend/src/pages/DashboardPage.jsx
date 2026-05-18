@@ -1,17 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
-import api from '../api/client';
+import api, { deleteSession as deleteSessionApi } from '../api/client';
 
 export default function DashboardPage() {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedSessionIds, setSelectedSessionIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
 
   const fetchSessions = useCallback(async () => {
     try {
       const response = await api.get('/trainer/sessions');
-      setSessions(response.data);
-      if (response.data.length > 0 && !selectedSession) {
-        setSelectedSession(response.data[0]);
+      const sessionList = response.data || [];
+      setSessions(sessionList);
+      setSelectedSessionIds((current) => {
+        const validIds = sessionList
+          .filter((session) => current.has(session.id))
+          .map((session) => session.id);
+        return new Set(validIds);
+      });
+
+      if (sessionList.length === 0) {
+        setSelectedSession(null);
+      } else if (
+        !selectedSession ||
+        !sessionList.some((s) => s.id === selectedSession.id)
+      ) {
+        setSelectedSession(sessionList[0]);
       }
     } catch (err) {
       console.error('Failed to fetch sessions', err);
@@ -20,8 +34,58 @@ export default function DashboardPage() {
     }
   }, [selectedSession]);
 
+  const allSelected =
+    sessions.length > 0 &&
+    selectedSessionIds.size === sessions.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedSessionIds(new Set());
+    } else {
+      setSelectedSessionIds(
+        new Set(sessions.map((session) => session.id))
+      );
+    }
+  };
+
+  const toggleSessionSelection = (sessionId) => {
+    setSelectedSessionIds((current) => {
+      const next = new Set(current);
+      if (next.has(sessionId)) {
+        next.delete(sessionId);
+      } else {
+        next.add(sessionId);
+      }
+      return next;
+    });
+  };
+
+  const deleteSelectedSessions = async () => {
+    if (selectedSessionIds.size === 0) {
+      return;
+    }
+
+    if (!window.confirm(`Delete ${selectedSessionIds.size} selected session(s)?`)) {
+      return;
+    }
+
+    try {
+      await Promise.all(
+        Array.from(selectedSessionIds).map((id) =>
+          deleteSessionApi(id)
+        )
+      );
+      setSelectedSessionIds(new Set());
+      setSelectedSession(null);
+      await fetchSessions();
+    } catch (err) {
+      console.error('Failed to delete selected sessions', err);
+      alert('Could not delete all selected sessions.');
+    }
+  };
+
   useEffect(() => {
-    fetchSessions();
+    void Promise.resolve().then(fetchSessions);
     const interval = setInterval(fetchSessions, 5000); // refresh list every 5s
     return () => clearInterval(interval);
   }, [fetchSessions]);
@@ -31,7 +95,7 @@ export default function DashboardPage() {
       {/* SIDEBAR */}
       <aside className="w-80 border-r border-slate-800 bg-slate-900 flex flex-col h-full">
         <div className="p-6 border-b border-slate-800 bg-slate-900/50">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-sm">
+          <h1 className="text-2xl font-bold bg-linear-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-sm">
             Instructor Dashboard
           </h1>
           <p className="text-xs text-slate-500 mt-1 uppercase tracking-wider font-semibold">
@@ -39,40 +103,80 @@ export default function DashboardPage() {
           </p>
         </div>
         
+        <div className="p-4 border-b border-slate-800/50">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-xs text-slate-400">
+              {selectedSessionIds.size} selected
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="text-xs px-3 py-1 rounded-lg border border-slate-700 bg-slate-800/70 text-slate-200 hover:bg-slate-700 transition"
+              >
+                {allSelected ? 'Unselect all' : 'Select all'}
+              </button>
+              {selectedSessionIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={deleteSelectedSessions}
+                  className="text-xs px-3 py-1 rounded-lg border border-red-500 bg-red-500/10 text-red-300 hover:bg-red-500/15 transition"
+                >
+                  Delete selected
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {loading && sessions.length === 0 ? (
             <div className="text-center text-slate-500 py-8 animate-pulse">Loading sessions...</div>
           ) : (
-            sessions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSelectedSession(s)}
-                className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
-                  selectedSession?.id === s.id
-                    ? 'bg-slate-800 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)] transform scale-[1.02]'
-                    : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-semibold text-slate-100 truncate pr-2">
-                    {s.trainee_name || 'Unknown Trainee'}
-                  </span>
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      s.status === 'active'
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse'
-                        : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                    }`}
-                  >
-                    {s.status}
-                  </span>
+            sessions.map((s) => {
+              const checked = selectedSessionIds.has(s.id);
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => setSelectedSession(s)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    selectedSession?.id === s.id
+                      ? 'bg-slate-800 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)] transform scale-[1.02]'
+                      : 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600'
+                  } ${checked ? 'ring-1 ring-cyan-500/40' : ''}`}
+                >
+                  <div className="flex justify-between items-start mb-2 gap-3">
+                    <label className="flex items-center gap-3 text-slate-100 truncate pr-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          event.stopPropagation();
+                          toggleSessionSelection(s.id);
+                        }}
+                        className="h-4 w-4 rounded border-slate-700 text-cyan-500 focus:ring-cyan-500"
+                      />
+                      <span className="font-semibold text-slate-100 truncate">
+                        {s.trainee_name || 'Unknown Trainee'}
+                      </span>
+                    </label>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        s.status === 'active'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse'
+                          : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                      }`}
+                    >
+                      {s.status}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400 font-mono">
+                    {new Date(s.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {s.completed_at && ` - ${new Date(s.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  </div>
                 </div>
-                <div className="text-xs text-slate-400 font-mono">
-                  {new Date(s.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  {s.completed_at && ` - ${new Date(s.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                </div>
-              </button>
-            ))
+              );
+            })
           )}
         </div>
       </aside>
@@ -94,19 +198,39 @@ export default function DashboardPage() {
                 </p>
               </div>
               
-              {selectedSession.status === 'active' && (
+              <div className="flex gap-3">
+                {selectedSession.status === 'active' && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm('Are you sure you want to stop this session?')) {
+                        await api.post(`/sessions/${selectedSession.id}/stop`);
+                        fetchSessions();
+                      }
+                    }}
+                    className="bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all duration-300 px-6 py-2.5 rounded-lg font-semibold shadow-[0_0_20px_rgba(239,68,68,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]"
+                  >
+                    Stop Session
+                  </button>
+                )}
+
                 <button
                   onClick={async () => {
-                    if (window.confirm('Are you sure you want to stop this session?')) {
-                      await api.post(`/sessions/${selectedSession.id}/stop`);
-                      fetchSessions();
+                    if (window.confirm('Delete this session permanently?')) {
+                      try {
+                        await deleteSessionApi(selectedSession.id);
+                        setSelectedSession(null);
+                        await fetchSessions();
+                      } catch (err) {
+                        console.error('Failed to delete session', err);
+                        alert('Could not delete this session.');
+                      }
                     }
                   }}
-                  className="bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all duration-300 px-6 py-2.5 rounded-lg font-semibold shadow-[0_0_20px_rgba(239,68,68,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]"
+                  className="bg-slate-700 text-slate-100 border border-slate-600 hover:bg-slate-600 transition-all duration-300 px-6 py-2.5 rounded-lg font-semibold shadow-[0_0_20px_rgba(15,23,42,0.35)] hover:shadow-[0_0_20px_rgba(15,23,42,0.55)]"
                 >
-                  Stop Session
+                  Delete Session
                 </button>
-              )}
+              </div>
             </header>
 
             {selectedSession.status === 'active' ? (
@@ -220,17 +344,86 @@ function CompletedSessionReport({ sessionId }) {
   if (loading) return <div className="text-slate-500 animate-pulse mt-8">Generating performance report...</div>;
   if (!report) return <div className="text-red-400 mt-8 bg-red-500/10 p-4 rounded-xl border border-red-500/20">Failed to load report data.</div>;
 
-  // Desestructuración segura con valores por defecto para evitar errores de undefined
-  const { 
-    overallScore = 0, 
-    accuracy = 0, 
-    completedOperations = 0, 
-    initialOperationsCount = 0 
-  } = report;
+  const performance = report.performance || {};
+  const {
+    accuracy = 0,
+    completedOperations = 0,
+    totalOperations = 0
+  } = performance;
 
-  // Aseguramos que accuracy sea un número antes de usar toFixed
+  const initialOperationsCount = totalOperations;
+  const overallScore = Math.round(Number(accuracy) || 0);
   const accValue = Number(accuracy) || 0;
-  
+
+  const formatRequestDetails = (op) => {
+    const requestData =
+      op.requestData ||
+      op.request_data ||
+      op.requestPayload ||
+      op.submitted_data;
+
+    if (requestData) {
+      let parsed = requestData;
+
+      if (typeof requestData === 'string') {
+        try {
+          parsed = JSON.parse(requestData);
+        } catch {
+          return requestData;
+        }
+      }
+
+      if (typeof parsed === 'object') {
+        const entries = Object.entries(parsed).map(([key, value]) => {
+          if (key === 'newPassword' || key === 'password') {
+            return `${key}: ${value ?? ''}`;
+          }
+          if (key === 'amount') {
+            return `Entered amount: $${Number(value || 0).toFixed(2)}`;
+          }
+          return `${key}: ${value ?? ''}`;
+        });
+
+        if (op.amount != null && parsed.amount != null) {
+          const expected = Number(op.amount || 0);
+          const entered = Number(parsed.amount || 0);
+          if (expected !== entered) {
+            entries.push(`Expected: $${expected.toFixed(2)}`);
+            entries.push(`Actual entered: $${entered.toFixed(2)}`);
+          }
+        }
+
+        return entries.join(' • ');
+      }
+    }
+
+    if (op.newPassword || op.password) {
+      return `Password: ${op.newPassword || op.password}`;
+    }
+
+    if (op.type === 'REFRESH BALANCE' && op.amount != null) {
+      return `Requested: $${op.amount}`;
+    }
+
+    return 'N/A';
+  };
+
+  const getBalanceDifference = (op) => {
+    if (op.targetBalance == null || op.actualBalance == null) {
+      return null;
+    }
+
+    const target = Number(op.targetBalance || 0);
+    const actual = Number(op.actualBalance || 0);
+    const diff = actual - target;
+
+    if (diff === 0) {
+      return 'No difference';
+    }
+
+    return `${diff > 0 ? '+' : ''}$${diff.toFixed(2)}`;
+  };
+
   let grade = 'F';
   let gradeColor = 'text-red-500';
   if (accValue >= 95) { grade = 'S'; gradeColor = 'text-purple-400'; }
@@ -245,7 +438,7 @@ function CompletedSessionReport({ sessionId }) {
         <StatCard title="Accuracy" value={`${accValue.toFixed(1)}%`} />
         <StatCard title="Processed" value={`${completedOperations} / ${initialOperationsCount}`} />
         <div className="bg-slate-800/40 border border-slate-700/50 p-6 rounded-2xl flex flex-col justify-center items-center backdrop-blur-sm relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <span className="text-sm text-slate-400 mb-2 font-medium">Final Grade</span>
           <span className={`text-6xl font-black drop-shadow-lg ${gradeColor}`}>{grade}</span>
         </div>
@@ -262,11 +455,13 @@ function CompletedSessionReport({ sessionId }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-900 border-b border-slate-800 text-slate-400 text-xs uppercase tracking-wider">
-                <th className="px-6 py-4 font-medium">Time</th>
+                <th className="px-6 py-4 font-medium">Requested</th>
+                <th className="px-6 py-4 font-medium">Processed</th>
                 <th className="px-6 py-4 font-medium">Type</th>
                 <th className="px-6 py-4 font-medium">Customer</th>
                 <th className="px-6 py-4 font-medium text-right">Target</th>
                 <th className="px-6 py-4 font-medium text-right">Actual</th>
+                <th className="px-6 py-4 font-medium text-left">Input / Notes</th>
                 <th className="px-6 py-4 font-medium text-center">Result</th>
                 <th className="px-6 py-4 font-medium text-right">Points</th>
               </tr>
@@ -275,7 +470,10 @@ function CompletedSessionReport({ sessionId }) {
               {report.operations?.map((op, idx) => (
                 <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
                   <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                    {op.createdAt ? new Date(op.createdAt).toLocaleTimeString() : 'N/A'}
+                    {op.created_at ? new Date(op.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                    {op.processed_at ? new Date(op.processed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Pending'}
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-slate-300 font-medium">{op.type}</span>
@@ -288,6 +486,14 @@ function CompletedSessionReport({ sessionId }) {
                     <span className={op.status === 'success' ? 'text-emerald-400' : op.status === 'pending' ? 'text-slate-500' : 'text-red-400'}>
                       ${(op.actualBalance || 0).toFixed(2)}
                     </span>
+                    {getBalanceDifference(op) && (
+                      <div className="text-xs text-slate-400 mt-1">
+                        Diff: {getBalanceDifference(op)}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-left text-slate-300 text-sm">
+                    {formatRequestDetails(op)}
                   </td>
                   <td className="px-6 py-4 text-center">
                     {op.status === 'success' && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">✓</span>}
