@@ -586,7 +586,7 @@ export async function hasCreatedAccount({
   const gameUsername =
     String(requestData.gameId ?? '')
       .trim();
-
+L
   if (!gameUsername) {
     return false;
   }

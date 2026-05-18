@@ -13,7 +13,8 @@ export default function GamesLauncher({
     `/games/orion-stars/${session.id}`;
   const goldenDragonUrl =
     `/games/golden-dragon/${session.id}`;
-
+  const vblinkUrl =
+    `/games/vblink/${session.id}`;
 
   return (
     <div className="bg-white rounded-2xl shadow p-5">
@@ -43,15 +44,21 @@ export default function GamesLauncher({
           </p>
         </button>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 opacity-60">
+        <button
+          onClick={() =>
+            openGame(vblinkUrl)
+          }
+          className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-left hover:border-blue-500 hover:bg-blue-50"
+          data-testid="vblink-launcher-btn"
+        >
           <p className="text-lg font-bold text-slate-800">
             Vblink
           </p>
 
           <p className="mt-2 text-sm text-slate-500">
-            Coming next.
+              User Management, Add Player, Set Score, Score Log, Edit Password.
           </p>
-        </div>
+        </button>
 
         <button
           onClick={() =>

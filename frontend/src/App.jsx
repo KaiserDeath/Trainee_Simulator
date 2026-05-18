@@ -2,8 +2,10 @@ import { useState } from "react";
 
 import SessionStartPage from "./pages/SessionStartPage";
 import TrainerPage from "./pages/TrainerPage";
+import DashboardPage from "./pages/DashboardPage";
 import OrionStarsPanel from "./components/games/OrionStarsPanel";
 import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
+import VblinkPanel from "./components/games/VblinkPanel";
 
 export default function App() {
   const [session, setSession] =
@@ -19,6 +21,14 @@ export default function App() {
       /^\/games\/golden-dragon\/([^/]+)$/
     );
 
+  const vblinkMatch =
+    window.location.pathname.match(
+      /^\/games\/vblink\/([^/]+)$/
+    );
+
+  const isTrainer =
+    window.location.pathname === "/trainer";
+
   if (gameMatch) {
     return (
       <OrionStarsPanel
@@ -33,6 +43,18 @@ export default function App() {
         sessionId={goldenDragonMatch[1]}
       />
     );
+  }
+
+  if (vblinkMatch) {
+    return (
+      <VblinkPanel
+        sessionId={vblinkMatch[1]}
+      />
+    );
+  }
+
+  if (isTrainer) {
+    return <DashboardPage />;
   }
 
   if (!session) {
