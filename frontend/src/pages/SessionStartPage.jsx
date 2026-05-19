@@ -1,12 +1,18 @@
 import { useState } from "react";
 import client from "../api/client";
 
+const SETTINGS_KEY = 'sessionTimeoutMinutes';
+
 export default function SessionStartPage({ onSessionCreated }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sessionDurationMinutes] = useState(() => {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    return saved ? Number(saved) : 30;
+  });
 
   // Step 1 — fill name
   const handleConfirmName = () => {
@@ -25,6 +31,7 @@ export default function SessionStartPage({ onSessionCreated }) {
       setError("");
       const response = await client.post("/sessions/start", {
         traineeName: `${firstName.trim()} ${lastName.trim()}`,
+        durationMinutes: sessionDurationMinutes,
       });
       onSessionCreated(response.data.session);
     } catch (err) {
@@ -99,7 +106,7 @@ export default function SessionStartPage({ onSessionCreated }) {
               <div className="bg-slate-700/30 rounded-xl px-5 py-4 border border-slate-600 space-y-1.5 text-sm text-slate-300">
                 <div className="flex items-center gap-2">
                   <span className="text-blue-400">⏱</span>
-                  <span>Session duration: <span className="font-semibold text-white">30 minutes</span></span>
+                  <span>Session duration: <span className="font-semibold text-white">{sessionDurationMinutes} minutes</span></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-blue-400">⚡</span>

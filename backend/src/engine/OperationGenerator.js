@@ -21,16 +21,32 @@ export function generateOperation(
     operationType ===
       'WITHDRAW CREDITS'
   ) {
+    const maxAvailable =
+      operationType ===
+      'ADD CREDITS'
+        ? Number(customer.balance)
+        : Number(gameAccount.balance);
 
-    amount =
-      Math.floor(
-        Math.random() * 500
-      ) + 20;
+    if (Number.isFinite(maxAvailable) && maxAvailable > 0) {
+      const limit =
+        Math.min(500, Math.floor(maxAvailable));
+      amount =
+        Math.floor(
+          Math.random() * limit
+        ) + 1;
+    }
   }
 
   // =========================
   // RETURN OPERATION
   // =========================
+
+  if (
+    (operationType === 'ADD CREDITS' && !amount) ||
+    (operationType === 'WITHDRAW CREDITS' && !amount)
+  ) {
+    return null;
+  }
 
   return {
 

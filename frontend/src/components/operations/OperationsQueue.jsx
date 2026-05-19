@@ -62,7 +62,8 @@ function getInitialRequestForm(
 }
 
 export default function OperationsQueue({
-  session
+  session,
+  isSessionClosed
 }) {
 
   const [operations, setOperations] =
@@ -131,6 +132,9 @@ export default function OperationsQueue({
     action,
     requestData
   ) => {
+    if (isSessionClosed) {
+      return;
+    }
 
     try {
 
@@ -154,6 +158,10 @@ export default function OperationsQueue({
   };
 
   const openRequestModal = operation => {
+    if (isSessionClosed) {
+      return;
+    }
+
     setSelectedRequest(operation);
     setRequestForm(
       getInitialRequestForm(operation)
@@ -228,6 +236,19 @@ export default function OperationsQueue({
   if (loading) {
     return (
       <p>Loading operations...</p>
+    );
+  }
+
+  if (isSessionClosed) {
+    return (
+      <div className="bg-slate-100 p-8 rounded-xl border border-slate-300">
+        <h3 className="text-xl font-semibold text-slate-900">
+          Session finished
+        </h3>
+        <p className="mt-3 text-slate-500">
+          The session is complete and pending operations are frozen. Review your final results in the reports tab.
+        </p>
+      </div>
     );
   }
 
@@ -410,7 +431,7 @@ export default function OperationsQueue({
 
       {selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-[520px] rounded-lg bg-white shadow-xl">
+          <div className="w-full max-w-130 rounded-lg bg-white shadow-xl">
 
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div />

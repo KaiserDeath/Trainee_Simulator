@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
 
 router.post('/start', async (req, res) => {
   try {
-    const { traineeName } = req.body;
+    const { traineeName, durationMinutes } = req.body;
 
     if (!traineeName) {
       return res.status(400).json({
@@ -55,9 +55,17 @@ router.post('/start', async (req, res) => {
         traineeName
       );
 
+    const minutes = Number(durationMinutes);
+    const durationMs =
+      Number.isFinite(minutes) &&
+      minutes > 0
+        ? Math.round(minutes * 60 * 1000)
+        : 30 * 60 * 1000;
+
     // START GAMEMASTER
     await GameMaster.startSession(
-      session.id
+      session.id,
+      durationMs
     );
 
     res.json({
@@ -66,6 +74,32 @@ router.post('/start', async (req, res) => {
       session
     });
 
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from('trainee_sessions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({
+        error: error?.message || 'Session not found'
+      });
+    }
+
+    res.json(data);
   } catch (err) {
     console.error(err);
 

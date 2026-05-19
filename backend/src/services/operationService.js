@@ -13,6 +13,10 @@ import {
   hasMatchingGameAction
 } from './gameSimulationService.js';
 
+import {
+  logActionEvent
+} from '../engine/AuditLogger.js';
+
 const operationSelect = `
   *,
   customer:sandbox_customers(
@@ -35,9 +39,36 @@ const fullOperationSelect = `
   game_account:sandbox_game_accounts(*)
 `;
 
+async function getSessionStatus(
+  sessionId
+) {
+  const { data, error } = await supabase
+    .from('trainee_sessions')
+    .select('status')
+    .eq('id', sessionId)
+    .single();
+
+  if (error || !data) {
+    const notFound =
+      new Error('Session not found');
+    notFound.statusCode = 404;
+    throw notFound;
+  }
+
+  return data.status;
+}
+
 export async function getPendingOperations(
   sessionId
 ) {
+  const sessionStatus = await getSessionStatus(
+    sessionId
+  );
+
+  if (sessionStatus !== 'active') {
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('sandbox_operations')
     .select(operationSelect)
@@ -75,6 +106,18 @@ async function getOperationForProcessing(id) {
       );
     alreadyProcessed.statusCode = 400;
     throw alreadyProcessed;
+  }
+
+  const sessionStatus = await getSessionStatus(
+    data.session_id
+  );
+
+  if (sessionStatus !== 'active') {
+    const inactiveError = new Error(
+      'Session is no longer active'
+    );
+    inactiveError.statusCode = 400;
+    throw inactiveError;
   }
 
   return data;
@@ -170,10 +213,22 @@ async function evaluateGameBackofficeWork(
     operation.type ===
     'WITHDRAW CREDITS'
   ) {
-    return hasMatchingGameAction({
-      operation,
-      type: 'GAME WITHDRAW CREDITS'
-    });
+    const enoughGameBalance =
+      Number(
+        operation.game_account
+          ?.balance
+      ) >= Number(operation.amount);
+
+    const hasGameWithdraw =
+      await hasMatchingGameAction({
+        operation,
+        type: 'GAME WITHDRAW CREDITS'
+      });
+
+    return (
+      enoughGameBalance &&
+      hasGameWithdraw
+    );
   }
 
   if (
@@ -219,15 +274,53 @@ async function evaluateGameBackofficeWork(
   );
 }
 
+async function updateGameAccountBalance(
+  accountId,
+  nextBalance
+) {
+  const { error } = await supabase
+    .from('sandbox_game_accounts')
+    .update({
+      balance: nextBalance
+    })
+    .eq('id', accountId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 async function applyApprovalSideEffects(
   operation,
   action,
-  isCorrect
+  isCorrect,
+  requestData
 ) {
   if (
     action !== 'APPROVED' ||
     !isCorrect
   ) {
+    return;
+  }
+
+  if (
+    operation.type ===
+    'REFRESH BALANCE'
+  ) {
+    const amount = Number(
+      requestData.amount
+    );
+
+    if (
+      Number.isFinite(amount) &&
+      amount >= 0
+    ) {
+      await updateGameAccountBalance(
+        operation.game_account_id,
+        amount
+      );
+    }
+
     return;
   }
 
@@ -397,7 +490,8 @@ export async function processOperation(
   await applyApprovalSideEffects(
     operation,
     action,
-    isCorrect
+    isCorrect,
+    requestData
   );
 
   const processingSeconds =
@@ -423,6 +517,18 @@ export async function processOperation(
     traineeName,
     requestData,
     isCorrect
+  });
+
+  await logActionEvent({
+    sessionId: operation.session_id,
+    traineeName,
+    operationId: operation.id,
+    actionType: action,
+    details: {
+      operationType: operation.type,
+      isCorrect,
+      processingSeconds
+    }
   });
 
   return {

@@ -1,11 +1,33 @@
-import { useState, useEffect, useCallback } from 'react';
-import api, { deleteSession as deleteSessionApi } from '../api/client';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import api, { deleteSession as deleteSessionApi, submitSessionForEvaluation } from '../api/client';
+import AuditLogPanel from '../components/audit/AuditLogPanel';
+
+const SESSION_STATUS_META = {
+  active: {
+    label: 'Active',
+    classes: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse'
+  },
+  completed: {
+    label: 'Completed (stats)',
+    classes: 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+  },
+  submitted: {
+    label: 'Submitted for evaluation',
+    classes: 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+  }
+};
 
 export default function DashboardPage() {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [selectedSessionIds, setSelectedSessionIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('live'); // 'live', 'report', 'audit'
+  const [traineeSearch, setTraineeSearch] = useState('');
+  const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(() => {
+    const saved = localStorage.getItem('sessionTimeoutMinutes');
+    return saved ? Number(saved) : 30;
+  });
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -34,16 +56,40 @@ export default function DashboardPage() {
     }
   }, [selectedSession]);
 
+  useEffect(() => {
+    localStorage.setItem(
+      'sessionTimeoutMinutes',
+      String(sessionTimeoutMinutes)
+    );
+  }, [sessionTimeoutMinutes]);
+
+  const filteredSessions = useMemo(() => {
+    const search = traineeSearch.trim().toLowerCase();
+    if (!search) {
+      return sessions;
+    }
+
+    return sessions.filter((session) => {
+      const traineeName = (session.trainee_name || '').toLowerCase();
+      return (
+        traineeName.includes(search) ||
+        session.id.toLowerCase().includes(search)
+      );
+    });
+  }, [sessions, traineeSearch]);
+
   const allSelected =
-    sessions.length > 0 &&
-    selectedSessionIds.size === sessions.length;
+    filteredSessions.length > 0 &&
+    filteredSessions.every((session) =>
+      selectedSessionIds.has(session.id)
+    );
 
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedSessionIds(new Set());
     } else {
       setSelectedSessionIds(
-        new Set(sessions.map((session) => session.id))
+        new Set(filteredSessions.map((session) => session.id))
       );
     }
   };
@@ -103,8 +149,49 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        <div className="p-4 border-b border-slate-800/50">
-          <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="p-4 border-b border-slate-800/50 space-y-4">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-500 mb-2 font-semibold">
+              Session settings
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={sessionTimeoutMinutes}
+                onChange={(event) =>
+                  setSessionTimeoutMinutes(
+                    Number(event.target.value)
+                  )
+                }
+                className="w-20 rounded-lg border border-slate-700 bg-slate-900 text-white px-3 py-2"
+                aria-label="Global session timeout minutes"
+              />
+              <span className="text-slate-400 text-xs">
+                minutes for all sessions
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              This value is saved locally and applies to new sessions.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-500 mb-2 font-semibold">
+              Trainee search
+            </p>
+            <input
+              type="text"
+              value={traineeSearch}
+              onChange={(event) =>
+                setTraineeSearch(event.target.value)
+              }
+              placeholder="Search by trainee name or session id"
+              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 placeholder:text-slate-500"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-slate-400">
               {selectedSessionIds.size} selected
             </span>
@@ -133,7 +220,7 @@ export default function DashboardPage() {
           {loading && sessions.length === 0 ? (
             <div className="text-center text-slate-500 py-8 animate-pulse">Loading sessions...</div>
           ) : (
-            sessions.map((s) => {
+            filteredSessions.map((s) => {
               const checked = selectedSessionIds.has(s.id);
               return (
                 <div
@@ -162,12 +249,10 @@ export default function DashboardPage() {
                     </label>
                     <span
                       className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        s.status === 'active'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 animate-pulse'
-                          : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                        SESSION_STATUS_META[s.status]?.classes || 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
                       }`}
                     >
-                      {s.status}
+                      {SESSION_STATUS_META[s.status]?.label || s.status}
                     </span>
                   </div>
                   <div className="text-xs text-slate-400 font-mono">
@@ -213,6 +298,26 @@ export default function DashboardPage() {
                   </button>
                 )}
 
+                {selectedSession.status === 'completed' && (
+                  <button
+                    onClick={async () => {
+                      if (window.confirm('Send this completed session for evaluation?')) {
+                        try {
+                          await submitSessionForEvaluation(selectedSession.id);
+                          await fetchSessions();
+                          alert('Session submitted for evaluation.');
+                        } catch (err) {
+                          console.error(err);
+                          alert('Could not submit session for evaluation.');
+                        }
+                      }
+                    }}
+                    className="bg-violet-500 text-white hover:bg-violet-400 transition-all duration-300 px-6 py-2.5 rounded-lg font-semibold shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+                  >
+                    Submit for evaluation
+                  </button>
+                )}
+
                 <button
                   onClick={async () => {
                     if (window.confirm('Delete this session permanently?')) {
@@ -233,8 +338,44 @@ export default function DashboardPage() {
               </div>
             </header>
 
-            {selectedSession.status === 'active' ? (
+            {/* VIEW MODE TABS */}
+            <div className="flex gap-4 mb-6 border-b border-slate-800/50 pb-4">
+              <button
+                onClick={() => setViewMode('live')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  viewMode === 'live'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Live Operations
+              </button>
+              <button
+                onClick={() => setViewMode('report')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  viewMode === 'report'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Report
+              </button>
+              <button
+                onClick={() => setViewMode('audit')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  viewMode === 'audit'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Audit Log
+              </button>
+            </div>
+
+            {selectedSession.status === 'active' && viewMode === 'live' ? (
               <LiveSessionView sessionId={selectedSession.id} />
+            ) : viewMode === 'audit' ? (
+              <AuditLogPanel sessionId={selectedSession.id} />
             ) : (
               <CompletedSessionReport sessionId={selectedSession.id} />
             )}

@@ -103,6 +103,25 @@ export async function completeSession(
   return data;
 }
 
+export async function submitSession(
+  sessionId
+) {
+  const { data, error } = await supabase
+    .from('trainee_sessions')
+    .update({
+      status: 'submitted'
+    })
+    .eq('id', sessionId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function deleteSession(
   sessionId
 ) {

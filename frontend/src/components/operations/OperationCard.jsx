@@ -1,4 +1,4 @@
-import client from "../../api/client";
+import client, { logTraineeAction } from "../../api/client";
 
 export default function OperationCard({
   operation,
@@ -25,6 +25,33 @@ export default function OperationCard({
     }
   };
 
+  const handleCopyUsername = async () => {
+    const username =
+      operation.customer?.username ||
+      operation.game_account?.game_username;
+
+    if (username) {
+      await navigator.clipboard.writeText(username);
+
+      try {
+        await logTraineeAction(
+          session.id,
+          'USERNAME_COPIED',
+          {
+            operationId: operation.id,
+            operationType: operation.type,
+            username,
+            timestamp: new Date().toISOString()
+          }
+        );
+      } catch (err) {
+        console.error('Failed to log copy action:', err);
+      }
+
+      alert(`Copied: ${username}`);
+    }
+  };
+
   return (
     <div className="bg-slate-900 border border-slate-700 rounded-xl p-4">
       <div className="flex justify-between items-start">
@@ -33,13 +60,18 @@ export default function OperationCard({
             {operation.type}
           </h3>
 
-          <p className="text-slate-400">
-            Customer:
-            {" "}
-            {
+          <p className="text-slate-400 flex items-center justify-between">
+            <span>Customer: {" "}{
               operation.customer
                 ?.username
-            }
+            }</span>
+            <button
+              onClick={handleCopyUsername}
+              className="ml-2 text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+              title="Copy username"
+            >
+              📋
+            </button>
           </p>
 
           <p className="text-slate-400">

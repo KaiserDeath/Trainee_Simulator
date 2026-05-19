@@ -97,12 +97,49 @@ export const deleteSession = async (sessionId) => {
   return api.delete(`/trainer/sessions/${sessionId}`);
 };
 
+export const submitSessionForEvaluation = async (sessionId) => {
+  return api.post(`/trainer/sessions/${sessionId}/submit`);
+};
+
+export const getSessionById = async (sessionId) => {
+  return api.get(`/sessions/${sessionId}`);
+};
+
 export const getGameAccountHistory = async (
   sessionId,
   customerId
 ) => {
   return api.get(
     `/games/${sessionId}/customers/${customerId}/history`
+  );
+};
+
+export const logTraineeAction = async (
+  sessionId,
+  actionType,
+  details = {}
+) => {
+  return api.post(
+    `/trainer/sessions/${sessionId}/log-action`,
+    { actionType, details }
+  );
+};
+
+export const getSessionAuditLog = async (
+  sessionId
+) => {
+  return api.get(
+    `/trainer/sessions/${sessionId}/audit-log`
+  );
+};
+
+export const setSessionTimeLimit = async (
+  sessionId,
+  minutes
+) => {
+  return api.post(
+    `/trainer/sessions/${sessionId}/time-limit`,
+    { minutes }
   );
 };
 

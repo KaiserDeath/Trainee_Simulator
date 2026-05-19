@@ -43,7 +43,7 @@ class GameMaster {
   //
   // START SESSION
   //
-  async startSession(sessionId) {
+  async startSession(sessionId, autoCloseMs = this.autoCloseMs) {
 
     if (
       this.activeSessions.has(sessionId)
@@ -64,9 +64,25 @@ class GameMaster {
       );
     }, QUEUE_LIMITS.generationIntervalMs);
 
-    const timeout = setTimeout(async () => {
+    const timeout = this.scheduleAutoClose(
+      sessionId,
+      autoCloseMs
+    );
+
+    this.activeSessions.set(
+      sessionId,
+      {
+        interval,
+        timeout,
+        autoCloseMs
+      }
+    );
+  }
+
+  scheduleAutoClose(sessionId, autoCloseMs) {
+    return setTimeout(async () => {
       console.log(
-        `Auto-closing session ${sessionId} after 30 minutes`
+        `Auto-closing session ${sessionId} after ${Math.round(autoCloseMs / 60000)} minutes`
       );
 
       this.stopSession(sessionId);
@@ -79,15 +95,28 @@ class GameMaster {
           err
         );
       }
-    }, this.autoCloseMs);
+    }, autoCloseMs);
+  }
 
-    this.activeSessions.set(
+  setSessionTimeout(sessionId, autoCloseMs) {
+    const timers = this.activeSessions.get(sessionId);
+
+    if (!timers) {
+      return false;
+    }
+
+    clearTimeout(timers.timeout);
+
+    const timeout = this.scheduleAutoClose(
       sessionId,
-      {
-        interval,
-        timeout
-      }
+      autoCloseMs
     );
+
+    timers.timeout = timeout;
+    timers.autoCloseMs = autoCloseMs;
+
+    this.activeSessions.set(sessionId, timers);
+    return true;
   }
 
   //
@@ -242,14 +271,16 @@ class GameMaster {
         const operationType =
           this.generateWeightedOperationType();
 
-        operations.push(
-          generateOperation(
+        const generated = generateOperation(
             customer,
             selectedGame,
             sessionId,
             operationType
-          )
-        );
+          );
+
+        if (generated) {
+          operations.push(generated);
+        }
       }
 
       // =========================

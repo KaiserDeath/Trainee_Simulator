@@ -1,0 +1,94 @@
+import { useState, useEffect } from 'react';
+import { getSessionAuditLog } from '../../api/client';
+
+export default function AuditLogPanel({ sessionId }) {
+  const [auditLog, setAuditLog] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const fetchAuditLog = async () => {
+      setLoading(true);
+      try {
+        const response = await getSessionAuditLog(sessionId);
+        setAuditLog(response.data);
+      } catch (err) {
+        console.error('Failed to fetch audit log:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAuditLog();
+    const interval = setInterval(fetchAuditLog, 5000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
+
+  const formatActionType = (actionType) => {
+    const map = {
+      'USERNAME_COPIED': '📋 Username Copied',
+      'APPROVE': '✅ Operation Approved',
+      'REJECT': '❌ Operation Rejected',
+      'CANCEL': '🚫 Operation Cancelled'
+    };
+    return map[actionType] || actionType;
+  };
+
+  const formatTimestamp = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  if (loading && auditLog.length === 0) {
+    return <div className="text-slate-400">Loading audit log...</div>;
+  }
+
+  if (auditLog.length === 0) {
+    return <div className="text-slate-400">No trainee actions recorded yet</div>;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm text-slate-300">
+        <thead>
+          <tr className="border-b border-slate-700">
+            <th className="text-left py-2 px-3">Trainee</th>
+            <th className="text-left py-2 px-3">Action</th>
+            <th className="text-left py-2 px-3">Time</th>
+            <th className="text-left py-2 px-3">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {auditLog.map((log, idx) => (
+            <tr
+              key={idx}
+              className="border-b border-slate-800 hover:bg-slate-800"
+            >
+              <td className="py-2 px-3">
+                {log.trainee_name}
+              </td>
+              <td className="py-2 px-3 font-mono">
+                {formatActionType(log.action_type)}
+              </td>
+              <td className="py-2 px-3 text-slate-500">
+                {formatTimestamp(log.timestamp)}
+              </td>
+              <td className="py-2 px-3 text-slate-400 text-xs">
+                {log.details ? (
+                  <span>
+                    {JSON.parse(log.details)?.username && `Username: ${JSON.parse(log.details).username}`}
+                    {JSON.parse(log.details)?.operationType && ` | Op: ${JSON.parse(log.details).operationType}`}
+                  </span>
+                ) : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
