@@ -124,6 +124,35 @@ export default function GoldenDragonPanel({
   const [notice, setNotice] =
     useState(null);
 
+  // --- ORION STARS EQUIVALENT ALIGNMENT: SESSION END SYNCHRONIZATION ---
+  const [forceSessionEnd, setForceSessionEnd] = useState(false);
+
+  // DERIVED STATE: Tracks and handles immediate lock screen termination
+  const isSessionEnded = forceSessionEnd || !activeSessionId;
+
+  // --- SYNCHRONIZATION EFFECT: TRACKS CROSS-WINDOW STORAGE EVAPORATION ---
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === 'casino_trainer_session') {
+        if (!event.newValue) {
+          setForceSessionEnd(true);
+        } else {
+          try {
+            const currentSession = JSON.parse(event.newValue);
+            if (currentSession.id !== activeSessionId) {
+              setForceSessionEnd(true);
+            }
+          } catch (error) {
+            console.error('Failed to process updated session token:', error);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [activeSessionId]);
+
   const selectedCustomerId =
     selected?.customer_id;
 
@@ -202,6 +231,7 @@ export default function GoldenDragonPanel({
 
   const fetchAccounts =
     useCallback(async () => {
+      if (isSessionEnded || !activeSessionId) return;
       const response =
         await searchGameAccounts(
           activeSessionId,
@@ -215,12 +245,13 @@ export default function GoldenDragonPanel({
     }, [
       activeSessionId,
       query,
-      searchType
+      searchType,
+      isSessionEnded
     ]);
 
   const fetchHistory =
     useCallback(async () => {
-      if (!selectedCustomerId) {
+      if (!selectedCustomerId || isSessionEnded || !activeSessionId) {
         setHistory([]);
         return;
       }
@@ -234,7 +265,8 @@ export default function GoldenDragonPanel({
       setHistory(response.data);
     }, [
       activeSessionId,
-      selectedCustomerId
+      selectedCustomerId,
+      isSessionEnded
     ]);
 
   useEffect(() => {
@@ -296,6 +328,11 @@ export default function GoldenDragonPanel({
   };
 
   const saveCustomer = async () => {
+    if (isSessionEnded || !activeSessionId) {
+      closeModal();
+      return;
+    }
+
     const firstName =
       String(form.firstName || '').trim();
 
@@ -341,7 +378,10 @@ export default function GoldenDragonPanel({
   };
 
   const runMoneyAction = async () => {
-    if (!selected) return;
+    if (isSessionEnded || !activeSessionId || !selected) {
+      closeModal();
+      return;
+    }
 
     try {
       if (modal === 'purchase') {
@@ -356,7 +396,7 @@ export default function GoldenDragonPanel({
       }
 
       if (modal === 'redeem') {
-                const value =
+        const value =
           Number(form.amount || 0);
 
         if (
@@ -390,7 +430,10 @@ export default function GoldenDragonPanel({
 
   const resetPasswordToDefault =
     async () => {
-      if (!selected) return;
+      if (isSessionEnded || !activeSessionId || !selected) {
+        closeModal();
+        return;
+      }
 
       const customerId =
         getGoldenDragonCustomerId(
@@ -426,6 +469,8 @@ export default function GoldenDragonPanel({
     };
 
   const runReportSearch = async () => {
+    if (isSessionEnded || !activeSessionId) return;
+
     const term =
       reportCustomerId.trim();
 
@@ -451,6 +496,32 @@ export default function GoldenDragonPanel({
 
     setReportHistory(response.data);
   };
+
+  // --- ORION STARS INTERACTION SYNC: FULL SCREEN TIMEOUT MASK ---
+  if (isSessionEnded) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-900 p-6">
+        <div className="w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-950 p-8 text-center shadow-2xl">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl text-amber-500 animate-pulse">
+            ⏳
+          </div>
+          <h3 className="text-xl font-bold text-slate-100">
+            Training Session Ended
+          </h3>
+          <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+            This training simulation session has completed its time tracking or was closed from the main dashboard tab. Operations are now locked.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.close()}
+            className="mt-6 w-full rounded-xl bg-slate-800 py-3 text-sm font-semibold text-slate-200 border border-slate-700 transition hover:bg-slate-700 active:scale-[0.98]"
+          >
+            Close This Window
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#e8e8e8] text-sm text-black">
@@ -528,7 +599,7 @@ export default function GoldenDragonPanel({
           <SidebarItem label="Shift Report" child onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
           <SidebarItem label="System Setup" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
           <SidebarItem label="Account Management" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
-          <SidebarItem label="Logout" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
+          <SidebarItem label="Logout" />
           <SidebarItem label="GD platform news" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
           <SidebarItem label="OnlineWalletSetup" onClick={() => setNotice({ title: 'Not Available', message: 'QUITE CLOSE, BUT IT IS NOT HERE.' })} />
         </aside>

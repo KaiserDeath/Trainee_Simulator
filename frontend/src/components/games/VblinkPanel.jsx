@@ -73,14 +73,44 @@ export default function VblinkPanel({ session, sessionId }) {
   const [notice, setNotice] = useState(null);
   const [scoreLog, setScoreLog] = useState([]);
 
+  // --- SESSION MANIPULATION STATE ---
+  const [forceSessionEnd, setForceSessionEnd] = useState(false);
+
+  // DERIVED STATE: Instantly active tracking on every render engine loop
+  const isSessionEnded = forceSessionEnd || !activeSessionId;
+
+  // --- CROSS-TAB SYNCHRONIZATION EFFECT ---
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === 'casino_trainer_session') {
+        if (!event.newValue) {
+          setForceSessionEnd(true);
+        } else {
+          try {
+            const currentSession = JSON.parse(event.newValue);
+            if (currentSession.id !== activeSessionId) {
+              setForceSessionEnd(true);
+            }
+          } catch (error) {
+            console.error('Failed to process updated session token:', error);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [activeSessionId]);
+
   const fetchAccounts = useCallback(async () => {
+    if (isSessionEnded || !activeSessionId) return;
     const response = await searchGameAccounts(
       activeSessionId,
       'Vblink',
       ''
     );
     setAccounts(response.data);
-  }, [activeSessionId]);
+  }, [activeSessionId, isSessionEnded]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -124,6 +154,10 @@ export default function VblinkPanel({ session, sessionId }) {
 
   // =================== ADD PLAYER ===================
   const submitAddPlayer = async () => {
+    if (isSessionEnded) {
+      closeModal();
+      return;
+    }
     const userName = String(form.userName || '').trim();
     const password = String(form.password || '');
     const initialScore = Number(form.setScore || 0);
@@ -166,7 +200,10 @@ export default function VblinkPanel({ session, sessionId }) {
 
   // =================== SET SCORE ===================
   const submitSetScore = async () => {
-    if (!selected) return;
+    if (isSessionEnded || !selected) {
+      closeModal();
+      return;
+    }
     const value = Number(form.amount);
     if (!Number.isFinite(value) || value === 0) {
       setFormError('Enter a non-zero amount (positive to add, negative to redeem)');
@@ -198,7 +235,10 @@ export default function VblinkPanel({ session, sessionId }) {
 
   // =================== EDIT (RESET PASSWORD) ===================
   const submitEditPassword = async () => {
-    if (!selected) return;
+    if (isSessionEnded || !selected) {
+      closeModal();
+      return;
+    }
     const password = String(form.password || '');
     if (!PASSWORD_REGEX.test(password)) {
       setFormError(PASSWORD_HINT);
@@ -216,6 +256,7 @@ export default function VblinkPanel({ session, sessionId }) {
 
   // =================== SCORE LOG ===================
   const openScoreLog = async account => {
+    if (isSessionEnded) return;
     setSelected(account);
     const response = await getGameAccountHistory(
       activeSessionId,
@@ -226,6 +267,32 @@ export default function VblinkPanel({ session, sessionId }) {
     );
     openModal('scoreLog');
   };
+
+  // --- VBLINK LOCK SCREEN CUT-OFF ---
+  if (isSessionEnded) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-900 p-6">
+        <div className="w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-950 p-8 text-center shadow-2xl">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl text-amber-500 animate-pulse">
+            ⏳
+          </div>
+          <h3 className="text-xl font-bold text-slate-100">
+            Training Session Ended
+          </h3>
+          <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+            This training simulation session has completed its time tracking or was closed from the main dashboard tab. Operations are now locked.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.close()}
+            className="mt-6 w-full rounded-xl bg-slate-800 py-3 text-sm font-semibold text-slate-200 border border-slate-700 transition hover:bg-slate-700 active:scale-[0.98]"
+          >
+            Close This Window
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // =================== UI ===================
   return (

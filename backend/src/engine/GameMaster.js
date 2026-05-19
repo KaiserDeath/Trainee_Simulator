@@ -19,15 +19,15 @@ class GameMaster {
     this.operationWeights = [
       {
         type: 'ADD CREDITS',
-        weight: 30
+        weight: 25
       },
       {
         type: 'WITHDRAW CREDITS',
-        weight: 15
+        weight: 20
       },
       {
         type: 'RESET PASSWORD',
-        weight: 35
+        weight: 25
       },
       {
         type: 'REFRESH BALANCE',
@@ -35,7 +35,7 @@ class GameMaster {
       },
       {
         type: 'CREATE ACCOUNT',
-        weight: 5
+        weight: 15
       }
     ];
   }

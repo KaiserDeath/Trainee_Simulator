@@ -38,74 +38,90 @@ export default function OrionStarsPanel({
   session,
   sessionId
 }) {
-  const activeSessionId =
-    session?.id || sessionId;
+  const activeSessionId = session?.id || sessionId;
 
-  const [query, setQuery] =
-    useState('');
+  const [query, setQuery] = useState('');
+  const [accounts, setAccounts] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
 
-  const [accounts, setAccounts] =
-    useState([]);
+  // --- FIX: Track an intentional override flag instead of manually mirroring a prop down into local state ---
+  const [forceSessionEnd, setForceSessionEnd] = useState(false);
 
-  const [selected, setSelected] =
-    useState(null);
+  // DERIVED STATE: This resolves instantly on every single render loop.
+  // This eliminates the cascading render loop error thrown by your IA Helper.
+  const isSessionEnded = forceSessionEnd || !activeSessionId;
 
-  const [history, setHistory] =
-    useState([]);
+  // --- SYNCHRONIZATION EFFECT: SAFELY CAPTURES CROSS-WINDOW STORAGE EVAPORATION ---
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === 'casino_trainer_session') {
+        if (!event.newValue) {
+          setForceSessionEnd(true);
+        } else {
+          try {
+            const currentSession = JSON.parse(event.newValue);
+            if (currentSession.id !== activeSessionId) {
+              setForceSessionEnd(true);
+            }
+          } catch (error) {
+            console.error('Failed to process updated session token:', error);
+          }
+        }
+      }
+    };
 
-  const [modal, setModal] =
-    useState(null);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [activeSessionId]);
 
-  const [form, setForm] =
-    useState({});
+  const selectedCustomerId = selected?.customer_id;
 
-  const selectedCustomerId =
-    selected?.customer_id;
+  const orionHistory = history.filter(item =>
+    item.game === GAME || item.description?.includes(GAME)
+  );
 
-  const orionHistory =
-    history.filter(item =>
-      item.game === GAME ||
-      item.description?.includes(GAME)
+  const fetchAccounts = useCallback(async () => {
+    if (isSessionEnded || !activeSessionId) return;
+
+    const response = await searchGameAccounts(
+      activeSessionId,
+      'Orion-Stars',
+      query
     );
 
-  const fetchAccounts =
-    useCallback(async () => {
-      const response =
-        await searchGameAccounts(
-          activeSessionId,
-          'Orion-Stars',
-          query
-        );
-
-      setAccounts(response.data);
-    }, [activeSessionId, query]);
-
-  const fetchHistory =
-    useCallback(async () => {
-      if (!selectedCustomerId) {
-        setHistory([]);
-        return;
+    setAccounts(response.data || []);
+    
+    if (selected) {
+      const updatedSelected = (response.data || []).find(acc => acc.id === selected.id);
+      if (updatedSelected) {
+        setSelected(updatedSelected);
       }
+    }
+  }, [activeSessionId, query, isSessionEnded, selected]);
 
-      const response =
-        await getGameAccountHistory(
-          activeSessionId,
-          selectedCustomerId
-        );
+  const fetchHistory = useCallback(async () => {
+    if (!selectedCustomerId || isSessionEnded || !activeSessionId) {
+      setHistory([]);
+      return;
+    }
 
-      setHistory(response.data);
-    }, [
+    const response = await getGameAccountHistory(
       activeSessionId,
-      selectedCustomerId,
-    ]);
+      selectedCustomerId
+    );
+
+    setHistory(response.data || []);
+  }, [activeSessionId, selectedCustomerId, isSessionEnded]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       fetchAccounts();
     }, 200);
 
-    return () =>
-      clearTimeout(timeout);
+    return () => clearTimeout(timeout);
   }, [fetchAccounts]);
 
   useEffect(() => {
@@ -113,22 +129,15 @@ export default function OrionStarsPanel({
       fetchHistory();
     }, 0);
 
-    return () =>
-      clearTimeout(timeout);
+    return () => clearTimeout(timeout);
   }, [fetchHistory]);
 
   const openModal = name => {
     setModal(name);
-
     if (name === 'create') {
-      setForm({
-        gameUsername:
-          selected?.customer
-            ?.username || ''
-      });
+      setForm({ gameUsername: selected?.customer?.username || '' });
       return;
     }
-
     setForm({});
   };
 
@@ -138,10 +147,7 @@ export default function OrionStarsPanel({
   };
 
   const updateForm = (key, value) => {
-    setForm(current => ({
-      ...current,
-      [key]: value
-    }));
+    setForm(current => ({ ...current, [key]: value }));
   };
 
   const refreshSelected = async () => {
@@ -150,38 +156,28 @@ export default function OrionStarsPanel({
   };
 
   const runAction = async () => {
-    if (modal === 'recharge') {
-      await rechargeGameAccount(
-        selected.id,
-        form.amount
-      );
+    if (isSessionEnded || !activeSessionId) {
+      closeModal();
+      return;
     }
 
-    if (modal === 'redeem') {
-      await redeemGameAccount(
-        selected.id,
-        form.amount
-      );
+    if (modal === 'recharge' && selected) {
+      await rechargeGameAccount(selected.id, form.amount);
     }
-
-    if (modal === 'password') {
-      await resetGamePassword(
-        selected.id,
-        form.newPassword
-      );
+    if (modal === 'redeem' && selected) {
+      await redeemGameAccount(selected.id, form.amount);
     }
-
+    if (modal === 'password' && selected) {
+      await resetGamePassword(selected.id, form.newPassword);
+    }
     if (modal === 'create') {
       await createGameAccount(
         activeSessionId,
         GAME,
         {
-          customerId:
-            selected?.customer_id,
-          gameUsername:
-            form.gameUsername,
-          password:
-            form.password
+          customerId: selected?.customer_id,
+          gameUsername: form.gameUsername,
+          password: form.password
         }
       );
     }
@@ -190,8 +186,33 @@ export default function OrionStarsPanel({
     refreshSelected();
   };
 
-  const selectedActionsDisabled =
-    !selected;
+  const selectedActionsDisabled = !selected;
+
+  // --- SESSION LOCK SCREEN CUT-OFF ---
+  if (isSessionEnded) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-900 p-6">
+        <div className="w-full max-w-md rounded-2xl border border-slate-700/50 bg-slate-950 p-8 text-center shadow-2xl">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-2xl text-amber-500 animate-pulse">
+            ⏳
+          </div>
+          <h3 className="text-xl font-bold text-slate-100">
+            Training Session Ended
+          </h3>
+          <p className="mt-3 text-sm text-slate-400 leading-relaxed">
+            This training simulation session has completed its time tracking or was closed from the main dashboard tab. Operations are now locked.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.close()}
+            className="mt-6 w-full rounded-xl bg-slate-800 py-3 text-sm font-semibold text-slate-200 border border-slate-700 transition hover:bg-slate-700 active:scale-[0.98]"
+          >
+            Close This Window
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-300 bg-white">
@@ -203,7 +224,6 @@ export default function OrionStarsPanel({
             (Release) / User Management
           </span>
         </h2>
-
         <div className="rounded-full bg-[#24577d] px-4 py-2 text-sm">
           Welcome Training Store
         </div>
@@ -227,9 +247,7 @@ export default function OrionStarsPanel({
             <div
               key={item}
               className={`border-b border-slate-300 px-3 py-3 text-sm font-semibold ${
-                index === 0
-                  ? 'bg-white text-slate-900'
-                  : 'text-slate-700'
+                index === 0 ? 'bg-white text-slate-900' : 'text-slate-700'
               }`}
             >
               {item}
@@ -244,20 +262,15 @@ export default function OrionStarsPanel({
                 <h3 className="mb-3 text-lg font-bold text-sky-700">
                   User Management
                 </h3>
-
                 <div className="flex gap-2">
                   <input
                     value={query}
-                    onChange={event =>
-                      setQuery(
-                        event.target.value
-                      )
-                    }
+                    onChange={event => setQuery(event.target.value)}
                     placeholder="ID or Account"
                     className="h-10 w-56 rounded border border-slate-400 px-3 outline-none"
                   />
-
                   <button
+                    type="button"
                     onClick={fetchAccounts}
                     className="h-10 rounded bg-sky-700 px-6 text-white"
                   >
@@ -265,11 +278,9 @@ export default function OrionStarsPanel({
                   </button>
                 </div>
               </div>
-
               <button
-                onClick={() =>
-                  openModal('create')
-                }
+                type="button"
+                onClick={() => openModal('create')}
                 className="rounded bg-purple-600 px-5 py-3 text-white"
               >
                 Create Player
@@ -277,18 +288,14 @@ export default function OrionStarsPanel({
             </div>
 
             <div className="mb-3 text-sm font-semibold">
-              Display prohibited accounts:
-              {' '}
-              <span className="font-normal">OFF</span>
+              Display prohibited accounts: <span className="font-normal">OFF</span>
             </div>
 
             <div className="overflow-hidden border border-slate-300">
               <table className="w-full text-center text-sm">
                 <thead>
                   <tr className="border-b border-slate-300 bg-white">
-                    <th className="py-3">
-                      ID
-                    </th>
+                    <th className="py-3">ID</th>
                     <th>Account</th>
                     <th>NickName</th>
                     <th>Credit</th>
@@ -297,92 +304,57 @@ export default function OrionStarsPanel({
                     <th>Status</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {selected ? (
                     <tr className="border-b border-slate-300">
-                      <td className="py-3">
-                        {selected.id}
-                      </td>
-                      <td>
-                        {selected.game_username}
-                      </td>
-                      <td>
-                        {selected.game_username}
-                      </td>
-                      <td className="font-semibold">
-                        {Number(
-                          selected.balance
-                        ).toFixed(2)}
-                      </td>
+                      <td className="py-3">{selected.id}</td>
+                      <td>{selected.game_username}</td>
+                      <td>{selected.game_username}</td>
+                      <td className="font-semibold">{Number(selected.balance).toFixed(2)}</td>
                       <td>0.00</td>
                       <td>TrainingStore</td>
                       <td>
-                        <span className="rounded bg-sky-600 px-3 py-2 text-white">
-                          Active
-                        </span>
+                        <span className="rounded bg-sky-600 px-3 py-2 text-white">Active</span>
                       </td>
                     </tr>
                   ) : (
                     <tr>
-                      <td
-                        colSpan="7"
-                        className="py-4 text-slate-500"
-                      >
+                      <td colSpan="7" className="py-4 text-slate-500">
                         Search and click Update to select an account.
                       </td>
                     </tr>
                   )}
-
                   <tr>
-                    <td
-                      colSpan="7"
-                      className="py-3"
-                    >
+                    <td colSpan="7" className="py-3">
                       <div className="flex flex-wrap justify-center gap-6">
                         <button
-                          disabled={
-                            selectedActionsDisabled
-                          }
-                          onClick={() =>
-                            openModal('recharge')
-                          }
+                          type="button"
+                          disabled={selectedActionsDisabled}
+                          onClick={() => openModal('recharge')}
                           className="rounded bg-red-600 px-5 py-2 text-white disabled:bg-slate-300"
                         >
                           Recharge
                         </button>
-
                         <button
-                          disabled={
-                            selectedActionsDisabled
-                          }
-                          onClick={() =>
-                            openModal('redeem')
-                          }
+                          type="button"
+                          disabled={selectedActionsDisabled}
+                          onClick={() => openModal('redeem')}
                           className="rounded bg-purple-600 px-5 py-2 text-white disabled:bg-slate-300"
                         >
                           Redeem
                         </button>
-
                         <button
-                          disabled={
-                            selectedActionsDisabled
-                          }
-                          onClick={() =>
-                            openModal('password')
-                          }
+                          type="button"
+                          disabled={selectedActionsDisabled}
+                          onClick={() => openModal('password')}
                           className="rounded bg-sky-700 px-5 py-2 text-white disabled:bg-slate-300"
                         >
                           Reset Password
                         </button>
-
                         <button
-                          disabled={
-                            selectedActionsDisabled
-                          }
-                          onClick={() =>
-                            openModal('records')
-                          }
+                          type="button"
+                          disabled={selectedActionsDisabled}
+                          onClick={() => openModal('records')}
                           className="rounded bg-sky-700 px-5 py-2 text-white disabled:bg-slate-300"
                         >
                           Transaction Records
@@ -407,30 +379,21 @@ export default function OrionStarsPanel({
                   <th>Status</th>
                 </tr>
               </thead>
-
               <tbody>
                 {accounts.map(account => (
-                  <tr
-                    key={account.id}
-                    className="border-b border-slate-300"
-                  >
+                  <tr key={account.id} className="border-b border-slate-300">
                     <td className="py-2">
                       <button
-                        onClick={() =>
-                          setSelected(account)
-                        }
+                        type="button"
+                        onClick={() => setSelected(account)}
                         className="rounded bg-sky-600 px-4 py-2 text-white"
                       >
                         Update
                       </button>
                     </td>
                     <td>{account.id}</td>
-                    <td>
-                      {account.game_username}
-                    </td>
-                    <td>
-                      {account.game_username}
-                    </td>
+                    <td>{account.game_username}</td>
+                    <td>{account.game_username}</td>
                     <td>TrainingStore</td>
                     <td>Active</td>
                   </tr>
@@ -445,26 +408,16 @@ export default function OrionStarsPanel({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="w-full max-w-4xl rounded bg-white shadow-xl">
             <div className="flex justify-end border-b px-5 py-3">
-              <button
-                onClick={closeModal}
-                className="text-2xl"
-              >
-                x
-              </button>
+              <button type="button" onClick={closeModal} className="text-2xl">x</button>
             </div>
 
             <div className="p-6">
               <h3 className="mb-5 text-center text-xl font-bold text-sky-900">
-                {modal === 'recharge' &&
-                  'Recharge'}
-                {modal === 'redeem' &&
-                  'Redeem'}
-                {modal === 'password' &&
-                  'Reset Password'}
-                {modal === 'create' &&
-                  'Create Player'}
-                {modal === 'records' &&
-                  'Transaction Records'}
+                {modal === 'recharge' && 'Recharge'}
+                {modal === 'redeem' && 'Redeem'}
+                {modal === 'password' && 'Reset Password'}
+                {modal === 'create' && 'Create Player'}
+                {modal === 'records' && 'Transaction Records'}
               </h3>
 
               {modal === 'records' ? (
@@ -472,50 +425,24 @@ export default function OrionStarsPanel({
                   <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="bg-sky-600 text-white">
                       <tr>
-                        <th className="px-3 py-2">
-                          Type
-                        </th>
-                        <th className="px-3 py-2">
-                          Amount
-                        </th>
-                        <th className="px-3 py-2">
-                          Game
-                        </th>
-                        <th className="px-3 py-2">
-                          Date
-                        </th>
-                        <th className="px-3 py-2">
-                          Manager
-                        </th>
-                        <th className="px-3 py-2">
-                          Status
-                        </th>
+                        <th className="px-3 py-2">Type</th>
+                        <th className="px-3 py-2">Amount</th>
+                        <th className="px-3 py-2">Game</th>
+                        <th className="px-3 py-2">Date</th>
+                        <th className="px-3 py-2">Manager</th>
+                        <th className="px-3 py-2">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {orionHistory.map(item => (
-                        <tr
-                          key={item.id}
-                          className="border-b"
-                        >
+                        <tr key={item.id} className="border-b">
+                          <td className="px-3 py-2">{item.type}</td>
+                          <td className="px-3 py-2 font-semibold">{item.amount ?? '-'}</td>
+                          <td className="px-3 py-2">{item.game}</td>
                           <td className="px-3 py-2">
-                            {item.type}
+                            {formatDateTime(item.acceptedAt || item.created_at)}
                           </td>
-                          <td className="px-3 py-2 font-semibold">
-                            {item.amount ?? '-'}
-                          </td>
-                          <td className="px-3 py-2">
-                            {item.game}
-                          </td>
-                          <td className="px-3 py-2">
-                            {formatDateTime(
-                              item.acceptedAt ||
-                              item.created_at
-                            )}
-                          </td>
-                          <td className="px-3 py-2">
-                            {item.manager}
-                          </td>
+                          <td className="px-3 py-2">{item.manager}</td>
                           <td className="px-3 py-2">
                             <span className="rounded-full border border-green-500 px-3 py-1 font-semibold text-green-600">
                               {item.status}
@@ -523,13 +450,9 @@ export default function OrionStarsPanel({
                           </td>
                         </tr>
                       ))}
-
                       {orionHistory.length === 0 && (
                         <tr>
-                          <td
-                            colSpan="6"
-                            className="px-3 py-6 text-center text-slate-500"
-                          >
+                          <td colSpan="6" className="px-3 py-6 text-center text-slate-500">
                             No transaction records available
                           </td>
                         </tr>
@@ -540,69 +463,41 @@ export default function OrionStarsPanel({
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {modal === 'create' && (
-                    <label>
-                      <span className="mb-1 block text-sm font-semibold">
-                        Account
-                      </span>
+                    <label className="block text-sm font-semibold">
+                      <span className="mb-1 block">Account</span>
                       <input
-                        value={
-                          form.gameUsername ||
-                          ''
-                        }
-                        onChange={event =>
-                          updateForm(
-                            'gameUsername',
-                            event.target.value
-                          )
-                        }
-                        className="w-full rounded border px-3 py-2"
+                        value={form.gameUsername || ''}
+                        onChange={event => updateForm('gameUsername', event.target.value)}
+                        className="w-full rounded border px-3 py-2 font-normal"
                       />
                     </label>
                   )}
 
-                  {modal !== 'create' &&
-                    modal !== 'password' && (
-                    <label>
-                      <span className="mb-1 block text-sm font-semibold">
-                        Amount
-                      </span>
+                  {modal !== 'create' && modal !== 'password' && (
+                    <label className="block text-sm font-semibold">
+                      <span className="mb-1 block">Amount</span>
                       <input
                         type="number"
-                        value={
-                          form.amount || ''
-                        }
-                        onChange={event =>
-                          updateForm(
-                            'amount',
-                            event.target.value
-                          )
-                        }
-                        className="w-full rounded border px-3 py-2"
+                        value={form.amount || ''}
+                        onChange={event => updateForm('amount', event.target.value)}
+                        className="w-full rounded border px-3 py-2 font-normal"
                       />
                     </label>
                   )}
 
-                  {(modal === 'create' ||
-                    modal === 'password') && (
-                    <label>
-                      <span className="mb-1 block text-sm font-semibold">
-                        New Password
-                      </span>
+                  {(modal === 'create' || modal === 'password') && (
+                    <label className="block text-sm font-semibold">
+                      <span className="mb-1 block">New Password</span>
                       <input
-                        value={
-                          form.password ||
-                          form.newPassword ||
-                          ''
-                        }
+                        type="text"
+                        value={form.password || form.newPassword || ''}
                         onChange={event =>
                           updateForm(
-                            modal === 'create'
-                              ? 'password'
-                              : 'newPassword',
+                            modal === 'create' ? 'password' : 'newPassword',
                             event.target.value
                           )
                         }
-                        className="w-full rounded border px-3 py-2"
+                        className="w-full rounded border px-3 py-2 font-normal"
                       />
                     </label>
                   )}
@@ -611,19 +506,12 @@ export default function OrionStarsPanel({
             </div>
 
             <div className="grid grid-cols-2 border-t">
-              <button
-                onClick={closeModal}
-                className="py-4 font-semibold text-red-500"
-              >
+              <button type="button" onClick={closeModal} className="py-4 font-semibold text-red-500">
                 Close
               </button>
-
               {modal !== 'records' && (
-                <button
-                  onClick={runAction}
-                  className="border-l py-4 font-semibold text-slate-700"
-                >
-                  Confirm
+                <button type="button" onClick={runAction} className="border-l py-4 font-semibold text-slate-700">
+                  Confirma
                 </button>
               )}
             </div>
@@ -633,4 +521,3 @@ export default function OrionStarsPanel({
     </div>
   );
 }
-
