@@ -28,7 +28,8 @@ function parseHistoryDetails(description) {
       parsed.kind ===
         'GAME_HISTORY'    
       ) {
-    }
+        return parsed;
+      }
   } catch {
     // Existing action rows use plain-text descriptions.
   }
@@ -43,6 +44,46 @@ function normalizeHistoryItem(item) {
       item.description
     );
 
+  const game =
+    details.game ||
+    inferGameFromDescription(
+      item.description
+    );
+
+  const gameUsername =
+    details.playerId ||
+    details.mobileId ||
+    details.mobile_id ||
+    item.game_username ||
+    '—';
+
+  const operationCode =
+    details.operationCode ||
+    details.operation_code ||
+    String(item.id).slice(0, 8)
+      .toUpperCase();
+
+  const manager =
+    details.manager ||
+    details.processed_by ||
+    'TrainingStore';
+
+  const status =
+    details.status ||
+    'Approved';
+
+  const requestedAt =
+    details.requestedAt ||
+    details.requested_at ||
+    details.executedAt ||
+    item.created_at;
+
+  const acceptedAt =
+    details.acceptedAt ||
+    details.accepted_at ||
+    details.executedAt ||
+    item.created_at;
+
   return {
     id: item.id,
     type: item.type,
@@ -52,27 +93,25 @@ function normalizeHistoryItem(item) {
         ? ''
         : item.description,
     created_at: item.created_at,
-    operationCode:
-      details.operationCode ||
-      String(item.id).slice(0, 8)
-        .toUpperCase(),
-    game:
-      details.game ||
-      inferGameFromDescription(
-        item.description
-      ),
-    requestedAt:
-      details.requestedAt ||
-      details.executedAt ||
-      item.created_at,
-    acceptedAt:
-      details.acceptedAt ||
-      details.executedAt ||
-      item.created_at,
-    manager:
-      details.manager || 'TrainingStore',
-    status:
-      details.status || 'Approved'
+    operationCode,
+    operation_code: operationCode,
+    game,
+    gameUsername,
+    game_username: gameUsername,
+    mobileId: gameUsername,
+    mobile_id: gameUsername,
+    requestedAt,
+    requested_at: requestedAt,
+    acceptedAt,
+    accepted_at: acceptedAt,
+    processed_at: acceptedAt,
+    processedAt: acceptedAt,
+    approved_at: acceptedAt,
+    approvedAt: acceptedAt,
+    manager,
+    processed_by: manager,
+    processedBy: manager,
+    status
   };
 }
 

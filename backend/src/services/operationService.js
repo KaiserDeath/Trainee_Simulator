@@ -384,6 +384,27 @@ async function createAuditHistory({
       ? ` Submitted data: ${JSON.stringify(requestData)}.`
       : '';
 
+  const plainDescription = `Operation ${action} by ${traineeName}. Correct: ${isCorrect}.${details}`;
+
+  let description = plainDescription;
+
+  if (!isRequestOperation(operation.type)) {
+    const descriptionObj = {
+      kind: 'MOVEMENT_HISTORY',
+      operationCode: operation.operation_code || String(operation.id).slice(0, 8).toUpperCase(),
+      playerId: operation.game_account?.game_username || '',
+      playerEmail: operation.customer?.email || '',
+      game: operation.game_account?.game || '',
+      requestedAt: operation.created_at,
+      acceptedAt: new Date().toISOString(),
+      manager: traineeName,
+      status: action === 'APPROVED' ? 'Approved' : 'Cancelled',
+      isCorrect,
+      details: plainDescription
+    };
+    description = JSON.stringify(descriptionObj);
+  }
+
   const { error } = await supabase
     .from(
       'sandbox_transaction_history'
@@ -396,8 +417,7 @@ async function createAuditHistory({
       type: operation.type,
       amount:
         operation.amount,
-      description:
-        `Operation ${action} by ${traineeName}. Correct: ${isCorrect}.${details}`
+      description
     });
 
   if (error) {

@@ -281,6 +281,17 @@ export default function DashboardPage() {
                 <p className="text-slate-400 font-mono text-sm">
                   ID: {selectedSession.id}
                 </p>
+                {selectedSession.status === 'submitted' && (
+                  <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-violet-500/10 px-3 py-1 text-xs text-violet-200 border border-violet-500/20">
+                    <span className="h-2.5 w-2.5 rounded-full bg-violet-300" />
+                    Submitted for evaluation
+                  </p>
+                )}
+                {selectedSession.status === 'completed' && (
+                  <p className="mt-2 text-xs text-slate-400">
+                    This completed session is available for evaluation submission.
+                  </p>
+                )}
               </div>
               
               <div className="flex gap-3">

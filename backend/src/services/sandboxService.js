@@ -53,7 +53,8 @@ function minutesAgo(minutes) {
 function createMovementHistory({
   customer,
   index,
-  minutesBack
+  minutesBack,
+  gameAccounts = {}
 }) {
   const requestedAt =
     minutesAgo(minutesBack);
@@ -86,6 +87,18 @@ function createMovementHistory({
       index % historicalGames.length
     ];
 
+  let playerId = '';
+  if (gameAccounts && gameAccounts[game]) {
+    playerId = gameAccounts[game];
+  } else if (game === 'Golden Dragon') {
+    playerId = createMobileId();
+  } else {
+    playerId = `${customer.username}${game
+      .replaceAll(' ', '')
+      .slice(0, 3)
+      .toLowerCase()}`;
+  }
+
   return {
     session_id: customer.session_id,
     customer_id: customer.id,
@@ -95,11 +108,7 @@ function createMovementHistory({
       kind: 'MOVEMENT_HISTORY',
       operationCode:
         createOperationCode(index),
-      playerId:
-        `${customer.username}${game
-          .replaceAll(' ', '')
-          .slice(0, 3)
-          .toLowerCase()}`,
+      playerId,
       playerEmail: customer.email,
       game,
       requestedAt:
@@ -132,7 +141,7 @@ export async function createSandboxSession(traineeName) {
   const customersSeed = [
     {
       session_id: session.id,
-      username: 'john_doe',
+      username: 'johndoe',
       first_name: 'John',
       last_name: 'Doe',
       email: 'john@test.com',
@@ -140,7 +149,7 @@ export async function createSandboxSession(traineeName) {
     },
     {
       session_id: session.id,
-      username: 'jane_smith',
+      username: 'janesmith',
       first_name: 'Jane',
       last_name: 'Smith',
       email: 'jane@test.com',
@@ -156,7 +165,7 @@ export async function createSandboxSession(traineeName) {
     },
     {
       session_id: session.id,
-      username: 'maria_cashier',
+      username: 'mariacashier',
       first_name: 'Maria',
       last_name: 'Lopez',
       email: 'maria.lopez@test.com',
@@ -164,7 +173,7 @@ export async function createSandboxSession(traineeName) {
     },
     {
       session_id: session.id,
-      username: 'devin_plays',
+      username: 'devinplays',
       first_name: 'Devin',
       last_name: 'Stone',
       email: 'devin.stone@test.com',
@@ -172,7 +181,7 @@ export async function createSandboxSession(traineeName) {
     },
     {
       session_id: session.id,
-      username: 'nina_gold',
+      username: 'ninagold',
       first_name: 'Nina',
       last_name: 'Patel',
       email: 'nina.patel@test.com',
@@ -180,7 +189,7 @@ export async function createSandboxSession(traineeName) {
     },
     {
       session_id: session.id,
-      username: 'carlos_spin',
+      username: 'carlosspin',
       first_name: 'Carlos',
       last_name: 'Rivera',
       email: 'carlos.rivera@test.com',
@@ -199,8 +208,16 @@ export async function createSandboxSession(traineeName) {
 
   // 3. Create game accounts
   const gameAccounts = [];
+  const customerGameUsernames = {};
 
   for (const customer of customers) {
+    const gdUsername = createMobileId();
+    customerGameUsernames[customer.id] = {
+      'Orion Stars': `${customer.username}_os`,
+      'Vblink': `${customer.username}_vb`,
+      'Golden Dragon': gdUsername
+    };
+
     gameAccounts.push(
       {
         session_id: session.id,
@@ -222,7 +239,7 @@ export async function createSandboxSession(traineeName) {
         session_id: session.id,
         customer_id: customer.id,
         game: 'Golden Dragon',
-        game_username: createMobileId(),
+        game_username: gdUsername,
         password: createGoldenDragonPassword(),
         balance: 300
       }
@@ -250,7 +267,8 @@ export async function createSandboxSession(traineeName) {
             customerIndex * 100 + index,
           minutesBack:
             45 + index * 37 +
-            customerIndex * 19
+            customerIndex * 19,
+          gameAccounts: customerGameUsernames[customer.id]
         })
       );
     }
