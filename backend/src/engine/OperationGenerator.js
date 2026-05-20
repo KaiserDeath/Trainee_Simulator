@@ -66,6 +66,12 @@ export function generateOperation(
 
     amount,
 
+    customer_balance_at_request:
+      Number(customer.balance),
+
+    game_balance_at_request:
+      Number(gameAccount.balance),
+
     status:
       'PENDING',
 

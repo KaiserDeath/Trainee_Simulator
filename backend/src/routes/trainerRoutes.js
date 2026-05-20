@@ -4,13 +4,15 @@ import { supabase }
   from '../config/supabase.js';
 
 import {
+  buildOperationTimeStats,
   buildSessionReport,
   deleteSession,
   deleteSessionsWithoutActivity,
   submitSession
 } from '../engine/SessionEngine.js';
 import {
-  getSessionActionLog
+  getSessionActionLog,
+  logActionEvent
 } from '../engine/AuditLogger.js';
 import GameMaster from '../engine/GameMaster.js';
 
@@ -93,6 +95,24 @@ router.get('/sessions', async (
   }
 
   res.json(data);
+});
+
+router.get('/operation-time-stats', async (
+  req,
+  res
+) => {
+  try {
+    const stats =
+      await buildOperationTimeStats();
+
+    res.json(stats);
+  } catch (err) {
+    console.error(err);
+
+    res.status(err.statusCode || 500).json({
+      error: err.message
+    });
+  }
 });
 
 router.post('/sessions/:id/time-limit', async (
@@ -205,7 +225,11 @@ router.get('/sessions/:id/report', async (
 
   } catch (err) {
 
-    console.error(err);
+    if (err.statusCode === 404) {
+      console.warn(err.message);
+    } else {
+      console.error(err);
+    }
 
     res
       .status(err.statusCode || 500)

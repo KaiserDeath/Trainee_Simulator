@@ -138,19 +138,28 @@ export default function OrionStarsPanel({
   const fetchAccounts = useCallback(async () => {
     if (isSessionEnded || !activeSessionId) return;
 
-    const response = await searchGameAccounts(
-      activeSessionId,
-      'Orion-Stars',
-      query
-    );
+    try {
+      const response = await searchGameAccounts(
+        activeSessionId,
+        GAME,
+        query
+      );
 
-    setAccounts(response.data || []);
-    
-    if (selected) {
-      const updatedSelected = (response.data || []).find(acc => acc.id === selected.id);
-      if (updatedSelected) {
-        setSelected(updatedSelected);
+      setAccounts(response.data || []);
+
+      if (selected) {
+        const updatedSelected = (response.data || []).find(acc => acc.id === selected.id);
+        if (updatedSelected) {
+          setSelected(updatedSelected);
+        }
       }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setForceSessionEnd(true);
+        return;
+      }
+
+      console.error('Failed to load Orion Stars accounts', err);
     }
   }, [activeSessionId, query, isSessionEnded, selected]);
 
@@ -160,12 +169,21 @@ export default function OrionStarsPanel({
       return;
     }
 
-    const response = await getGameAccountHistory(
-      activeSessionId,
-      selectedCustomerId
-    );
+    try {
+      const response = await getGameAccountHistory(
+        activeSessionId,
+        selectedCustomerId
+      );
 
-    setHistory(response.data || []);
+      setHistory(response.data || []);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setForceSessionEnd(true);
+        return;
+      }
+
+      console.error('Failed to load Orion Stars history', err);
+    }
   }, [activeSessionId, selectedCustomerId, isSessionEnded]);
 
   useEffect(() => {
@@ -235,7 +253,7 @@ export default function OrionStarsPanel({
     }
 
     closeModal();
-    refreshSelected();
+    await refreshSelected();
   };
 
   const selectedActionsDisabled = !selected;
@@ -563,7 +581,7 @@ export default function OrionStarsPanel({
               </button>
               {modal !== 'records' && (
                 <button type="button" onClick={runAction} className="border-l py-4 font-semibold text-slate-700">
-                  Confirma
+                  Confirm
                 </button>
               )}
             </div>

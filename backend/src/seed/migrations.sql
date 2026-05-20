@@ -41,3 +41,19 @@ COMMENT ON COLUMN trainee_action_logs.operation_id IS 'Reference to the operatio
 COMMENT ON COLUMN trainee_action_logs.action_type IS 'Type of action: USERNAME_COPIED, OPERATION_ACCEPTED, OPERATION_REJECTED, OPERATION_CANCELLED';
 COMMENT ON COLUMN trainee_action_logs.details IS 'JSON details about the action (timestamp, username, operation details, etc.)';
 COMMENT ON COLUMN trainee_action_logs.timestamp IS 'Exact timestamp when the action occurred';
+
+-- Operation handling timer. Queue processing_time_seconds measures from
+-- request creation; handling_time_seconds measures from the first copied
+-- username/game ID to approve/cancel.
+ALTER TABLE sandbox_operations
+  ADD COLUMN IF NOT EXISTS handling_started_at TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN IF NOT EXISTS handling_time_seconds NUMERIC;
+
+CREATE INDEX IF NOT EXISTS idx_sandbox_operations_handling_started_at
+  ON sandbox_operations(handling_started_at);
+
+-- Balance snapshots used to score movements against the state that existed
+-- when the request was generated, not the mutable balance after processing.
+ALTER TABLE sandbox_operations
+  ADD COLUMN IF NOT EXISTS customer_balance_at_request NUMERIC,
+  ADD COLUMN IF NOT EXISTS game_balance_at_request NUMERIC;

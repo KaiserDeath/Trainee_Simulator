@@ -6,7 +6,9 @@ import {
 }
   from 'react';
 
-import api from '../../api/client';
+import api, {
+  logTraineeAction
+} from '../../api/client';
 
 const requestTitles = {
   'CREATE ACCOUNT': 'Create Account',
@@ -63,7 +65,8 @@ function getInitialRequestForm(
 
 export default function OperationsQueue({
   session,
-  isSessionClosed
+  isSessionClosed,
+  onSessionMissing
 }) {
 
   const [operations, setOperations] =
@@ -98,11 +101,16 @@ export default function OperationsQueue({
       setOperations(response.data);
 
     } catch (err) {
+      if (err.response?.status === 404) {
+        onSessionMissing?.();
+        return;
+      }
+
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [session.id]);
+  }, [onSessionMissing, session.id]);
 
   //
   // AUTO REFRESH
@@ -153,6 +161,11 @@ export default function OperationsQueue({
       setRequestForm({});
 
     } catch (err) {
+      if (err.response?.status === 404) {
+        onSessionMissing?.();
+        return;
+      }
+
       console.error(err);
     }
   };
@@ -167,6 +180,75 @@ export default function OperationsQueue({
       getInitialRequestForm(operation)
     );
   };
+
+  const getCopiedIdentifier = operation => {
+    if (
+      operation.type ===
+      'CREATE ACCOUNT'
+    ) {
+      return {
+        actionType: 'USERNAME_COPIED',
+        label: 'Username',
+        value:
+          operation.customer?.username ||
+          ''
+      };
+    }
+
+    return {
+      actionType: 'GAME_ID_COPIED',
+      label: 'Game ID',
+      value:
+        operation.game_account
+          ?.game_username || ''
+    };
+  };
+
+  const copyOperationIdentifier =
+    async operation => {
+      const copied =
+        getCopiedIdentifier(operation);
+
+      if (!copied.value) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(
+          copied.value
+        );
+
+        await logTraineeAction(
+          session.id,
+          copied.actionType,
+          {
+            operationId: operation.id,
+            operationType:
+              operation.type,
+            label: copied.label,
+            username:
+              copied.actionType ===
+              'USERNAME_COPIED'
+                ? copied.value
+                : undefined,
+            gameId:
+              copied.actionType ===
+              'GAME_ID_COPIED'
+                ? copied.value
+                : undefined,
+            copiedValue:
+              copied.value,
+            timestamp:
+              new Date().toISOString()
+          }
+        );
+      } catch (err) {
+        console.error(
+          'Failed to copy/log operation start',
+          err
+        );
+      }
+    };
 
   const updateRequestForm = (
     field,
@@ -336,11 +418,25 @@ export default function OperationsQueue({
                   {operation.type}
                 </h4>
 
-                <p className="text-sm text-slate-500 font-medium">
-                  {operation.type === 'CREATE ACCOUNT'
-                    ? operation.customer?.username
-                    : operation.game_account?.game_username}
-                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="text-sm text-slate-500 font-medium">
+                    {operation.type === 'CREATE ACCOUNT'
+                      ? operation.customer?.username
+                      : operation.game_account?.game_username}
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyOperationIdentifier(
+                        operation
+                      )
+                    }
+                    className="rounded border border-slate-300 px-2 py-0.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                  >
+                    Copy
+                  </button>
+                </div>
 
                 <p className="text-sm text-slate-500">
                   {operation.game_account.game}

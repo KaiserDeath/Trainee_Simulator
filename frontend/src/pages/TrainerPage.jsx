@@ -14,6 +14,10 @@ export default function TrainerPage({ session, onSessionEnded }) {
   const [sessionState, setSessionState] = useState(session);
   const [sessionReport, setSessionReport] = useState(null);
 
+  const handleMissingSession = useCallback(() => {
+    onSessionEnded();
+  }, [onSessionEnded]);
+
   const fetchSessionState = useCallback(async () => {
     try {
       const response = await api.get(
@@ -21,9 +25,14 @@ export default function TrainerPage({ session, onSessionEnded }) {
       );
       setSessionState(response.data);
     } catch (err) {
+      if (err.response?.status === 404) {
+        handleMissingSession();
+        return;
+      }
+
       console.error('Failed to refresh session state', err);
     }
-  }, [session.id]);
+  }, [handleMissingSession, session.id]);
 
   const fetchSessionReport = useCallback(async () => {
     try {
@@ -32,9 +41,14 @@ export default function TrainerPage({ session, onSessionEnded }) {
       );
       setSessionReport(response.data);
     } catch (err) {
+      if (err.response?.status === 404) {
+        handleMissingSession();
+        return;
+      }
+
       console.error('Failed to load session report', err);
     }
-  }, [session.id]);
+  }, [handleMissingSession, session.id]);
 
   useEffect(() => {
     let mounted = true;
@@ -111,10 +125,14 @@ export default function TrainerPage({ session, onSessionEnded }) {
               <OperationsQueue
                 session={sessionState}
                 isSessionClosed={isSessionClosed}
+                onSessionMissing={handleMissingSession}
               />
             </div>
             <div className="bg-white rounded-2xl shadow p-5">
-              <PerformancePanel session={sessionState} />
+              <PerformancePanel
+                session={sessionState}
+                onSessionMissing={handleMissingSession}
+              />
             </div>
           </div>
         )}
@@ -129,7 +147,10 @@ export default function TrainerPage({ session, onSessionEnded }) {
 
         {activeView === 'reports' && (
           <div className="bg-white rounded-2xl shadow p-5">
-            <PerformancePanel session={sessionState} />
+            <PerformancePanel
+              session={sessionState}
+              onSessionMissing={handleMissingSession}
+            />
           </div>
         )}
       </MainLayout>

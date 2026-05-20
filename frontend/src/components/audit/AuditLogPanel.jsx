@@ -27,12 +27,32 @@ export default function AuditLogPanel({ sessionId }) {
 
   const formatActionType = (actionType) => {
     const map = {
-      'USERNAME_COPIED': '📋 Username Copied',
-      'APPROVE': '✅ Operation Approved',
-      'REJECT': '❌ Operation Rejected',
-      'CANCEL': '🚫 Operation Cancelled'
+      USERNAME_COPIED: 'Username Copied',
+      GAME_ID_COPIED: 'Game ID Copied',
+      OPERATION_STARTED: 'Operation Started',
+      APPROVED: 'Operation Approved',
+      CANCELLED: 'Operation Cancelled',
+      APPROVE: 'Operation Approved',
+      REJECT: 'Operation Rejected',
+      CANCEL: 'Operation Cancelled'
     };
     return map[actionType] || actionType;
+  };
+
+  const parseDetails = (details) => {
+    if (!details) {
+      return {};
+    }
+
+    if (typeof details === 'object') {
+      return details;
+    }
+
+    try {
+      return JSON.parse(details);
+    } catch {
+      return {};
+    }
   };
 
   const formatTimestamp = (timestamp) => {
@@ -41,6 +61,24 @@ export default function AuditLogPanel({ sessionId }) {
       minute: '2-digit',
       second: '2-digit'
     });
+  };
+
+  const formatDuration = (seconds) => {
+    const value = Number(seconds);
+
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+
+    const totalSeconds = Math.max(0, Math.round(value));
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainingSeconds = totalSeconds % 60;
+
+    if (minutes > 0) {
+      return `${minutes}m ${remainingSeconds}s`;
+    }
+
+    return `${remainingSeconds}s`;
   };
 
   if (loading && auditLog.length === 0) {
@@ -63,30 +101,40 @@ export default function AuditLogPanel({ sessionId }) {
           </tr>
         </thead>
         <tbody>
-          {auditLog.map((log, idx) => (
-            <tr
-              key={idx}
-              className="border-b border-slate-800 hover:bg-slate-800"
-            >
-              <td className="py-2 px-3">
-                {log.trainee_name}
-              </td>
-              <td className="py-2 px-3 font-mono">
-                {formatActionType(log.action_type)}
-              </td>
-              <td className="py-2 px-3 text-slate-500">
-                {formatTimestamp(log.timestamp)}
-              </td>
-              <td className="py-2 px-3 text-slate-400 text-xs">
-                {log.details ? (
-                  <span>
-                    {JSON.parse(log.details)?.username && `Username: ${JSON.parse(log.details).username}`}
-                    {JSON.parse(log.details)?.operationType && ` | Op: ${JSON.parse(log.details).operationType}`}
-                  </span>
-                ) : '—'}
-              </td>
-            </tr>
-          ))}
+          {auditLog.map((log, idx) => {
+            const details = parseDetails(log.details);
+            const handlingDuration = formatDuration(
+              details.handlingSeconds
+            );
+
+            return (
+              <tr
+                key={idx}
+                className="border-b border-slate-800 hover:bg-slate-800"
+              >
+                <td className="py-2 px-3">
+                  {log.trainee_name}
+                </td>
+                <td className="py-2 px-3 font-mono">
+                  {formatActionType(log.action_type)}
+                </td>
+                <td className="py-2 px-3 text-slate-500">
+                  {formatTimestamp(log.timestamp)}
+                </td>
+                <td className="py-2 px-3 text-slate-400 text-xs">
+                  {log.details ? (
+                    <span>
+                      {details.username && `Username: ${details.username}`}
+                      {details.gameId && `Game ID: ${details.gameId}`}
+                      {details.operationType && ` | Op: ${details.operationType}`}
+                      {handlingDuration && ` | Handling: ${handlingDuration}`}
+                      {details.handlingStartedAt && ` | Started: ${formatTimestamp(details.handlingStartedAt)}`}
+                    </span>
+                  ) : '-'}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

@@ -137,6 +137,12 @@ export const getSessionAuditLog = async (
   );
 };
 
+export const getOperationTimeStats = async () => {
+  return api.get(
+    '/trainer/operation-time-stats'
+  );
+};
+
 export const setSessionTimeLimit = async (
   sessionId,
   minutes

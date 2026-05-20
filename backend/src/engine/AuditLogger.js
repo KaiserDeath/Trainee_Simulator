@@ -49,3 +49,51 @@ export async function getSessionActionLog(sessionId) {
     return [];
   }
 }
+
+export function parseActionDetails(details) {
+  if (!details) {
+    return {};
+  }
+
+  if (typeof details === 'object') {
+    return details;
+  }
+
+  try {
+    return JSON.parse(details);
+  } catch {
+    return {};
+  }
+}
+
+export async function getOperationHandlingStart({
+  sessionId,
+  operationId
+}) {
+  if (!operationId) {
+    return null;
+  }
+
+  const logs = await getSessionActionLog(
+    sessionId
+  );
+
+  const startLog = logs.find(log => {
+    const details =
+      parseActionDetails(log.details);
+
+    return (
+      log.operation_id === operationId ||
+      details.operationId === operationId
+    ) && (
+      log.action_type ===
+        'USERNAME_COPIED' ||
+      log.action_type ===
+        'GAME_ID_COPIED' ||
+      log.action_type ===
+        'OPERATION_STARTED'
+    );
+  });
+
+  return startLog?.timestamp || null;
+}

@@ -165,6 +165,67 @@ class GameMaster {
     return 'RESET PASSWORD';
   }
 
+  async getPendingAddCreditExposure(sessionId) {
+    const { data, error } = await supabase
+      .from('sandbox_operations')
+      .select('customer_id, amount')
+      .eq('session_id', sessionId)
+      .eq('type', 'ADD CREDITS')
+      .eq('status', 'PENDING');
+
+    if (error) {
+      throw error;
+    }
+
+    return (data || []).reduce((map, operation) => {
+      const current =
+        map.get(operation.customer_id) || 0;
+      map.set(
+        operation.customer_id,
+        current + Number(operation.amount || 0)
+      );
+      return map;
+    }, new Map());
+  }
+
+  async ensureAddCreditBalance({
+    customer,
+    pendingExposure
+  }) {
+    const balance =
+      Number(customer.balance) || 0;
+    const reserved =
+      pendingExposure.get(customer.id) || 0;
+    const available =
+      balance - reserved;
+
+    if (available >= 50) {
+      return customer;
+    }
+
+    const injectedBalance =
+      reserved + 500;
+
+    const { data, error } = await supabase
+      .from('sandbox_customers')
+      .update({
+        balance: injectedBalance
+      })
+      .eq('id', customer.id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(
+      `Injected customer balance for ADD CREDITS generation: ${customer.id}`
+    );
+
+    return data;
+  }
+
   //
   // GENERATE OPERATIONS
   //
@@ -229,6 +290,10 @@ class GameMaster {
         getGenerationVolume();
 
       const operations = [];
+      const pendingAddExposure =
+        await this.getPendingAddCreditExposure(
+          sessionId
+        );
 
       // =========================
       // CREATE OPERATIONS
@@ -240,7 +305,7 @@ class GameMaster {
         i++
       ) {
 
-        const customer =
+        let customer =
           customers[
             Math.floor(
               Math.random() *
@@ -271,8 +336,29 @@ class GameMaster {
         const operationType =
           this.generateWeightedOperationType();
 
+        if (operationType === 'ADD CREDITS') {
+          customer =
+            await this.ensureAddCreditBalance({
+              customer,
+              pendingExposure:
+                pendingAddExposure
+            });
+        }
+
+        const generationCustomer =
+          operationType === 'ADD CREDITS'
+            ? {
+                ...customer,
+                balance: Math.max(
+                  0,
+                  Number(customer.balance || 0) -
+                    (pendingAddExposure.get(customer.id) || 0)
+                )
+              }
+            : customer;
+
         const generated = generateOperation(
-            customer,
+            generationCustomer,
             selectedGame,
             sessionId,
             operationType
@@ -280,6 +366,13 @@ class GameMaster {
 
         if (generated) {
           operations.push(generated);
+          if (operationType === 'ADD CREDITS') {
+            pendingAddExposure.set(
+              customer.id,
+              (pendingAddExposure.get(customer.id) || 0) +
+                Number(generated.amount || 0)
+            );
+          }
         }
       }
 
@@ -289,10 +382,35 @@ class GameMaster {
 
       if (operations.length > 0) {
 
-        const { error } =
+        let { error } =
           await supabase
             .from('sandbox_operations')
             .insert(operations);
+
+        if (
+          error &&
+          /customer_balance_at_request|game_balance_at_request|column .* does not exist|field .* not found/i
+            .test(error.message)
+        ) {
+          const legacyOperations =
+            operations.map(operation => {
+              const legacyOperation = {
+                ...operation
+              };
+              delete legacyOperation
+                .customer_balance_at_request;
+              delete legacyOperation
+                .game_balance_at_request;
+              return legacyOperation;
+            });
+
+          const retry =
+            await supabase
+              .from('sandbox_operations')
+              .insert(legacyOperations);
+
+          error = retry.error;
+        }
 
         if (error) {
 

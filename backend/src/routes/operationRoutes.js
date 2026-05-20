@@ -19,9 +19,13 @@ router.get('/:sessionId', async (
 
     res.json(operations);
   } catch (err) {
-    console.error(err);
+    if (err.statusCode === 404) {
+      console.warn(err.message);
+    } else {
+      console.error(err);
+    }
 
-    res.status(500).json({
+    res.status(err.statusCode || 500).json({
       error: err.message
     });
   }

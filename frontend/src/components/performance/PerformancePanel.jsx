@@ -7,7 +7,8 @@ import {
 import api from '../../api/client';
 
 export default function PerformancePanel({
-  session
+  session,
+  onSessionMissing
 }) {
 
   const [report, setReport] =
@@ -29,6 +30,10 @@ export default function PerformancePanel({
       setReport(response.data);
 
     } catch (err) {
+      if (err.response?.status === 404) {
+        onSessionMissing?.();
+        return;
+      }
 
       console.error(
         'Failed to fetch report:',
@@ -40,7 +45,7 @@ export default function PerformancePanel({
       setLoading(false);
 
     }
-  }, [session.id]);
+  }, [onSessionMissing, session.id]);
 
   //
   // AUTO REFRESH

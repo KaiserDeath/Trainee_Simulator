@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import api, { deleteSession as deleteSessionApi } from '../api/client';
+import api, {
+  deleteSession as deleteSessionApi,
+  getOperationTimeStats
+} from '../api/client';
 import AuditLogPanel from '../components/audit/AuditLogPanel';
 
 const SESSION_STATUS_META = {
@@ -22,8 +25,10 @@ export default function DashboardPage() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [selectedSessionIds, setSelectedSessionIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [dashboardSection, setDashboardSection] = useState('trainees');
   const [viewMode, setViewMode] = useState('live'); // 'live', 'report', 'audit'
   const [traineeSearch, setTraineeSearch] = useState('');
+  const [operationTimeStats, setOperationTimeStats] = useState(null);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(() => {
     const saved = localStorage.getItem('sessionTimeoutMinutes');
     return saved ? Number(saved) : 30;
@@ -89,6 +94,28 @@ export default function DashboardPage() {
       ? 'report'
       : viewMode;
 
+  const sidebarOperationRows =
+    operationTimeStats?.allOperations || [];
+  const sidebarTopOperation =
+    sidebarOperationRows.reduce(
+      (top, operation) =>
+        !top || operation.count > top.count
+          ? operation
+          : top,
+      null
+    );
+  const sidebarMaxAverage =
+    Math.max(
+      1,
+      ...sidebarOperationRows.map(operation =>
+        Number(operation.averageSeconds) || 0
+      )
+    );
+  const activeSessionCount =
+    sessions.filter(session =>
+      session.status === 'active'
+    ).length;
+
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedSessionIds(new Set());
@@ -141,6 +168,37 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchSessions]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchOperationStats = async () => {
+      try {
+        const response =
+          await getOperationTimeStats();
+
+        if (mounted) {
+          setOperationTimeStats(response.data);
+        }
+      } catch (err) {
+        console.error(
+          'Failed to fetch operation time stats',
+          err
+        );
+      }
+    };
+
+    fetchOperationStats();
+    const interval = setInterval(
+      fetchOperationStats,
+      30000
+    );
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <div className="flex h-screen bg-slate-950 text-slate-200 overflow-hidden font-sans">
       {/* SIDEBAR */}
@@ -154,7 +212,36 @@ export default function DashboardPage() {
           </p>
         </div>
         
-        <div className="p-4 border-b border-slate-800/50 space-y-4">
+        <div className="p-4 border-b border-slate-800/50">
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-950/70 p-1">
+            <button
+              type="button"
+              onClick={() => setDashboardSection('trainees')}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                dashboardSection === 'trainees'
+                  ? 'bg-cyan-500/20 text-cyan-300'
+                  : 'text-slate-400 hover:bg-slate-800'
+              }`}
+            >
+              Trainees
+            </button>
+            <button
+              type="button"
+              onClick={() => setDashboardSection('statistics')}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                dashboardSection === 'statistics'
+                  ? 'bg-cyan-500/20 text-cyan-300'
+                  : 'text-slate-400 hover:bg-slate-800'
+              }`}
+            >
+              Statistics
+            </button>
+          </div>
+        </div>
+
+        {dashboardSection === 'trainees' ? (
+          <>
+            <div className="p-4 border-b border-slate-800/50 space-y-4">
           <div>
             <p className="text-xs uppercase tracking-wider text-slate-500 mb-2 font-semibold">
               Session settings
@@ -269,6 +356,60 @@ export default function DashboardPage() {
             })
           )}
         </div>
+          </>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                Statistics overview
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <MiniStat
+                  glyph="clock"
+                  label="Avg handling"
+                  value={formatDurationValue(
+                    operationTimeStats?.overall
+                      ?.averageSeconds
+                  )}
+                  tone="cyan"
+                />
+                <MiniStat
+                  glyph="pulse"
+                  label="Timed ops"
+                  value={operationTimeStats?.overall?.count || 0}
+                  tone="slate"
+                />
+                <MiniStat
+                  glyph="users"
+                  label="Active"
+                  value={activeSessionCount}
+                  tone="emerald"
+                />
+                <MiniStat
+                  glyph="layers"
+                  label="Types"
+                  value={sidebarOperationRows.length}
+                  tone="violet"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] uppercase tracking-wider text-slate-500">
+                  Top volume
+                </span>
+                <span className="text-xs font-semibold text-slate-300">
+                  {sidebarTopOperation?.type || 'No data'}
+                </span>
+              </div>
+              <CompactOperationBars
+                rows={sidebarOperationRows}
+                maxAverage={sidebarMaxAverage}
+              />
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* MAIN CONTENT */}
@@ -276,7 +417,11 @@ export default function DashboardPage() {
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
         
-        {selectedSession ? (
+        {dashboardSection === 'statistics' ? (
+          <div className="flex-1 overflow-y-auto p-8 relative z-10">
+            <OperationTimeStats />
+          </div>
+        ) : selectedSession ? (
           <div className="flex-1 overflow-y-auto p-8 relative z-10">
             <header className="mb-8 flex justify-between items-end border-b border-slate-800/50 pb-6">
               <div>
@@ -359,6 +504,16 @@ export default function DashboardPage() {
                 Report
               </button>
               <button
+                onClick={() => setViewMode('session-statistics')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  viewMode === 'session-statistics'
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Session Statistics
+              </button>
+              <button
                 onClick={() => setViewMode('audit')}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   viewMode === 'audit'
@@ -374,6 +529,8 @@ export default function DashboardPage() {
               <LiveSessionView sessionId={selectedSession.id} />
             ) : effectiveViewMode === 'audit' ? (
               <AuditLogPanel sessionId={selectedSession.id} />
+            ) : effectiveViewMode === 'session-statistics' ? (
+              <SessionStatisticsView sessionId={selectedSession.id} />
             ) : (
               <CompletedSessionReport sessionId={selectedSession.id} />
             )}
@@ -387,6 +544,540 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+const MINI_STAT_TONES = {
+  cyan: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300',
+  emerald: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+  slate: 'border-slate-700 bg-slate-800 text-slate-200',
+  violet: 'border-violet-500/20 bg-violet-500/10 text-violet-300'
+};
+
+function ChartGlyph({
+  type = 'bars',
+  small = false
+}) {
+  const sizeClass = small
+    ? 'h-4 w-4'
+    : 'h-5 w-5';
+
+  if (type === 'clock') {
+    return (
+      <span className={`${sizeClass} relative block rounded-full border-2 border-current`}>
+        <span className="absolute left-1/2 top-1/2 h-[38%] w-0.5 origin-bottom -translate-x-1/2 -translate-y-full rounded-full bg-current" />
+        <span className="absolute left-1/2 top-1/2 h-0.5 w-[34%] -translate-y-1/2 rounded-full bg-current" />
+      </span>
+    );
+  }
+
+  if (type === 'pulse') {
+    return (
+      <span className={`${sizeClass} flex items-end gap-0.5`}>
+        <span className="h-1/3 w-1 rounded-full bg-current" />
+        <span className="h-full w-1 rounded-full bg-current" />
+        <span className="h-2/3 w-1 rounded-full bg-current" />
+      </span>
+    );
+  }
+
+  if (type === 'users') {
+    return (
+      <span className={`${sizeClass} relative block`}>
+        <span className="absolute left-0 top-1 h-2 w-2 rounded-full border-2 border-current" />
+        <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-current" />
+        <span className="absolute bottom-0 left-0 h-1.5 w-full rounded-full bg-current" />
+      </span>
+    );
+  }
+
+  if (type === 'layers') {
+    return (
+      <span className={`${sizeClass} flex flex-col justify-center gap-0.5`}>
+        <span className="h-1.5 rounded-sm border border-current" />
+        <span className="h-1.5 rounded-sm border border-current" />
+        <span className="h-1.5 rounded-sm border border-current" />
+      </span>
+    );
+  }
+
+  if (type === 'gauge') {
+    return (
+      <span className={`${sizeClass} relative block overflow-hidden rounded-t-full border-2 border-b-0 border-current`}>
+        <span className="absolute bottom-0 left-1/2 h-0.5 w-1/2 origin-left -rotate-45 rounded-full bg-current" />
+      </span>
+    );
+  }
+
+  if (type === 'trend') {
+    return (
+      <span className={`${sizeClass} relative block`}>
+        <span className="absolute bottom-1 left-0 h-0.5 w-full -rotate-12 rounded-full bg-current" />
+        <span className="absolute right-0 top-1 h-2 w-2 rotate-45 border-r-2 border-t-2 border-current" />
+      </span>
+    );
+  }
+
+  return (
+    <span className={`${sizeClass} flex items-end gap-0.5`}>
+      <span className="h-1/2 w-1 rounded-full bg-current" />
+      <span className="h-full w-1 rounded-full bg-current" />
+      <span className="h-3/4 w-1 rounded-full bg-current" />
+    </span>
+  );
+}
+
+function MiniStat({
+  glyph,
+  label,
+  value,
+  tone = 'slate'
+}) {
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+      <div className="mb-2 flex items-center gap-2">
+        <span
+          className={`flex h-7 w-7 items-center justify-center rounded-md ${MINI_STAT_TONES[tone] || MINI_STAT_TONES.slate}`}
+        >
+          <ChartGlyph type={glyph} small />
+        </span>
+        <span className="text-[11px] text-slate-500">
+          {label}
+        </span>
+      </div>
+      <p className="text-lg font-bold text-white">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function CompactOperationBars({
+  rows,
+  maxAverage
+}) {
+  const visibleRows = rows.slice(0, 4);
+
+  if (visibleRows.length === 0) {
+    return (
+      <div className="mt-3 rounded-md border border-dashed border-slate-800 py-4 text-center text-xs text-slate-500">
+        No timed operations yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      {visibleRows.map((row) => {
+        const width = Math.max(
+          8,
+          Math.round(
+            ((Number(row.averageSeconds) || 0) /
+              maxAverage) *
+              100
+          )
+        );
+
+        return (
+          <div key={row.type}>
+            <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
+              <span className="truncate text-slate-400">
+                {row.type}
+              </span>
+              <span className="font-mono text-slate-500">
+                {formatDurationValue(row.averageSeconds)}
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+              <div
+                className="h-full rounded-full bg-linear-to-r from-cyan-400 to-emerald-400"
+                style={{ width: `${width}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatDurationValue(seconds) {
+  const value = Number(seconds);
+
+  if (!Number.isFinite(value)) {
+    return 'N/A';
+  }
+
+  const totalSeconds = Math.max(
+    0,
+    Math.round(value)
+  );
+  const minutes = Math.floor(
+    totalSeconds / 60
+  );
+  const remainingSeconds =
+    totalSeconds % 60;
+
+  if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+
+  return `${remainingSeconds}s`;
+}
+
+function OperationStatsTable({
+  rows,
+  showTrainee = false
+}) {
+  if (!rows?.length) {
+    return (
+      <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 text-sm text-slate-500">
+        No handling-time data recorded yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-slate-800">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-slate-800 bg-slate-900 text-xs uppercase tracking-wider text-slate-400">
+            {showTrainee && (
+              <th className="px-4 py-3 font-medium">Trainee</th>
+            )}
+            <th className="px-4 py-3 font-medium">Operation</th>
+            <th className="px-4 py-3 text-right font-medium">Count</th>
+            <th className="px-4 py-3 text-right font-medium">Average</th>
+            <th className="px-4 py-3 text-right font-medium">Fastest</th>
+            <th className="px-4 py-3 text-right font-medium">Slowest</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800/60 bg-slate-900/20">
+          {rows.map((row, index) => (
+            <tr
+              key={`${row.traineeName || 'all'}-${row.type}-${index}`}
+              className="hover:bg-slate-800/30"
+            >
+              {showTrainee && (
+                <td className="px-4 py-3 font-medium text-slate-200">
+                  {row.traineeName}
+                </td>
+              )}
+              <td className="px-4 py-3 text-slate-300">
+                {row.type}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-slate-400">
+                {row.count}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-cyan-300">
+                {formatDurationValue(row.averageSeconds)}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-slate-400">
+                {formatDurationValue(row.minSeconds)}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-slate-400">
+                {formatDurationValue(row.maxSeconds)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function OperationTimeStats() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchStats = async () => {
+      try {
+        const response =
+          await getOperationTimeStats();
+
+        if (mounted) {
+          setStats(response.data);
+        }
+      } catch (err) {
+        console.error(
+          'Failed to fetch operation time stats',
+          err
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mt-8 text-slate-500 animate-pulse">
+        Loading handling-time statistics...
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="mt-8 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-300">
+        Failed to load operation statistics.
+      </div>
+    );
+  }
+
+  const perPersonRows =
+    stats.perPerson?.flatMap(person =>
+      [
+        {
+          traineeName: person.traineeName,
+          type: 'All operations',
+          ...person.overall
+        },
+        ...person.operations.map(operation => ({
+          traineeName: person.traineeName,
+          ...operation
+        }))
+      ]
+    ) || [];
+  const allOperations =
+    stats.allOperations || [];
+  const maxAverageSeconds =
+    Math.max(
+      1,
+      ...allOperations.map(operation =>
+        Number(operation.averageSeconds) || 0
+      )
+    );
+  const topOperation =
+    allOperations.reduce(
+      (top, operation) =>
+        !top || operation.count > top.count
+          ? operation
+          : top,
+      null
+    );
+
+  return (
+    <div className="space-y-8 animate-fade-in-up">
+      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                <ChartGlyph type="trend" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wider text-slate-500">
+                  Statistics
+                </p>
+                <h3 className="text-2xl font-bold text-white">
+                  Handling-time overview
+                </h3>
+              </div>
+            </div>
+            <p className="mt-4 max-w-2xl text-sm text-slate-400">
+              Visual comparison of speed, volume, and operation mix across completed trainee work.
+            </p>
+          </div>
+          <div className="border-t border-slate-800 bg-slate-950/40 p-6 lg:border-l lg:border-t-0">
+            <p className="text-xs uppercase tracking-wider text-slate-500">
+              Highest volume
+            </p>
+            <div className="mt-3 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xl font-semibold text-white">
+                  {topOperation?.type || 'No operations'}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {topOperation?.count || 0} timed records
+                </p>
+              </div>
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-2xl font-black text-emerald-300">
+                {topOperation?.count || 0}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          glyph="pulse"
+          title="Timed Operations"
+          value={stats.overall?.count || 0}
+        />
+        <StatCard
+          glyph="clock"
+          title="Average Handling"
+          value={formatDurationValue(
+            stats.overall?.averageSeconds
+          )}
+        />
+        <StatCard
+          glyph="layers"
+          title="Operation Types"
+          value={allOperations.length}
+        />
+      </div>
+
+      <section className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white">
+            Operation Visuals
+          </h3>
+          <p className="text-sm text-slate-500">
+            Average handling time by operation type, shown as visual bars.
+          </p>
+        </div>
+
+        <OperationVisualGrid
+          rows={allOperations}
+          maxAverageSeconds={maxAverageSeconds}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white">
+            Per Person
+          </h3>
+          <p className="text-sm text-slate-500">
+            Average handling time by trainee and operation type.
+          </p>
+        </div>
+
+        <OperationStatsTable
+          rows={perPersonRows}
+          showTrainee
+        />
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white">
+            All Sessions
+          </h3>
+          <p className="text-sm text-slate-500">
+            Average handling time for each operation type across every session.
+          </p>
+        </div>
+
+        <OperationStatsTable
+          rows={allOperations}
+        />
+      </section>
+    </div>
+  );
+}
+
+function OperationVisualGrid({
+  rows,
+  maxAverageSeconds
+}) {
+  if (!rows.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center text-sm text-slate-500">
+        No operation visuals available yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      {rows.map((row) => {
+        const averageSeconds =
+          Number(row.averageSeconds) || 0;
+        const width = Math.max(
+          6,
+          Math.round(
+            (averageSeconds / maxAverageSeconds) * 100
+          )
+        );
+        const countWidth = Math.max(
+          6,
+          Math.min(100, row.count * 12)
+        );
+
+        return (
+          <div
+            key={row.type}
+            className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  {row.type}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {row.count} timed records
+                </p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                <ChartGlyph type="gauge" />
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <VisualMetricBar
+                label="Average"
+                value={formatDurationValue(row.averageSeconds)}
+                width={width}
+                barClass="bg-linear-to-r from-cyan-400 to-blue-400"
+              />
+              <VisualMetricBar
+                label="Fastest"
+                value={formatDurationValue(row.minSeconds)}
+                width={Math.max(6, width * 0.55)}
+                barClass="bg-linear-to-r from-emerald-400 to-cyan-300"
+              />
+              <VisualMetricBar
+                label="Volume"
+                value={row.count}
+                width={countWidth}
+                barClass="bg-linear-to-r from-violet-400 to-fuchsia-400"
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function VisualMetricBar({
+  label,
+  value,
+  width,
+  barClass
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+        <span className="text-slate-500">
+          {label}
+        </span>
+        <span className="font-mono text-slate-300">
+          {value}
+        </span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+        <div
+          className={`h-full rounded-full ${barClass}`}
+          style={{ width: `${width}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -462,6 +1153,468 @@ function LiveSessionView({ sessionId }) {
   );
 }
 
+function SessionStatisticsView({ sessionId }) {
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchReport = async () => {
+      try {
+        const response = await api.get(`/trainer/sessions/${sessionId}/report`);
+        if (mounted) {
+          setReport(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch session statistics', err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchReport();
+
+    return () => {
+      mounted = false;
+    };
+  }, [sessionId]);
+
+  if (loading) {
+    return (
+      <div className="text-slate-500 animate-pulse mt-8">
+        Loading session statistics...
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <div className="text-red-400 mt-8 bg-red-500/10 p-4 rounded-xl border border-red-500/20">
+        Failed to load session statistics.
+      </div>
+    );
+  }
+
+  const performance = report.performance || {};
+  const operations = report.operations || [];
+  const breakdown = report.operationBreakdown || {};
+  const movementTotal =
+    Object.values(breakdown.movements || {})
+      .reduce((sum, value) => sum + Number(value || 0), 0);
+  const requestTotal =
+    Object.values(breakdown.requests || {})
+      .reduce((sum, value) => sum + Number(value || 0), 0);
+  const accuracy = Number(performance.accuracy) || 0;
+  const averageHandlingSeconds =
+    averageOperationSeconds(
+      operations,
+      'handling_time_seconds'
+    );
+  const operationRows =
+    buildSessionOperationRows(operations);
+  const gameRows =
+    buildSessionGameRows(operations);
+  const maxTypeCount =
+    Math.max(
+      1,
+      ...operationRows.map(row => row.count)
+    );
+  const maxGameCount =
+    Math.max(
+      1,
+      ...gameRows.map(row => row.count)
+    );
+
+  return (
+    <div className="space-y-8 animate-fade-in-up">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <StatCard
+          glyph="gauge"
+          title="Session Accuracy"
+          value={`${accuracy.toFixed(1)}%`}
+        />
+        <StatCard
+          glyph="pulse"
+          title="Completed"
+          value={`${performance.completedOperations || 0} / ${performance.totalOperations || 0}`}
+        />
+        <StatCard
+          glyph="clock"
+          title="Avg Handling"
+          value={formatDurationValue(averageHandlingSeconds)}
+        />
+        <StatCard
+          glyph="layers"
+          title="Incorrect"
+          value={performance.incorrectOperations || 0}
+        />
+      </section>
+
+      <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-white">
+                Session Mix
+              </h3>
+              <p className="text-sm text-slate-500">
+                Requests and movements in this session only.
+              </p>
+            </div>
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+              <ChartGlyph type="layers" />
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            <SessionRatioBar
+              label="Movements"
+              value={movementTotal}
+              total={performance.totalOperations || 0}
+              barClass="bg-linear-to-r from-cyan-400 to-blue-400"
+            />
+            <SessionRatioBar
+              label="Requests"
+              value={requestTotal}
+              total={performance.totalOperations || 0}
+              barClass="bg-linear-to-r from-violet-400 to-fuchsia-400"
+            />
+            <SessionRatioBar
+              label="Pending"
+              value={performance.pendingOperations || 0}
+              total={performance.totalOperations || 0}
+              barClass="bg-linear-to-r from-amber-400 to-orange-400"
+            />
+          </div>
+        </div>
+
+        <div className="xl:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+          <div className="mb-5">
+            <h3 className="text-lg font-semibold text-white">
+              Operation Types
+            </h3>
+            <p className="text-sm text-slate-500">
+              Counts, results, and handling time within this session.
+            </p>
+          </div>
+          <SessionOperationTable rows={operationRows} />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+        <div className="mb-5">
+          <h3 className="text-lg font-semibold text-white">
+            Games In This Session
+          </h3>
+          <p className="text-sm text-slate-500">
+            Operation volume by game for the selected trainee session.
+          </p>
+        </div>
+        <SessionDistributionGrid
+          rows={gameRows}
+          maxCount={maxGameCount}
+        />
+      </section>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+        <div className="mb-5">
+          <h3 className="text-lg font-semibold text-white">
+            Type Distribution
+          </h3>
+          <p className="text-sm text-slate-500">
+            Relative volume for each operation type in this session.
+          </p>
+        </div>
+        <SessionDistributionGrid
+          rows={operationRows}
+          maxCount={maxTypeCount}
+        />
+      </section>
+    </div>
+  );
+}
+
+function getSessionOperationResult(operation) {
+  if (operation.status === 'PENDING') {
+    return 'pending';
+  }
+
+  const requirements =
+    operation.validationRequirements ||
+    operation.validation_requirements ||
+    [];
+
+  if (requirements.length > 0) {
+    return requirements.every(item => item.ok)
+      ? 'correct'
+      : 'incorrect';
+  }
+
+  if (operation.is_correct === true) {
+    return 'correct';
+  }
+
+  if (operation.is_correct === false) {
+    return 'incorrect';
+  }
+
+  return 'pending';
+}
+
+function averageOperationSeconds(
+  operations,
+  fieldName
+) {
+  const values = operations
+    .map(operation => Number(operation[fieldName]))
+    .filter(Number.isFinite);
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return values.reduce(
+    (sum, value) => sum + value,
+    0
+  ) / values.length;
+}
+
+function buildSessionOperationRows(operations) {
+  const rows = new Map();
+
+  operations.forEach(operation => {
+    const type =
+      operation.type || 'UNKNOWN';
+    const current =
+      rows.get(type) || {
+        label: type,
+        type,
+        count: 0,
+        correct: 0,
+        incorrect: 0,
+        pending: 0,
+        handlingSamples: []
+      };
+    const result =
+      getSessionOperationResult(operation);
+    const handlingSeconds =
+      Number(operation.handling_time_seconds);
+
+    current.count += 1;
+    current[result] += 1;
+
+    if (Number.isFinite(handlingSeconds)) {
+      current.handlingSamples.push(
+        handlingSeconds
+      );
+    }
+
+    rows.set(type, current);
+  });
+
+  return Array.from(rows.values())
+    .map(row => ({
+      ...row,
+      averageHandlingSeconds:
+        row.handlingSamples.length > 0
+          ? row.handlingSamples.reduce(
+              (sum, value) => sum + value,
+              0
+            ) / row.handlingSamples.length
+          : null
+    }))
+    .sort((a, b) =>
+      b.count - a.count ||
+      a.label.localeCompare(b.label)
+    );
+}
+
+function buildSessionGameRows(operations) {
+  const rows = new Map();
+
+  operations.forEach(operation => {
+    const label =
+      operation.game ||
+      operation.game_account?.game ||
+      'Unknown Game';
+    const current =
+      rows.get(label) || {
+        label,
+        count: 0,
+        correct: 0,
+        incorrect: 0,
+        pending: 0
+      };
+    const result =
+      getSessionOperationResult(operation);
+
+    current.count += 1;
+    current[result] += 1;
+
+    rows.set(label, current);
+  });
+
+  return Array.from(rows.values())
+    .sort((a, b) =>
+      b.count - a.count ||
+      a.label.localeCompare(b.label)
+    );
+}
+
+function SessionRatioBar({
+  label,
+  value,
+  total,
+  barClass
+}) {
+  const safeTotal =
+    Math.max(1, Number(total) || 0);
+  const width =
+    Math.round(
+      (Number(value || 0) / safeTotal) * 100
+    );
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+        <span className="text-slate-400">
+          {label}
+        </span>
+        <span className="font-mono text-slate-200">
+          {value}
+        </span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+        <div
+          className={`h-full rounded-full ${barClass}`}
+          style={{ width: `${Math.max(4, width)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SessionOperationTable({ rows }) {
+  if (!rows.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
+        No operations recorded for this session.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-slate-800">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-slate-800 bg-slate-950/70 text-xs uppercase tracking-wider text-slate-400">
+            <th className="px-4 py-3 font-medium">Type</th>
+            <th className="px-4 py-3 text-right font-medium">Total</th>
+            <th className="px-4 py-3 text-right font-medium">Correct</th>
+            <th className="px-4 py-3 text-right font-medium">Incorrect</th>
+            <th className="px-4 py-3 text-right font-medium">Pending</th>
+            <th className="px-4 py-3 text-right font-medium">Avg Handling</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-800/60 bg-slate-900/20">
+          {rows.map(row => (
+            <tr
+              key={row.type}
+              className="hover:bg-slate-800/30"
+            >
+              <td className="px-4 py-3 font-medium text-slate-200">
+                {row.label}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-slate-300">
+                {row.count}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-emerald-300">
+                {row.correct}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-red-300">
+                {row.incorrect}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-amber-300">
+                {row.pending}
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-cyan-300">
+                {formatDurationValue(row.averageHandlingSeconds)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SessionDistributionGrid({
+  rows,
+  maxCount
+}) {
+  if (!rows.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-slate-800 p-6 text-center text-sm text-slate-500">
+        No distribution data for this session.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {rows.map(row => {
+        const width =
+          Math.round(
+            (row.count / Math.max(1, maxCount)) * 100
+          );
+
+        return (
+          <div
+            key={row.label}
+            className="rounded-xl border border-slate-800 bg-slate-950/40 p-4"
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold text-slate-100">
+                  {row.label}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {row.count} operations
+                </p>
+              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+                <ChartGlyph type="bars" small />
+              </span>
+            </div>
+
+            <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+              <div
+                className="h-full rounded-full bg-linear-to-r from-cyan-400 to-emerald-400"
+                style={{ width: `${Math.max(6, width)}%` }}
+              />
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="rounded-md border border-emerald-500/20 bg-emerald-500/10 py-2 text-emerald-200">
+                {row.correct} OK
+              </div>
+              <div className="rounded-md border border-red-500/20 bg-red-500/10 py-2 text-red-200">
+                {row.incorrect} Bad
+              </div>
+              <div className="rounded-md border border-amber-500/20 bg-amber-500/10 py-2 text-amber-200">
+                {row.pending} Open
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CompletedSessionReport({ sessionId }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -494,73 +1647,132 @@ function CompletedSessionReport({ sessionId }) {
   const overallScore = Math.round(Number(accuracy) || 0);
   const accValue = Number(accuracy) || 0;
 
-  const formatRequestDetails = (op) => {
-    const requestData =
-      op.requestData ||
-      op.request_data ||
-      op.requestPayload ||
-      op.submitted_data;
+  const getCustomerDisplay = (op) =>
+    op.customerName ||
+    op.customer_name ||
+    op.customer?.first_name ||
+    op.customer?.username ||
+    'N/A';
 
-    if (requestData) {
-      let parsed = requestData;
+  const getMobileIdDisplay = (op) =>
+    op.mobileId ||
+    op.mobile_id ||
+    op.game_account?.game_username ||
+    'N/A';
 
-      if (typeof requestData === 'string') {
-        try {
-          parsed = JSON.parse(requestData);
-        } catch {
-          return requestData;
-        }
-      }
-
-      if (typeof parsed === 'object') {
-        const entries = Object.entries(parsed).map(([key, value]) => {
-          if (key === 'newPassword' || key === 'password') {
-            return `${key}: ${value ?? ''}`;
-          }
-          if (key === 'amount') {
-            return `Entered amount: $${Number(value || 0).toFixed(2)}`;
-          }
-          return `${key}: ${value ?? ''}`;
-        });
-
-        if (op.amount != null && parsed.amount != null) {
-          const expected = Number(op.amount || 0);
-          const entered = Number(parsed.amount || 0);
-          if (expected !== entered) {
-            entries.push(`Expected: $${expected.toFixed(2)}`);
-            entries.push(`Actual entered: $${entered.toFixed(2)}`);
-          }
-        }
-
-        return entries.join(' • ');
-      }
-    }
-
-    if (op.newPassword || op.password) {
-      return `Password: ${op.newPassword || op.password}`;
-    }
-
-    if (op.type === 'REFRESH BALANCE' && op.amount != null) {
-      return `Requested: $${op.amount}`;
-    }
-
-    return 'N/A';
+  const getResultLabel = (value) => {
+    const normalized = String(value || 'PENDING').toUpperCase();
+    if (normalized === 'APPROVED') return 'Approved';
+    if (normalized === 'CANCELLED') return 'Cancelled';
+    if (normalized === 'PENDING') return 'Pending';
+    if (normalized === 'UNKNOWN') return 'Unknown';
+    return normalized;
   };
 
-  const getBalanceDifference = (op) => {
-    if (op.targetBalance == null || op.actualBalance == null) {
-      return null;
+  const getExpectedResult = (op) =>
+    op.expectedResult ||
+    op.expected_result ||
+    'UNKNOWN';
+
+  const getSentResult = (op) =>
+    op.sentResult ||
+    op.sent_result ||
+    op.status ||
+    'PENDING';
+
+  const getValidationRequirements = (op) =>
+    op.validationRequirements ||
+    op.validation_requirements ||
+    [];
+
+  const getDisplayedResult = (op) => {
+    const sentResult =
+      String(getSentResult(op)).toUpperCase();
+
+    if (sentResult === 'PENDING') {
+      return 'Pending';
     }
 
-    const target = Number(op.targetBalance || 0);
-    const actual = Number(op.actualBalance || 0);
-    const diff = actual - target;
+    const requirements =
+      getValidationRequirements(op);
 
-    if (diff === 0) {
-      return 'No difference';
+    if (requirements.length > 0) {
+      return requirements.every((item) => item.ok)
+        ? 'Correct'
+        : 'Incorrect';
     }
 
-    return `${diff > 0 ? '+' : ''}$${diff.toFixed(2)}`;
+    if (op.is_correct === true) return 'Correct';
+    if (op.is_correct === false) return 'Incorrect';
+
+    return 'Pending';
+  };
+
+  const getDisplayedResultClass = (result) => {
+    if (result === 'Correct') {
+      return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
+    }
+    if (result === 'Incorrect') {
+      return 'bg-red-500/10 text-red-300 border-red-500/30';
+    }
+    return 'bg-slate-800 text-slate-400 border-slate-700';
+  };
+
+  const getResultBadgeClass = (value) => {
+    const normalized = String(value || '').toUpperCase();
+    if (normalized === 'APPROVED') {
+      return 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30';
+    }
+    if (normalized === 'CANCELLED') {
+      return 'bg-red-500/10 text-red-300 border-red-500/30';
+    }
+    return 'bg-slate-800 text-slate-400 border-slate-700';
+  };
+
+  const getOperationPoints = (op) => {
+    if (getDisplayedResult(op) === 'Correct') {
+      return 1;
+    }
+    if (getDisplayedResult(op) === 'Incorrect') {
+      return 0;
+    }
+    if (op.is_correct === true) return 1;
+    if (op.is_correct === false) return 0;
+    return op.score || 0;
+  };
+
+  const formatRequirementValue = (value) => {
+    if (typeof value === 'number') {
+      return `$${value.toFixed(2)}`;
+    }
+    if (value == null || value === '') {
+      return 'N/A';
+    }
+    return String(value);
+  };
+
+  const formatDuration = (seconds) => {
+    const value = Number(seconds);
+
+    if (!Number.isFinite(value)) {
+      return 'N/A';
+    }
+
+    const totalSeconds = Math.max(
+      0,
+      Math.round(value)
+    );
+    const minutes = Math.floor(
+      totalSeconds / 60
+    );
+    const remainingSeconds =
+      totalSeconds % 60;
+
+    if (minutes > 0) {
+      return `${minutes}m ${remainingSeconds}s`;
+    }
+
+    return `${remainingSeconds}s`;
   };
 
   let grade = 'F';
@@ -598,9 +1810,11 @@ function CompletedSessionReport({ sessionId }) {
                 <th className="px-6 py-4 font-medium">Processed</th>
                 <th className="px-6 py-4 font-medium">Type</th>
                 <th className="px-6 py-4 font-medium">Customer</th>
-                <th className="px-6 py-4 font-medium text-right">Target</th>
-                <th className="px-6 py-4 font-medium text-right">Actual</th>
-                <th className="px-6 py-4 font-medium text-left">Input / Notes</th>
+                <th className="px-6 py-4 font-medium">Mobile ID</th>
+                <th className="px-6 py-4 font-medium text-left">Requirements</th>
+                <th className="px-6 py-4 font-medium text-center">Sent Operation</th>
+                <th className="px-6 py-4 font-medium text-center">Expected Operation</th>
+                <th className="px-6 py-4 font-medium text-right">Handling Time</th>
                 <th className="px-6 py-4 font-medium text-center">Result</th>
                 <th className="px-6 py-4 font-medium text-right">Points</th>
               </tr>
@@ -617,31 +1831,66 @@ function CompletedSessionReport({ sessionId }) {
                   <td className="px-6 py-4">
                     <span className="text-slate-300 font-medium">{op.type}</span>
                   </td>
-                  <td className="px-6 py-4 text-slate-400">{op.customerName}</td>
-                  <td className="px-6 py-4 text-right font-mono text-slate-300">
-                    ${(op.targetBalance || 0).toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-right font-mono">
-                    <span className={op.status === 'success' ? 'text-emerald-400' : op.status === 'pending' ? 'text-slate-500' : 'text-red-400'}>
-                      ${(op.actualBalance || 0).toFixed(2)}
-                    </span>
-                    {getBalanceDifference(op) && (
-                      <div className="text-xs text-slate-400 mt-1">
-                        Diff: {getBalanceDifference(op)}
-                      </div>
+                  <td className="px-6 py-4 text-slate-300">
+                    <div className="font-medium">{getCustomerDisplay(op)}</div>
+                    {op.customerUsername && (
+                      <div className="text-xs text-slate-500">{op.customerUsername}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-left text-slate-300 text-sm">
-                    {formatRequestDetails(op)}
+                  <td className="px-6 py-4 text-slate-400 font-mono text-xs">
+                    {getMobileIdDisplay(op)}
+                  </td>
+                  <td className="px-6 py-4 text-left">
+                    <div className="flex min-w-96 flex-wrap gap-2">
+                      {getValidationRequirements(op).map((item, requirementIndex) => (
+                        <div
+                          key={`${item.label}-${requirementIndex}`}
+                          className={`rounded-md border px-2.5 py-1.5 text-xs ${item.ok ? 'bg-emerald-500/10 text-emerald-200 border-emerald-500/30' : 'bg-red-500/10 text-red-200 border-red-500/30'}`}
+                        >
+                          <div className="font-semibold">{item.label}</div>
+                          <div className="mt-0.5 text-[11px] opacity-80">
+                            Posted: {formatRequirementValue(item.sent)}
+                          </div>
+                          {item.expected !== '' && (
+                            <div className="text-[11px] opacity-70">
+                              Expected: {formatRequirementValue(item.expected)}
+                            </div>
+                          )}
+                          {!item.ok && item.label === 'Game amount' && (
+                            <div className="mt-1 text-[11px] font-semibold">
+                              Amount mismatch
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {getValidationRequirements(op).length === 0 && (
+                        <span className="rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs text-slate-400">
+                          No checks
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    {op.status === 'success' && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">✓</span>}
-                    {op.status === 'failed' && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">✗</span>}
-                    {op.status === 'pending' && <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs border border-slate-700">⌛</span>}
+                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-xs font-semibold ${getResultBadgeClass(getSentResult(op))}`}>
+                      {getResultLabel(getSentResult(op))}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-xs font-semibold ${getResultBadgeClass(getExpectedResult(op))}`}>
+                      {getResultLabel(getExpectedResult(op))}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right font-mono text-slate-300">
+                    {formatDuration(op.handling_time_seconds)}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-xs font-semibold ${getDisplayedResultClass(getDisplayedResult(op))}`}>
+                      {getDisplayedResult(op)}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-right font-semibold">
-                    <span className={op.score > 0 ? 'text-emerald-400' : 'text-slate-500'}>
-                      +{op.score || 0}
+                    <span className={getOperationPoints(op) > 0 ? 'text-emerald-400' : 'text-slate-500'}>
+                      +{getOperationPoints(op)}
                     </span>
                   </td>
                 </tr>
@@ -654,11 +1903,25 @@ function CompletedSessionReport({ sessionId }) {
   );
 }
 
-function StatCard({ title, value, suffix = '' }) {
+function StatCard({
+  glyph,
+  title,
+  value,
+  suffix = ''
+}) {
   return (
     <div className="bg-slate-800/40 border border-slate-700/50 p-6 rounded-2xl flex flex-col justify-between backdrop-blur-sm relative overflow-hidden group hover:border-slate-600 transition-colors">
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/5 rounded-full blur-xl group-hover:bg-white/10 transition-colors" />
-      <span className="text-sm text-slate-400 mb-2 font-medium z-10">{title}</span>
+      <div className="z-10 mb-4 flex items-center justify-between gap-3">
+        <span className="text-sm text-slate-400 font-medium">
+          {title}
+        </span>
+        {glyph && (
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
+            <ChartGlyph type={glyph} />
+          </span>
+        )}
+      </div>
       <div className="z-10">
         <span className="text-3xl font-bold text-white">{value}</span>
         {suffix && <span className="text-slate-500 ml-1 font-medium">{suffix}</span>}

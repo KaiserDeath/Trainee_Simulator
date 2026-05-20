@@ -26,6 +26,23 @@ const normalizeText = value =>
 const normalizeNumber = value =>
   Number(value);
 
+function getGameBalanceAtRequest(
+  operation
+) {
+  const snapshot =
+    Number(
+      operation.game_balance_at_request
+    );
+
+  if (Number.isFinite(snapshot)) {
+    return snapshot;
+  }
+
+  return Number(
+    operation.game_account?.balance
+  );
+}
+
 export function isValidAction(action) {
   return VALID_OPERATION_ACTIONS.includes(
     action
@@ -43,16 +60,7 @@ export function evaluateMovementOperation(
   if (
     operation.type === 'ADD CREDITS'
   ) {
-    const shouldApprove =
-      Number(operation.customer?.balance) >=
-      Number(operation.amount);
-
-    return (
-      action ===
-        (shouldApprove
-          ? 'APPROVED'
-          : 'CANCELLED')
-    );
+    return action === 'APPROVED';
   }
 
   if (
@@ -60,8 +68,8 @@ export function evaluateMovementOperation(
     'WITHDRAW CREDITS'
   ) {
     const shouldApprove =
-      Number(
-        operation.game_account?.balance
+      getGameBalanceAtRequest(
+        operation
       ) >= Number(operation.amount);
 
     return (
@@ -73,6 +81,33 @@ export function evaluateMovementOperation(
   }
 
   return false;
+}
+
+export function getExpectedOperationAction(
+  operation
+) {
+  if (
+    operation.type === 'ADD CREDITS'
+  ) {
+    return 'APPROVED';
+  }
+
+  if (
+    operation.type ===
+    'WITHDRAW CREDITS'
+  ) {
+    return getGameBalanceAtRequest(
+      operation
+    ) >= Number(operation.amount)
+      ? 'APPROVED'
+      : 'CANCELLED';
+  }
+
+  if (isRequestOperation(operation.type)) {
+    return 'APPROVED';
+  }
+
+  return 'UNKNOWN';
 }
 
 export function getExpectedRequestContext(

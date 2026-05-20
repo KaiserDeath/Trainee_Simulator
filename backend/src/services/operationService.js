@@ -14,6 +14,7 @@ import {
 } from './gameSimulationService.js';
 
 import {
+  getOperationHandlingStart,
   logActionEvent
 } from '../engine/AuditLogger.js';
 
@@ -192,43 +193,26 @@ async function evaluateGameBackofficeWork(
   if (
     operation.type === 'ADD CREDITS'
   ) {
-    const customerCanPay =
-      Number(
-        operation.customer?.balance
-      ) >= Number(operation.amount);
-
     const gameWasRecharged =
       await hasMatchingGameAction({
         operation,
         type: 'GAME ADD CREDITS'
       });
 
-    return (
-      customerCanPay &&
-      gameWasRecharged
-    );
+    return gameWasRecharged;
   }
 
   if (
     operation.type ===
     'WITHDRAW CREDITS'
   ) {
-    const enoughGameBalance =
-      Number(
-        operation.game_account
-          ?.balance
-      ) >= Number(operation.amount);
-
     const hasGameWithdraw =
       await hasMatchingGameAction({
         operation,
         type: 'GAME WITHDRAW CREDITS'
       });
 
-    return (
-      enoughGameBalance &&
-      hasGameWithdraw
-    );
+    return hasGameWithdraw;
   }
 
   if (
@@ -469,6 +453,40 @@ async function saveRequestPayload(
   }
 }
 
+async function saveHandlingMetrics({
+  operationId,
+  handlingStartedAt,
+  handlingSeconds
+}) {
+  const fields = {
+    handling_started_at:
+      handlingStartedAt,
+    handling_time_seconds:
+      handlingSeconds
+  };
+
+  for (const fieldName of Object.keys(fields)) {
+    const { error } = await supabase
+      .from('sandbox_operations')
+      .update({
+        [fieldName]: fields[fieldName]
+      })
+      .eq('id', operationId);
+
+    if (!error) {
+      continue;
+    }
+
+    const isMissingField =
+      /column .* does not exist|no such column|field .* not found/i
+        .test(error.message);
+
+    if (!isMissingField) {
+      throw error;
+    }
+  }
+}
+
 export async function processOperation(
   operationId,
   payload
@@ -517,6 +535,21 @@ export async function processOperation(
   const processingSeconds =
     getProcessingSeconds(operation);
 
+  const handlingStartedAt =
+    await getOperationHandlingStart({
+      sessionId: operation.session_id,
+      operationId: operation.id
+    });
+  const handlingSeconds =
+    handlingStartedAt
+      ? (
+          Date.now() -
+          new Date(
+            handlingStartedAt
+          ).getTime()
+        ) / 1000
+      : null;
+
   const updatedOperation =
     await markOperationProcessed({
       operation,
@@ -530,6 +563,12 @@ export async function processOperation(
     operation.id,
     requestData
   );
+
+  await saveHandlingMetrics({
+    operationId: operation.id,
+    handlingStartedAt,
+    handlingSeconds
+  });
 
   await createAuditHistory({
     operation,
@@ -547,7 +586,9 @@ export async function processOperation(
     details: {
       operationType: operation.type,
       isCorrect,
-      processingSeconds
+      processingSeconds,
+      handlingStartedAt,
+      handlingSeconds
     }
   });
 

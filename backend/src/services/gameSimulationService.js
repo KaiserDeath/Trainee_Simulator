@@ -466,16 +466,14 @@ export async function createGameAccount({
       throw error;
     }
 
-    if (!customer) {
-      const notFound =
-        new Error(
-          'Customer not found for this username'
-        );
-      notFound.statusCode = 404;
-      throw notFound;
-    }
-
-    resolvedCustomerId = customer.id;
+    resolvedCustomerId =
+      customer?.id ||
+      await resolveOrCreateSandboxCustomer({
+        sessionId,
+        name:
+          customerName ||
+          username
+      });
   }
 
   const { data, error } = await supabase
@@ -616,6 +614,71 @@ export async function hasMatchingGameAction({
   }
 
   return data.length > 0;
+}
+
+export async function findRelatedGameAction({
+  operation,
+  type
+}) {
+  const { data, error } = await supabase
+    .from(
+      'sandbox_transaction_history'
+    )
+    .select('id, type, amount, created_at, description')
+    .eq(
+      'session_id',
+      operation.session_id
+    )
+    .eq(
+      'customer_id',
+      operation.customer_id
+    )
+    .eq('type', type)
+    .gte(
+      'created_at',
+      operation.created_at
+    )
+    .order('created_at', {
+      ascending: true
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  const accountUsername =
+    operation.game_account?.game_username;
+  const accountGame =
+    operation.game_account?.game;
+
+  const parsedRows = (data || []).map(row => {
+    let details = {};
+
+    try {
+      details = JSON.parse(
+        row.description || '{}'
+      );
+    } catch {
+      details = {};
+    }
+
+    return {
+      ...row,
+      details
+    };
+  });
+
+  return (
+    parsedRows.find(row =>
+      (!accountGame ||
+        row.details.game === accountGame) &&
+      (!accountUsername ||
+        row.details.mobileId === accountUsername ||
+        row.details.playerId === accountUsername)
+    ) ||
+    parsedRows[0] ||
+    null
+  );
 }
 
 export async function hasCreatedAccount({
