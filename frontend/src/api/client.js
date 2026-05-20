@@ -101,6 +101,10 @@ export const submitSessionForEvaluation = async (sessionId) => {
   return api.post(`/trainer/sessions/${sessionId}/submit`);
 };
 
+export const submitSession = async (sessionId) => {
+  return api.post(`/sessions/${sessionId}/submit`);
+};
+
 export const getSessionById = async (sessionId) => {
   return api.get(`/sessions/${sessionId}`);
 };

@@ -109,7 +109,8 @@ export async function submitSession(
   const { data, error } = await supabase
     .from('trainee_sessions')
     .update({
-      status: 'submitted'
+      status: 'submitted',
+      ended_at: new Date().toISOString()
     })
     .eq('id', sessionId)
     .select()

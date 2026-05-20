@@ -8,6 +8,7 @@ import {
 import {
   createGameAccount,
   getGameAccountHistory,
+  getSessionById,
   rechargeGameAccount,
   redeemGameAccount,
   resetGamePassword,
@@ -132,6 +133,15 @@ export default function GoldenDragonPanel({
 
   // --- SYNCHRONIZATION EFFECT: TRACKS CROSS-WINDOW STORAGE EVAPORATION ---
   useEffect(() => {
+    const handleSessionUpdate = (event) => {
+      const updatedSession = event?.detail;
+      if (!updatedSession || updatedSession.id !== activeSessionId) {
+        setForceSessionEnd(true);
+      } else if (updatedSession.status && updatedSession.status !== 'active') {
+        setForceSessionEnd(true);
+      }
+    };
+
     const handleStorageChange = (event) => {
       if (event.key === 'casino_trainer_session') {
         if (!event.newValue) {
@@ -139,7 +149,10 @@ export default function GoldenDragonPanel({
         } else {
           try {
             const currentSession = JSON.parse(event.newValue);
-            if (currentSession.id !== activeSessionId) {
+            if (
+              currentSession.id !== activeSessionId ||
+              currentSession.status !== 'active'
+            ) {
               setForceSessionEnd(true);
             }
           } catch (error) {
@@ -149,9 +162,48 @@ export default function GoldenDragonPanel({
       }
     };
 
+    window.addEventListener(
+      'casino_trainer_session_update',
+      handleSessionUpdate
+    );
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener(
+        'casino_trainer_session_update',
+        handleSessionUpdate
+      );
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [activeSessionId]);
+
+  useEffect(() => {
+    if (!activeSessionId || isSessionEnded) return;
+
+    let mounted = true;
+
+    const pollSessionStatus = async () => {
+      try {
+        const response = await getSessionById(activeSessionId);
+        if (
+          mounted &&
+          response.data?.status &&
+          response.data.status !== 'active'
+        ) {
+          setForceSessionEnd(true);
+        }
+      } catch (err) {
+        console.error('Failed to verify session status', err);
+      }
+    };
+
+    pollSessionStatus();
+    const interval = setInterval(pollSessionStatus, 3000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [activeSessionId, isSessionEnded]);
 
   const selectedCustomerId =
     selected?.customer_id;

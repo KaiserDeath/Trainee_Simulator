@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import api, { deleteSession as deleteSessionApi, submitSessionForEvaluation } from '../api/client';
+import api, { deleteSession as deleteSessionApi } from '../api/client';
 import AuditLogPanel from '../components/audit/AuditLogPanel';
 
 const SESSION_STATUS_META = {
@@ -83,6 +83,11 @@ export default function DashboardPage() {
     filteredSessions.every((session) =>
       selectedSessionIds.has(session.id)
     );
+
+  const effectiveViewMode =
+    selectedSession?.status !== 'active' && viewMode === 'live'
+      ? 'report'
+      : viewMode;
 
   const toggleSelectAll = () => {
     if (allSelected) {
@@ -309,26 +314,6 @@ export default function DashboardPage() {
                   </button>
                 )}
 
-                {selectedSession.status === 'completed' && (
-                  <button
-                    onClick={async () => {
-                      if (window.confirm('Send this completed session for evaluation?')) {
-                        try {
-                          await submitSessionForEvaluation(selectedSession.id);
-                          await fetchSessions();
-                          alert('Session submitted for evaluation.');
-                        } catch (err) {
-                          console.error(err);
-                          alert('Could not submit session for evaluation.');
-                        }
-                      }
-                    }}
-                    className="bg-violet-500 text-white hover:bg-violet-400 transition-all duration-300 px-6 py-2.5 rounded-lg font-semibold shadow-[0_0_20px_rgba(139,92,246,0.15)]"
-                  >
-                    Submit for evaluation
-                  </button>
-                )}
-
                 <button
                   onClick={async () => {
                     if (window.confirm('Delete this session permanently?')) {
@@ -351,6 +336,7 @@ export default function DashboardPage() {
 
             {/* VIEW MODE TABS */}
             <div className="flex gap-4 mb-6 border-b border-slate-800/50 pb-4">
+              {selectedSession?.status === 'active' && (
               <button
                 onClick={() => setViewMode('live')}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
@@ -361,7 +347,8 @@ export default function DashboardPage() {
               >
                 Live Operations
               </button>
-              <button
+            )}
+            <button
                 onClick={() => setViewMode('report')}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   viewMode === 'report'
@@ -383,9 +370,9 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {selectedSession.status === 'active' && viewMode === 'live' ? (
+            {selectedSession.status === 'active' && effectiveViewMode === 'live' ? (
               <LiveSessionView sessionId={selectedSession.id} />
-            ) : viewMode === 'audit' ? (
+            ) : effectiveViewMode === 'audit' ? (
               <AuditLogPanel sessionId={selectedSession.id} />
             ) : (
               <CompletedSessionReport sessionId={selectedSession.id} />

@@ -27,6 +27,12 @@ export default function App() {
     } else {
       localStorage.removeItem(SESSION_KEY);
     }
+
+    window.dispatchEvent(
+      new CustomEvent('casino_trainer_session_update', {
+        detail: session || null
+      })
+    );
   }, [session]);
 
   const handleSessionCreated = (newSession) => {
@@ -45,9 +51,9 @@ export default function App() {
   const vblinkMatch = path.match(/^\/games\/vblink\/([^/]+)$/);
   const isTrainer = path === "/trainer";
 
-  if (gameMatch) return <OrionStarsPanel sessionId={gameMatch[1]} />;
-  if (goldenDragonMatch) return <GoldenDragonPanel sessionId={goldenDragonMatch[1]} />;
-  if (vblinkMatch) return <VblinkPanel sessionId={vblinkMatch[1]} />;
+  if (gameMatch) return <OrionStarsPanel session={session} sessionId={gameMatch[1]} />;
+  if (goldenDragonMatch) return <GoldenDragonPanel session={session} sessionId={goldenDragonMatch[1]} />;
+  if (vblinkMatch) return <VblinkPanel session={session} sessionId={vblinkMatch[1]} />;
   if (isTrainer) return <DashboardPage />;
 
   if (!session) {

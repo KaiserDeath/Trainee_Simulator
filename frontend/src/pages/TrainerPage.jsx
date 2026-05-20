@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import api from '../api/client';
+import api, { submitSession } from '../api/client';
 import MainLayout from '../components/layout/MainLayout';
 import Sidebar from '../components/layout/Sidebar';
 import Header from '../components/layout/Header';
@@ -75,6 +75,18 @@ export default function TrainerPage({ session, onSessionEnded }) {
   const isSessionClosed =
     sessionState?.status !== 'active';
 
+  const handleSubmitSession = async () => {
+    try {
+      await submitSession(sessionState.id);
+    } catch (err) {
+      console.error('Failed to submit session for evaluation', err);
+      alert('Unable to submit session for evaluation. Please try again.');
+      return;
+    }
+
+    onSessionEnded();
+  };
+
   return (
     <>
       <MainLayout
@@ -126,7 +138,7 @@ export default function TrainerPage({ session, onSessionEnded }) {
         <SessionCompleteOverlay
           session={sessionState}
           report={sessionReport}
-          onSubmit={onSessionEnded}
+          onSubmit={handleSubmitSession}
           onRetry={onSessionEnded}
         />
       )}
@@ -217,7 +229,7 @@ function SessionCompleteOverlay({
               onClick={onSubmit}
               className="w-full rounded-2xl bg-cyan-500 px-6 py-3 text-base font-semibold text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-400 sm:w-auto"
             >
-              Submit Results
+              Submit for evaluation
             </button>
             <button
               type="button"

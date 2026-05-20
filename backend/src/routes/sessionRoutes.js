@@ -10,7 +10,8 @@ import GameMaster
 import {
   completeSession,
   deleteSession,
-  deleteSessionsWithoutActivity
+  deleteSessionsWithoutActivity,
+  submitSession
 } from '../engine/SessionEngine.js';
 
 const router = Router();
@@ -104,6 +105,27 @@ router.get('/:id', async (req, res) => {
     console.error(err);
 
     res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+router.post('/:id/submit', async (req, res) => {
+  const { id } = req.params;
+
+  // STOP GAMEMASTER before finalizing submission
+  GameMaster.stopSession(id);
+
+  try {
+    const session = await submitSession(id);
+
+    res.json({
+      message: 'Session submitted for evaluation',
+      session
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(err.statusCode || 500).json({
       error: err.message
     });
   }

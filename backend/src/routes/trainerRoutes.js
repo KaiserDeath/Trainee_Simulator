@@ -168,6 +168,9 @@ router.post('/sessions/:id/submit', async (
 ) => {
   const { id } = req.params;
 
+  // STOP GAMEMASTER before finalizing submission
+  GameMaster.stopSession(id);
+
   try {
     const session = await submitSession(id);
 
