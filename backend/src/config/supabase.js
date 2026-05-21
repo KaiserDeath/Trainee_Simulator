@@ -1,20 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
+import WebSocket from 'ws'; // 1. Importamos el parche de WebSockets
 import dotenv from 'dotenv';
 
-// 1. Asegurar la lectura en cualquier entorno
-dotenv.config(); 
+dotenv.config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-// 2. Usar service_role localmente o anon key como respaldo si falta en producción
+// Acepta tanto la Service Key como la Anon Key como respaldo
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-// 3. En lugar de un "throw new Error" que apaga el servidor, usa un console.error
 if (!supabaseUrl || !supabaseKey) {
-  console.error('⚠️ Advertencia: Faltan variables de entorno de Supabase.');
+  console.error('⚠️ Alerta: Faltan variables de entorno de Supabase en este entorno.');
 }
 
-// 4. Crear el cliente de forma segura
 export const supabase = createClient(
   supabaseUrl || 'https://supabase.co', 
-  supabaseKey || 'placeholder-key'
+  supabaseKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: false // Configuración recomendada para servidores backend
+    },
+    realtime: {
+      webSocketConnectors: WebSocket // 2. Forzamos a Supabase a usar la librería 'ws'
+    }
+  }
 );
