@@ -4,21 +4,28 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// ⚠️ REEMPLAZA ESTOS DOS VALORES CON TUS DATOS REALES DE SUPABASE
-const REAL_URL = "https://gctsgfjuwshqjxgnpzhg.supabase.co"; 
-const REAL_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjdHNnZmp1d3NocWp4Z25wemhnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUwNzUxOCwiZXhwIjoyMDk0MDgzNTE4fQ.1lEblppEP282pthTpi-AICUsjGETAQ5qNUbBCGJ4zdc"; 
+// Lee los nombres exactos que tienes configurados en Back4App
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabaseUrl = process.env.SUPABASE_URL || REAL_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || REAL_KEY;
+console.log("📢 URL detectada desde Back4App:", supabaseUrl);
+console.log("📢 ¿Clave detectada desde Back4App?:", supabaseKey ? "SÍ" : "NO");
 
-console.log("📢 URL detectada:", supabaseUrl);
-console.log("📢 ¿Clave detectada?:", supabaseKey && supabaseKey !== "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjdHNnZmp1d3NocWp4Z25wemhnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODUwNzUxOCwiZXhwIjoyMDk0MDgzNTE4fQ.1lEblppEP282pthTpi-AICUsjGETAQ5qNUbBCGJ4zdc" ? "SÍ" : "NO (Revisa las comillas)");
+let supabaseInstance = null;
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false
-  },
-  realtime: {
-    webSocketConnectors: WebSocket
+// Inicialización segura para evitar el crash 'throw new Error' de la librería
+if (supabaseUrl && supabaseKey && supabaseKey.trim() !== "") {
+  try {
+    supabaseInstance = createClient(supabaseUrl.trim(), supabaseKey.trim(), {
+      auth: { persistSession: false },
+      realtime: { webSocketConnectors: WebSocket }
+    });
+    console.log("🚀 SDK de Supabase enlazado correctamente.");
+  } catch (error) {
+    console.error("❌ Error al procesar el string de la clave:", error.message);
   }
-});
+} else {
+  console.error("❌ CRÍTICO: No se inició Supabase. Verifica las variables en el panel web.");
+}
+
+export const supabase = supabaseInstance;
