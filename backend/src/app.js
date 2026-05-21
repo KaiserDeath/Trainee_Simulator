@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
 
 import sessionRoutes from './routes/sessionRoutes.js';
 import operationRoutes from './routes/operationRoutes.js';
@@ -7,9 +8,20 @@ import customerRoutes from './routes/customerRoutes.js';
 import gameRoutes from './routes/gameRoutes.js';
 import trainerRoutes from './routes/trainerRoutes.js';
 
+dotenv.config();
+
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      process.env.CLIENT_URL
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.get('/health', (req, res) => {
