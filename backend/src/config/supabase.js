@@ -4,28 +4,59 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Lee los nombres exactos que tienes configurados en Back4App
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl =
+  process.env.SUPABASE_URL?.trim();
 
-console.log("📢 URL detectada desde Back4App:", supabaseUrl);
-console.log("📢 ¿Clave detectada desde Back4App?:", supabaseKey ? "SÍ" : "NO");
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
-let supabaseInstance = null;
+console.log(
+  "📢 URL detectada:",
+  supabaseUrl || "NO"
+);
 
-// Inicialización segura para evitar el crash 'throw new Error' de la librería
-if (supabaseUrl && supabaseKey && supabaseKey.trim() !== "") {
-  try {
-    supabaseInstance = createClient(supabaseUrl.trim(), supabaseKey.trim(), {
-      auth: { persistSession: false },
-      realtime: { webSocketConnectors: WebSocket }
-    });
-    console.log("🚀 SDK de Supabase enlazado correctamente.");
-  } catch (error) {
-    console.error("❌ Error al procesar el string de la clave:", error.message);
+console.log(
+  "📢 Clave detectada:",
+  supabaseKey ? "SÍ" : "NO"
+);
+
+let supabase = null;
+
+try {
+  if (!supabaseUrl) {
+    throw new Error(
+      "Falta SUPABASE_URL"
+    );
   }
-} else {
-  console.error("❌ CRÍTICO: No se inició Supabase. Verifica las variables en el panel web.");
+
+  if (!supabaseKey) {
+    throw new Error(
+      "Falta SUPABASE_SERVICE_ROLE_KEY"
+    );
+  }
+
+  supabase = createClient(
+    supabaseUrl,
+    supabaseKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      },
+      realtime: {
+        webSocketConnectors: WebSocket
+      }
+    }
+  );
+
+  console.log(
+    "🚀 Supabase conectado correctamente."
+  );
+} catch (error) {
+  console.error(
+    "❌ Error iniciando Supabase:",
+    error.message
+  );
 }
 
-export const supabase = supabaseInstance;
+export { supabase };
