@@ -1,10 +1,10 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import dotenv from 'dotenv'; 
+dotenv.config(); 
+import app from './app.js'; 
 
-import app from './app.js';
+// Cambiamos el respaldo a 8080 para que Back4App pase el Health Check con éxito
+const PORT = process.env.PORT || 8080; 
 
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, () => { 
+  console.log(`Server running on port ${PORT}`); 
 });
