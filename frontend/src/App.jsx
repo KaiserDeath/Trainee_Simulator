@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import socket from './sockets/socket';
 
 import SessionStartPage from "./pages/SessionStartPage";
-import TrainerPage from "./pages/TrainerPage";
-import DashboardPage from "./pages/DashboardPage";
+import TraineeDashboard from "./pages/TraineeDashboard";   // renamed from TrainerPage
+import TrainerDashboard from "./pages/DashboardPage";     // renamed alias for clarity
 import OrionStarsPanel from "./components/games/OrionStarsPanel";
 import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
 import VblinkPanel from "./components/games/VblinkPanel";
@@ -11,7 +11,7 @@ import VblinkPanel from "./components/games/VblinkPanel";
 const SESSION_KEY = "casino_trainer_session";
 
 export default function App() {
-  // Try to restore session from localStorage on first load
+  // Restore session from localStorage on first load
   const [session, setSession] = useState(() => {
     try {
       const saved = localStorage.getItem(SESSION_KEY);
@@ -67,18 +67,11 @@ export default function App() {
   if (gameMatch) return <OrionStarsPanel session={session} sessionId={gameMatch[1]} />;
   if (goldenDragonMatch) return <GoldenDragonPanel session={session} sessionId={goldenDragonMatch[1]} />;
   if (vblinkMatch) return <VblinkPanel session={session} sessionId={vblinkMatch[1]} />;
-  if (isTrainer) return <DashboardPage />;
+  if (isTrainer) return <TrainerDashboard />;
 
   if (!session) {
-    return (
-      <SessionStartPage onSessionCreated={handleSessionCreated} />
-    );
+    return <SessionStartPage onSessionCreated={handleSessionCreated} />;
   }
 
-  return (
-    <TrainerPage
-      session={session}
-      onSessionEnded={handleSessionEnded}
-    />
-  );
+  return <TraineeDashboard session={session} onSessionEnded={handleSessionEnded} />;
 }

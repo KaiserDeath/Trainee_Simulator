@@ -10,7 +10,7 @@ import CustomerPanel from '../components/customers/CustomerPanel';
 import GamesLauncher from '../components/games/GamesLauncher';
 
 
-export default function TrainerPage({ session, onSessionEnded }) {
+export default function TraineeDashboard({ session, onSessionEnded }) {
   const [activeView, setActiveView] = useState('operations');
   const [sessionState, setSessionState] = useState(session);
   const [sessionReport, setSessionReport] = useState(null);
@@ -120,8 +120,8 @@ export default function TrainerPage({ session, onSessionEnded }) {
         }
       >
         {activeView === 'operations' && (
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2 bg-white rounded-2xl shadow p-5">
+          <div className="grid grid-cols-6 gap-6">
+            <div className="col-span-5 bg-white rounded-2xl shadow p-5">
               <h3 className="text-lg font-semibold mb-4">Live Operations Queue</h3>
               <OperationsQueue
                 session={sessionState}
