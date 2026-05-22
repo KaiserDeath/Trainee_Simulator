@@ -4,6 +4,7 @@ import api, {
   getOperationTimeStats
 } from '../api/client';
 import AuditLogPanel from '../components/audit/AuditLogPanel';
+import socket from '../sockets/socket';
 
 const SESSION_STATUS_META = {
   active: {
@@ -67,6 +68,51 @@ export default function DashboardPage() {
       String(sessionTimeoutMinutes)
     );
   }, [sessionTimeoutMinutes]);
+
+  useEffect(() => {
+    const handleSessionUpdated = (
+      updatedSession
+    ) => {
+      setSessions((prevSessions) =>
+        prevSessions.map((session) =>
+          session.id === updatedSession.id
+            ? updatedSession
+            : session
+        )
+      );
+    };
+
+    const handleSessionCreated = (
+      newSession
+    ) => {
+      setSessions((prevSessions) => [
+        newSession,
+        ...prevSessions,
+      ]);
+    };
+
+    socket.on(
+      'session-updated',
+      handleSessionUpdated
+    );
+
+    socket.on(
+      'session-created',
+      handleSessionCreated
+    );
+
+    return () => {
+      socket.off(
+        'session-updated',
+        handleSessionUpdated
+      );
+
+      socket.off(
+        'session-created',
+        handleSessionCreated
+      );
+    };
+  }, []);
 
   const filteredSessions = useMemo(() => {
     const search = traineeSearch.trim().toLowerCase();

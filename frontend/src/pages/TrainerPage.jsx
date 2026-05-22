@@ -9,6 +9,7 @@ import PerformancePanel from '../components/performance/PerformancePanel';
 import CustomerPanel from '../components/customers/CustomerPanel';
 import GamesLauncher from '../components/games/GamesLauncher';
 
+
 export default function TrainerPage({ session, onSessionEnded }) {
   const [activeView, setActiveView] = useState('operations');
   const [sessionState, setSessionState] = useState(session);

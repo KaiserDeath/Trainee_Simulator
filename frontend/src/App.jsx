@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import socket from './sockets/socket';
 
 import SessionStartPage from "./pages/SessionStartPage";
 import TrainerPage from "./pages/TrainerPage";
@@ -19,6 +20,18 @@ export default function App() {
       return null;
     }
   });
+
+  useEffect(() => {
+    socket.connect();
+
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   // Persist session to localStorage whenever it changes
   useEffect(() => {
