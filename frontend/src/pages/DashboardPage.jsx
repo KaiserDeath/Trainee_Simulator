@@ -1131,6 +1131,24 @@ function VisualMetricBar({
 function LiveSessionView({ sessionId }) {
   const [operations, setOperations] = useState([]);
 
+  // ✅ MOVED OUTSIDE: Define getTypeStyles here, before the useEffect
+  const getTypeStyles = (type) => {
+    switch (type) {
+      case 'ADD':
+      case 'CREDIT':
+      case 'DEPOSIT':
+        return 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'; // Transparent light green
+
+      case 'WITHDRAW':
+      case 'DEBIT':
+      case 'WITHDRAWAL':
+        return 'bg-red-500/10 text-red-300 border border-red-500/20'; // Transparent red
+
+      default:
+        return 'bg-slate-700/40 text-slate-300 border border-slate-600';
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     const fetchOps = async () => {
@@ -1164,23 +1182,7 @@ function LiveSessionView({ sessionId }) {
           </div>
         ) : (
           operations.map((op) => {
-            const getTypeStyles = (type) => {
-              switch (type) {
-                case 'ADD':
-                case 'CREDIT':
-                case 'DEPOSIT':
-                  return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
-
-                case 'WITHDRAW':
-                case 'DEBIT':
-                case 'WITHDRAWAL':
-                  return 'bg-red-500/15 text-red-300 border border-red-500/30';
-
-                default:
-                  return 'bg-slate-700/40 text-slate-300 border border-slate-600';
-              }
-            };
-
+            // ❌ REMOVED: getTypeStyles is no longer defined here
             return (
               <div
                 key={op.id}
@@ -1449,6 +1451,7 @@ function averageOperationSeconds(
   fieldName
 ) {
   const values = operations
+    .filter(op => op.status !== 'PENDING')  // ✅ exclude pending
     .map(operation => Number(operation[fieldName]))
     .filter(Number.isFinite);
 
@@ -1486,10 +1489,10 @@ function buildSessionOperationRows(operations) {
     current.count += 1;
     current[result] += 1;
 
-    if (Number.isFinite(handlingSeconds)) {
-      current.handlingSamples.push(
-        handlingSeconds
-      );
+    // ✅ Only include handling time for processed operations
+    const isProcessed = operation.status !== 'PENDING';
+    if (isProcessed && Number.isFinite(handlingSeconds)) {
+      current.handlingSamples.push(handlingSeconds);
     }
 
     rows.set(type, current);
