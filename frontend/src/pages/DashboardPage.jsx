@@ -1163,36 +1163,70 @@ function LiveSessionView({ sessionId }) {
             No pending operations. The GameMaster is generating traffic...
           </div>
         ) : (
-          operations.map((op) => (
-            <div key={op.id} className="bg-slate-800/40 border border-slate-700/50 p-5 rounded-2xl backdrop-blur-sm shadow-xl flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <span className={`px-2.5 py-1 text-xs font-bold rounded-md ${
-                    op.type === 'ADD' ? 'bg-blue-500/20 text-blue-400' :
-                    op.type === 'WITHDRAW' ? 'bg-amber-500/20 text-amber-400' :
-                    'bg-purple-500/20 text-purple-400'
-                  }`}>
-                    {op.type}
-                  </span>
-                  <span className="text-xs text-slate-500 font-mono">
-                    {new Date(op.created_at).toLocaleTimeString()}
-                  </span>
-                </div>
-                
-                <div className="mb-2">
-                  <div className="text-sm text-slate-400 mb-1">Customer</div>
-                  <div className="font-semibold text-slate-200">{op.customer_name}</div>
-                </div>
-                
-                {op.amount && (
-                  <div>
-                    <div className="text-sm text-slate-400 mb-1">Amount</div>
-                    <div className="font-semibold text-white text-lg">${op.amount}</div>
+          operations.map((op) => {
+            const getTypeStyles = (type) => {
+              switch (type) {
+                case 'ADD':
+                case 'CREDIT':
+                case 'DEPOSIT':
+                  return 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+
+                case 'WITHDRAW':
+                case 'DEBIT':
+                case 'WITHDRAWAL':
+                  return 'bg-red-500/15 text-red-300 border border-red-500/30';
+
+                default:
+                  return 'bg-slate-700/40 text-slate-300 border border-slate-600';
+              }
+            };
+
+            return (
+              <div
+                key={op.id}
+                className="bg-slate-800/40 border border-slate-700/50 p-5 rounded-2xl backdrop-blur-sm shadow-xl flex flex-col justify-between"
+              >
+                <div>
+                  {/* HEADER */}
+                  <div className="flex justify-between items-start mb-4">
+                    <span
+                      className={`px-2.5 py-1 text-xs font-bold rounded-md ${getTypeStyles(
+                        op.type
+                      )}`}
+                    >
+                      {op.type}
+                    </span>
+
+                    <span className="text-xs text-slate-500 font-mono">
+                      {new Date(op.created_at).toLocaleTimeString()}
+                    </span>
                   </div>
-                )}
+
+                  {/* CUSTOMER */}
+                  <div className="mb-2">
+                    <div className="text-sm text-slate-400 mb-1">
+                      Customer
+                    </div>
+                    <div className="font-semibold text-slate-200">
+                      {op.customer_name}
+                    </div>
+                  </div>
+
+                  {/* AMOUNT */}
+                  {op.amount && (
+                    <div>
+                      <div className="text-sm text-slate-400 mb-1">
+                        Amount
+                      </div>
+                      <div className="font-semibold text-white text-lg">
+                        ${op.amount}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
