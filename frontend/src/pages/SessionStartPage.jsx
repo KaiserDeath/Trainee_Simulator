@@ -48,7 +48,10 @@ export default function SessionStartPage({ onSessionCreated }) {
 
         {/* Header */}
         <div className="px-8 pt-8 pb-6 border-b border-slate-700">
-          <h1 className="text-2xl font-bold text-white">Simulador DOS</h1>
+          {/* 🧼 Cleaned Header: Click bypass mechanics completely removed */}
+          <h1 className="text-2xl font-bold text-white select-none">
+            Simulador DOS
+          </h1>
           <p className="text-slate-400 text-sm mt-1">Backoffice Operator Training</p>
         </div>
 

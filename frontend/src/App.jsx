@@ -10,7 +10,13 @@ import VblinkPanel from "./components/games/VblinkPanel";
 
 const SESSION_KEY = "casino_trainer_session";
 
+// 🔑 Set your custom developer password here:
+const DEV_TRAINER_PASSWORD = "admin_trainer_2026";
+
 export default function App() {
+  // ⚡ Keep track of the path in a state variable so React re-renders when it shifts
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
   // Restore session from localStorage on first load
   const [session, setSession] = useState(() => {
     try {
@@ -30,6 +36,21 @@ export default function App() {
 
     return () => {
       socket.disconnect();
+    };
+  }, []);
+
+  // Listen to popstate events (when browser back/forward buttons or pushState triggers occur)
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('locationchange', handleLocationChange);
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('locationchange', handleLocationChange);
     };
   }, []);
 
@@ -57,17 +78,38 @@ export default function App() {
   };
 
   // ── Route matching ──────────────────────────────────────────────────────────
-  const path = window.location.pathname;
-
-  const gameMatch = path.match(/^\/games\/orion-stars\/([^/]+)$/);
-  const goldenDragonMatch = path.match(/^\/games\/golden-dragon\/([^/]+)$/);
-  const vblinkMatch = path.match(/^\/games\/vblink\/([^/]+)$/);
-  const isTrainer = path === "/trainer";
+  const gameMatch = currentPath.match(/^\/games\/orion-stars\/([^/]+)$/);
+  const goldenDragonMatch = currentPath.match(/^\/games\/golden-dragon\/([^/]+)$/);
+  const vblinkMatch = currentPath.match(/^\/games\/vblink\/([^/]+)$/);
+  const isTrainer = currentPath === "/trainer";
 
   if (gameMatch) return <OrionStarsPanel session={session} sessionId={gameMatch[1]} />;
   if (goldenDragonMatch) return <GoldenDragonPanel session={session} sessionId={goldenDragonMatch[1]} />;
   if (vblinkMatch) return <VblinkPanel session={session} sessionId={vblinkMatch[1]} />;
-  if (isTrainer) return <TrainerDashboard />;
+  
+  // 🔒 Secure the trainer view utilizing your protection layer
+  if (isTrainer) {
+    // Read the current storage state directly
+    const hasToken = localStorage.getItem('token');
+    
+    // 🔐 INTERACTIVE PROMPT CHALLENGE WHEN VISITING THE /trainer LINK
+    if (!hasToken) {
+      const userInput = window.prompt("🔐 Enter Trainer Access Password:");
+      
+      if (userInput === DEV_TRAINER_PASSWORD) {
+        // Correct Password! Plant token badge to log them in for future visits
+        localStorage.setItem('token', 'allow_trainer_access');
+      } else {
+        // Wrong password or canceled! Boot them back to the landing screen safely
+        alert("❌ Unauthorized Access Denied.");
+        window.history.replaceState({}, '', '/');
+        setTimeout(() => setCurrentPath('/'), 0);
+        return <SessionStartPage onSessionCreated={handleSessionCreated} />;
+      }
+    }
+    
+    return <TrainerDashboard />;
+  }
 
   if (!session) {
     return <SessionStartPage onSessionCreated={handleSessionCreated} />;
