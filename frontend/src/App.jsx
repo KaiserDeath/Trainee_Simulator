@@ -11,7 +11,7 @@ import VblinkPanel from "./components/games/VblinkPanel";
 const SESSION_KEY = "casino_trainer_session";
 
 // 🔑 Set your custom developer password here:
-const DEV_TRAINER_PASSWORD = "admin_trainer_2026";
+const DEV_TRAINER_PASSWORD = "superctrl2023";
 
 export default function App() {
   // ⚡ Keep track of the path in a state variable so React re-renders when it shifts
