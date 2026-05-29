@@ -268,4 +268,63 @@ router.get('/sessions/:id/audit-log', async (
   }
 });
 
+//
+// GET SIMULATOR SETTINGS
+//
+router.get('/settings', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('simulator_settings')
+      .select('*')
+      .eq('key', 'session_timeout_minutes')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching settings from database:', error);
+      return res.json({ sessionTimeoutMinutes: 30 });
+    }
+
+    if (!data) {
+      return res.json({ sessionTimeoutMinutes: 30 });
+    }
+
+    res.json({ sessionTimeoutMinutes: Number(data.value) });
+  } catch (err) {
+    console.error('Unexpected error fetching settings:', err);
+    res.json({ sessionTimeoutMinutes: 30 });
+  }
+});
+
+//
+// POST SIMULATOR SETTINGS
+//
+router.post('/settings', async (req, res) => {
+  const { sessionTimeoutMinutes } = req.body;
+  const minutes = Number(sessionTimeoutMinutes);
+
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return res.status(400).json({ error: 'sessionTimeoutMinutes must be a positive number' });
+  }
+
+  try {
+    const { error } = await supabase
+      .from('simulator_settings')
+      .upsert({
+        key: 'session_timeout_minutes',
+        value: minutes,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' });
+
+    if (error) {
+      console.error('Error saving settings to database:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ message: 'Settings saved successfully', sessionTimeoutMinutes: minutes });
+  } catch (err) {
+    console.error('Unexpected error saving settings:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -260,6 +260,344 @@ The Game Master should eventually evolve from a random generator into a scenario
 
 ---
 
+# Architecture Flow Structure
+
+This section describes how the simulator is wired end-to-end: layers, session lifecycle, operation flow, persistence, and the main code modules.
+
+## System Overview
+
+The application follows a **session-centric, API-driven architecture**:
+
+| Layer | Technology | Role |
+|-------|------------|------|
+| **Client** | React + Vite | Trainee and trainer UIs, game platform panels, operation queue |
+| **API** | Express (Node.js) | REST endpoints for sessions, operations, customers, games, trainer tools |
+| **Realtime** | Socket.IO | Live trainer dashboard updates (`session-created`, `session-updated`) |
+| **Simulation** | Game Master + engines | Sandbox seeding, queue generation, scoring, audit logging |
+| **Persistence** | Supabase (PostgreSQL) | Per-session sandbox state and retained trainee analytics |
+
+```mermaid
+flowchart TB
+  subgraph Client["React Frontend (Vite)"]
+    SSP[SessionStartPage]
+    TD[TraineeDashboard]
+    TR[TrainerDashboard]
+    GP[Game Panels<br/>Orion / Vblink / Golden Dragon]
+    API_CLIENT[api/client.js]
+    SOCK[socket.js]
+  end
+
+  subgraph Server["Node.js Backend"]
+    APP[app.js — Express routes]
+    GM[GameMaster]
+    OGEN[OperationGenerator]
+    QM[QueueManager]
+    SE[SessionEngine]
+    SS[sandboxService]
+    OS[operationService]
+    CS[customerService]
+    GSS[gameSimulationService]
+    SC[scoringService]
+    AL[AuditLogger]
+    SIO[Socket.IO server]
+  end
+
+  subgraph DB["Supabase / PostgreSQL"]
+    TS[(trainee_sessions)]
+    SCU[(sandbox_customers)]
+    SGA[(sandbox_game_accounts)]
+    STH[(sandbox_transaction_history)]
+    SO[(sandbox_operations)]
+    TAL[(trainee_action_logs)]
+  end
+
+  SSP -->|POST /api/sessions/start| APP
+  TD --> API_CLIENT
+  TR --> API_CLIENT
+  TR --> SOCK
+  GP --> API_CLIENT
+  API_CLIENT --> APP
+  SOCK <-->|events| SIO
+
+  APP --> SS
+  APP --> GM
+  APP --> OS
+  APP --> CS
+  APP --> GSS
+  APP --> SE
+
+  GM --> OGEN
+  GM --> QM
+  GM --> SE
+  OS --> SC
+  OS --> GSS
+  OS --> AL
+  SE --> SC
+
+  SS --> TS
+  SS --> SCU
+  SS --> SGA
+  SS --> STH
+  GM --> SO
+  OS --> SO
+  CS --> SCU
+  CS --> STH
+  GSS --> SGA
+  AL --> TAL
+  SE --> TS
+```
+
+---
+
+## Session Lifecycle Flow
+
+Every trainee run is an isolated sandbox session. The flow below matches the current implementation.
+
+```mermaid
+sequenceDiagram
+  participant Trainee as Trainee UI
+  participant API as Express API
+  participant Sandbox as sandboxService
+  participant GM as GameMaster
+  participant DB as Supabase
+
+  Trainee->>API: POST /api/sessions/start { traineeName, durationMinutes }
+  API->>Sandbox: createSandboxSession()
+  Sandbox->>DB: Insert trainee_sessions
+  Sandbox->>DB: Seed sandbox_customers
+  Sandbox->>DB: Seed sandbox_game_accounts
+  Sandbox->>DB: Seed sandbox_transaction_history (pre-session history)
+  API->>GM: startSession(sessionId, durationMs)
+  GM->>GM: generateOperations() immediately
+  GM->>GM: setInterval — periodic operation injection
+  GM->>GM: setTimeout — auto-close session
+  API-->>Trainee: session object (stored in localStorage)
+
+  loop While session active
+    GM->>DB: Insert PENDING sandbox_operations
+    Trainee->>API: GET /api/operations/:sessionId
+    Trainee->>API: POST /api/operations/:id/process { action }
+    API->>DB: Update operation, balances, game accounts
+    API->>DB: Log trainee_action_logs (AuditLogger)
+  end
+
+  alt Trainee submits early
+    Trainee->>API: POST /api/sessions/:id/submit
+  else Timer expires
+    GM->>API: completeSession() via auto-close
+  else Trainer ends session
+    Trainee->>API: POST /api/sessions/:id/stop
+  end
+
+  API->>GM: stopSession(sessionId)
+  API->>SE: submitSession / completeSession
+  SE->>DB: Score operations, persist performance metrics
+  Note over DB: Sandbox rows may be deleted;<br/>session scores and audit logs persist
+```
+
+### Sandbox creation (what gets seeded)
+
+When `createSandboxSession()` runs, the environment is **never empty**:
+
+1. **Session record** — `trainee_sessions` (trainee name, timestamps, status).
+2. **Customers** — cloned baseline profiles with balances in `sandbox_customers`.
+3. **Game accounts** — Orion Stars, Vblink, and Golden Dragon accounts per customer in `sandbox_game_accounts`.
+4. **Movement history** — pre-generated deposits/withdrawals in `sandbox_transaction_history` (operators validate against this before the first live request).
+
+Only after seeding does **Game Master** begin injecting live `sandbox_operations` into the queue.
+
+---
+
+## Runtime Operation Flow
+
+Incoming work is always **manual** on the trainee side. The backend never auto-approves queue items.
+
+```mermaid
+flowchart LR
+  A[GameMaster tick] --> B{QueueManager<br/>can generate?}
+  B -->|no| Z[Wait next interval]
+  B -->|yes| C[Pick weighted operation type]
+  C --> D[OperationGenerator<br/>build payload + amounts]
+  D --> E[(sandbox_operations<br/>status: PENDING)]
+  E --> F[Trainee opens Operations tab]
+  F --> G[Investigate customer /<br/>history / game logs]
+  G --> H{Decision}
+  H -->|Approve / Complete| I[processOperation]
+  H -->|Cancel / Reject| I
+  I --> J[scoringService evaluates<br/>expected vs actual action]
+  I --> K[gameSimulationService<br/>validates game-side actions]
+  I --> L[AuditLogger — handling time,<br/>copies, decisions]
+  I --> M[(Update balances,<br/>operation status, logs)]
+```
+
+**Operation types** generated at runtime (weighted by Game Master):
+
+- `ADD CREDITS` / `WITHDRAW CREDITS` (Movements)
+- `CREATE ACCOUNT` / `RESET PASSWORD` / `REFRESH BALANCE` (Requests)
+
+**Trainee actions** sent to `POST /api/operations/:id/process`:
+
+- Approve, Complete, Cancel, Reject (validated by `scoringService`)
+
+---
+
+## Backend Module Map
+
+```
+backend/src/
+├── server.js              # HTTP server + Socket.IO bootstrap
+├── app.js                 # Express app, CORS, route mounting
+├── config/
+│   └── supabase.js        # Supabase client
+├── routes/
+│   ├── sessionRoutes.js   # Start, stop, submit, delete sessions
+│   ├── operationRoutes.js # Queue fetch + process operations
+│   ├── customerRoutes.js  # Search + movement/game history
+│   ├── gameRoutes.js      # Game account CRUD, recharge, redeem
+│   └── trainerRoutes.js   # Trainer dashboard, audit, analytics
+├── engine/
+│   ├── GameMaster.js      # Session orchestrator, operation injection
+│   ├── OperationGenerator.js
+│   ├── QueueManager.js    # Pending limits + generation interval
+│   ├── SessionEngine.js   # Complete, submit, delete, scoring rollup
+│   └── AuditLogger.js     # trainee_action_logs
+└── services/
+    ├── sandboxService.js       # Session + seed world creation
+    ├── operationService.js     # Queue + process + evaluate
+    ├── customerService.js      # Customer search + history
+    ├── gameSimulationService.js# Game account mutations + validation
+    └── scoringService.js       # Accuracy, timing, expected actions
+```
+
+---
+
+## Frontend Module Map
+
+```
+frontend/src/
+├── App.jsx                    # Routing: session start, trainee, trainer, game panels
+├── api/client.js              # Axios wrapper for all REST calls
+├── sockets/socket.js          # Socket.IO client (trainer live updates)
+├── pages/
+│   ├── SessionStartPage.jsx   # Trainee onboarding + POST /sessions/start
+│   ├── TraineeDashboard.jsx   # Main operator workspace
+│   └── DashboardPage.jsx      # Trainer / supervisor view
+└── components/
+    ├── operations/            # OperationsQueue, OperationCard
+    ├── customers/             # CustomerPanel, search, history
+    ├── games/                 # OrionStars, Vblink, GoldenDragon panels
+    ├── performance/           # Session performance summary
+    └── audit/                 # AuditLogPanel
+```
+
+**Trainee navigation flow:**
+
+1. `SessionStartPage` → creates session → `TraineeDashboard`
+2. **Operations** — Movements and Requests tabs process the live queue
+3. **Customer** — search, header, movement history, game logs
+4. **Games** — opens simulated platform UIs (`/games/orion-stars/:sessionId`, etc.)
+
+---
+
+## REST API Surface
+
+| Prefix | Purpose |
+|--------|---------|
+| `GET /health` | Backend health check |
+| `/api/sessions` | List, start, get, stop, submit, delete sessions |
+| `/api/operations/:sessionId` | Pending operation queue for a session |
+| `/api/operations/:id/process` | Trainee decision on a single operation |
+| `/api/customers/:sessionId` | Customer search within sandbox |
+| `/api/customers/:sessionId/:customerId/history` | Movement + game history |
+| `/api/games/:sessionId/:game/accounts` | Game account search and creation |
+| `/api/games/accounts/:id/recharge` | Simulated add credits on game account |
+| `/api/games/accounts/:id/redeem` | Simulated withdraw credits |
+| `/api/games/accounts/:id/reset-password` | Password reset simulation |
+| `/api/trainer/*` | Trainer dashboard, audit logs, analytics, session admin |
+
+---
+
+## Data Model (Sandbox vs Persistent)
+
+```mermaid
+erDiagram
+  trainee_sessions ||--o{ sandbox_customers : contains
+  trainee_sessions ||--o{ sandbox_operations : generates
+  trainee_sessions ||--o{ trainee_action_logs : audits
+  sandbox_customers ||--o{ sandbox_game_accounts : owns
+  sandbox_customers ||--o{ sandbox_transaction_history : has
+  sandbox_operations }o--|| sandbox_customers : references
+  sandbox_operations }o--o| sandbox_game_accounts : references
+
+  trainee_sessions {
+    uuid id PK
+    text trainee_name
+    text status
+    timestamptz started_at
+    jsonb performance_metrics
+  }
+
+  sandbox_customers {
+    uuid id PK
+    uuid session_id FK
+    text username
+    numeric balance
+  }
+
+  sandbox_game_accounts {
+    uuid id PK
+    uuid session_id FK
+    uuid customer_id FK
+    text game
+    numeric balance
+  }
+
+  sandbox_transaction_history {
+    uuid id PK
+    uuid session_id FK
+    text type
+    numeric amount
+  }
+
+  sandbox_operations {
+    uuid id PK
+    uuid session_id FK
+    text type
+    text status
+    numeric amount
+  }
+
+  trainee_action_logs {
+    uuid id PK
+    uuid session_id FK
+    text action_type
+    jsonb details
+  }
+```
+
+| Data | Lifetime |
+|------|----------|
+| `sandbox_customers`, `sandbox_game_accounts`, `sandbox_transaction_history`, `sandbox_operations` | **Disposable** — tied to the active sandbox; deleted when the session is torn down |
+| `trainee_sessions` (scores, performance), `trainee_action_logs` | **Persistent** — used for evaluation, trainer review, and analytics |
+
+---
+
+## Technology Stack
+
+| Component | Stack |
+|-----------|-------|
+| Frontend | React 18, Vite, Axios, Socket.IO client |
+| Backend | Node.js, Express, Socket.IO |
+| Database | Supabase (PostgreSQL) |
+| Deployment | Backend Dockerfile; frontend `vercel.json` |
+
+Environment variables (typical):
+
+- Backend: `PORT`, `CLIENT_URL`, Supabase URL and service key
+- Frontend: `VITE_API_URL` pointing at the Express API base
+
+---
+
 # Session Isolation
 
 Each trainee session is fully independent.

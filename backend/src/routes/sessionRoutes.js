@@ -56,18 +56,42 @@ router.post('/start', async (req, res) => {
         traineeName
       );
 
-    const minutes = Number(durationMinutes);
-    const durationMs =
-      Number.isFinite(minutes) &&
-      minutes > 0
-        ? Math.round(minutes * 60 * 1000)
-        : 30 * 60 * 1000;
+    let minutes = Number(durationMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      try {
+        const { data, error } = await supabase
+          .from('simulator_settings')
+          .select('value')
+          .eq('key', 'session_timeout_minutes')
+          .maybeSingle();
+        if (!error && data) {
+          minutes = Number(data.value);
+        } else {
+          minutes = 30;
+        }
+      } catch (dbErr) {
+        console.error('Error reading timeout from database, using 30 mins fallback:', dbErr);
+        minutes = 30;
+      }
+    }
+    const durationMs = Math.round(minutes * 60 * 1000);
 
     // START GAMEMASTER
     await GameMaster.startSession(
       session.id,
       durationMs
     );
+
+    // Save selected duration to the session in DB so trainee client can access it
+    try {
+      await supabase
+        .from('trainee_sessions')
+        .update({ duration_minutes: minutes })
+        .eq('id', session.id);
+      session.duration_minutes = minutes;
+    } catch (updateErr) {
+      console.error('Failed to save duration_minutes on trainee_session:', updateErr);
+    }
 
     res.json({
       message:

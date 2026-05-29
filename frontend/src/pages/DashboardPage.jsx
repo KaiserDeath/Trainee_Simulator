@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api, {
   deleteSession as deleteSessionApi,
-  getOperationTimeStats
+  getOperationTimeStats,
+  getSimulatorSettings,
+  updateSimulatorSettings
 } from '../api/client';
 import AuditLogPanel from '../components/audit/AuditLogPanel';
 import socket from '../sockets/socket';
@@ -30,10 +32,41 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState('live'); // 'live', 'report', 'audit'
   const [traineeSearch, setTraineeSearch] = useState('');
   const [operationTimeStats, setOperationTimeStats] = useState(null);
-  const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(() => {
-    const saved = localStorage.getItem('sessionTimeoutMinutes');
-    return saved ? Number(saved) : 30;
-  });
+  const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(30);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
+
+  // Load settings from backend on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await getSimulatorSettings();
+        if (response.data && response.data.sessionTimeoutMinutes !== undefined) {
+          setSessionTimeoutMinutes(response.data.sessionTimeoutMinutes);
+        }
+      } catch (err) {
+        console.error('Failed to load simulator settings from backend', err);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleTimeoutChange = async (minutes) => {
+    const val = Number(minutes);
+    setSessionTimeoutMinutes(val);
+    
+    if (!val || val <= 0) return;
+
+    setSaveStatus('saving');
+    try {
+      await updateSimulatorSettings({ sessionTimeoutMinutes: val });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2500);
+    } catch (err) {
+      console.error('Failed to save settings to backend', err);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
+  };
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -61,13 +94,6 @@ export default function DashboardPage() {
       setLoading(false);
     }
   }, [selectedSession]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      'sessionTimeoutMinutes',
-      String(sessionTimeoutMinutes)
-    );
-  }, [sessionTimeoutMinutes]);
 
   useEffect(() => {
     const handleSessionUpdated = (
@@ -289,16 +315,34 @@ export default function DashboardPage() {
           <>
             <div className="p-4 border-b border-slate-800/50 space-y-4">
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-500 mb-2 font-semibold">
-              Session settings
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                Session settings
+              </p>
+              {saveStatus === 'saving' && (
+                <span className="text-[10px] text-cyan-400 flex items-center gap-1 animate-pulse font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping" />
+                  Syncing...
+                </span>
+              )}
+              {saveStatus === 'saved' && (
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
+                  <span className="inline-block">✓</span> Saved
+                </span>
+              )}
+              {saveStatus === 'error' && (
+                <span className="text-[10px] text-rose-400 font-medium">
+                  ✗ Sync failed
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <input
                 type="number"
                 min="1"
                 value={sessionTimeoutMinutes}
                 onChange={(event) =>
-                  setSessionTimeoutMinutes(
+                  handleTimeoutChange(
                     Number(event.target.value)
                   )
                 }
@@ -310,7 +354,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              This value is saved locally and applies to new sessions.
+              This value is stored in the database and applies globally to all computers.
             </p>
           </div>
 

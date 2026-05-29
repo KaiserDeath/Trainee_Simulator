@@ -57,3 +57,24 @@ CREATE INDEX IF NOT EXISTS idx_sandbox_operations_handling_started_at
 ALTER TABLE sandbox_operations
   ADD COLUMN IF NOT EXISTS customer_balance_at_request NUMERIC,
   ADD COLUMN IF NOT EXISTS game_balance_at_request NUMERIC;
+
+-- Create simulator_settings table for global session configurations
+CREATE TABLE IF NOT EXISTS simulator_settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+COMMENT ON TABLE simulator_settings IS 'Global settings for the simulator system';
+
+-- Seed default timeout if not exists
+INSERT INTO simulator_settings (key, value)
+VALUES ('session_timeout_minutes', '30'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+
+-- Store session duration on each trainee session
+ALTER TABLE trainee_sessions
+  ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 30;
+
+

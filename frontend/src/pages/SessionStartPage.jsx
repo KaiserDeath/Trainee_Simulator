@@ -1,7 +1,5 @@
-import { useState } from "react";
-import client from "../api/client";
-
-const SETTINGS_KEY = 'sessionTimeoutMinutes';
+import { useState, useEffect } from "react";
+import client, { getSimulatorSettings } from "../api/client";
 
 export default function SessionStartPage({ onSessionCreated }) {
   const [firstName, setFirstName] = useState("");
@@ -9,10 +7,21 @@ export default function SessionStartPage({ onSessionCreated }) {
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [sessionDurationMinutes] = useState(() => {
-    const saved = localStorage.getItem(SETTINGS_KEY);
-    return saved ? Number(saved) : 30;
-  });
+  const [sessionDurationMinutes, setSessionDurationMinutes] = useState(30);
+
+  useEffect(() => {
+    const fetchDuration = async () => {
+      try {
+        const response = await getSimulatorSettings();
+        if (response.data && response.data.sessionTimeoutMinutes !== undefined) {
+          setSessionDurationMinutes(response.data.sessionTimeoutMinutes);
+        }
+      } catch (err) {
+        console.error("Failed to load global session duration from backend", err);
+      }
+    };
+    fetchDuration();
+  }, []);
 
   // Step 1 — fill name
   const handleConfirmName = () => {

@@ -1,9 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import client from "../../api/client";
 
 export default function Header({ session, traineeName, onSessionEnded }) {
   const [confirming, setConfirming] = useState(false);
   const [ending, setEnding] = useState(false);
+
+  const startedAtStr = session?.started_at;
+  const durationMinutes = session?.duration_minutes || 30;
+
+  const [timeLeftSeconds, setTimeLeftSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!startedAtStr || session?.status !== 'active') return;
+
+    const startedAtMs = new Date(startedAtStr).getTime();
+    const endsAtMs = startedAtMs + durationMinutes * 60 * 1000;
+
+    const updateTimer = () => {
+      const remaining = Math.max(0, Math.round((endsAtMs - Date.now()) / 1000));
+      setTimeLeftSeconds(remaining);
+      return remaining;
+    };
+
+    // Calculate and update once on mount / dependency change
+    const initialRemaining = updateTimer();
+    if (initialRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      const remaining = updateTimer();
+      if (remaining <= 0) {
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [startedAtStr, durationMinutes, session?.status]);
+
+  const formatTime = (totalSeconds) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
 
   const handleEndClick = () => setConfirming(true);
   const handleCancel = () => setConfirming(false);
@@ -31,8 +68,21 @@ export default function Header({ session, traineeName, onSessionEnded }) {
           <p className="text-sm text-slate-500">Live Training Session</p>
         </div>
 
-        {/* Right: trainee info + end button */}
+        {/* Right: trainee info + timer + end button */}
         <div className="flex items-center gap-3">
+          {/* Countdown Timer */}
+          {session?.status === 'active' && (
+            <div className={`px-4 py-2 rounded-lg border shadow-sm text-sm font-semibold flex items-center gap-2 transition-all duration-300 ${
+              timeLeftSeconds < 60
+                ? 'bg-red-50 text-red-600 border-red-200 animate-pulse'
+                : 'bg-slate-50 text-slate-700 border-slate-200'
+            }`}>
+              <span className={timeLeftSeconds < 60 ? 'text-red-500 animate-bounce' : 'text-slate-400'}>⏱</span>
+              <span>Time Remaining:</span>
+              <span className="font-mono text-base font-bold">{formatTime(timeLeftSeconds)}</span>
+            </div>
+          )}
+
           <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow text-sm font-medium">
             Operator: {traineeName || session?.trainee_name || "—"}
           </div>

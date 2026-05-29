@@ -153,4 +153,12 @@ export const setSessionTimeLimit = async (
   );
 };
 
-export default api
+export const getSimulatorSettings = async () => {
+  return api.get('/trainer/settings');
+};
+
+export const updateSimulatorSettings = async (settings) => {
+  return api.post('/trainer/settings', settings);
+};
+
+export default api;
