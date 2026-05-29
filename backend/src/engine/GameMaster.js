@@ -2,7 +2,6 @@ import { supabase } from '../config/supabase.js';
 import { generateOperation } from '../engine/OperationGenerator.js';
 import {
   canGenerateOperations,
-  getGenerationVolume,
   getPendingCount,
   QUEUE_LIMITS
 } from './QueueManager.js';
@@ -286,8 +285,47 @@ class GameMaster {
       // GENERATION VOLUME
       // =========================
 
-      const numberOfOperations =
-        getGenerationVolume();
+      let minOpm = 2;
+      let maxOpm = 4;
+      try {
+        const { data: minData } = await supabase
+          .from('simulator_settings')
+          .select('value')
+          .eq('key', 'min_opm')
+          .maybeSingle();
+
+        const { data: maxData } = await supabase
+          .from('simulator_settings')
+          .select('value')
+          .eq('key', 'max_opm')
+          .maybeSingle();
+
+        if (minData && minData.value !== undefined) {
+          minOpm = Number(minData.value);
+        }
+        if (maxData && maxData.value !== undefined) {
+          maxOpm = Number(maxData.value);
+        }
+      } catch (dbErr) {
+        console.error('Failed to fetch OPM settings from database, using defaults:', dbErr);
+      }
+
+      // Pick a random OPM in the range
+      const range = maxOpm - minOpm;
+      const selectedOpm = range > 0
+        ? Math.random() * range + minOpm
+        : minOpm;
+
+      // Translate OPM to Operations for this 30s tick (1/2 of a minute)
+      const expectedOps = selectedOpm / 2;
+      const baseOps = Math.floor(expectedOps);
+      const remainder = expectedOps - baseOps;
+      const numberOfOperations = Math.random() < remainder ? baseOps + 1 : baseOps;
+
+      if (numberOfOperations <= 0) {
+        console.log(`Session ${sessionId}: 0 operations generated for this tick (OPM range: ${minOpm}-${maxOpm})`);
+        return;
+      }
 
       const operations = [];
       const pendingAddExposure =

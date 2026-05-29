@@ -116,6 +116,7 @@ export default function TraineeDashboard({ session, onSessionEnded }) {
             session={sessionState}
             traineeName={sessionState?.trainee_name}
             onSessionEnded={onSessionEnded}
+            onRefreshSession={fetchSessionState}
           />
         }
       >

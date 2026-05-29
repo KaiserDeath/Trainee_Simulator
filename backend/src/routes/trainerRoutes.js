@@ -273,25 +273,36 @@ router.get('/sessions/:id/audit-log', async (
 //
 router.get('/settings', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data: timeoutData, error: timeoutErr } = await supabase
       .from('simulator_settings')
       .select('*')
       .eq('key', 'session_timeout_minutes')
       .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching settings from database:', error);
-      return res.json({ sessionTimeoutMinutes: 30 });
+    const { data: minOpmData, error: minOpmErr } = await supabase
+      .from('simulator_settings')
+      .select('*')
+      .eq('key', 'min_opm')
+      .maybeSingle();
+
+    const { data: maxOpmData, error: maxOpmErr } = await supabase
+      .from('simulator_settings')
+      .select('*')
+      .eq('key', 'max_opm')
+      .maybeSingle();
+
+    if (timeoutErr || minOpmErr || maxOpmErr) {
+      console.error('Error fetching settings from database:', timeoutErr || minOpmErr || maxOpmErr);
     }
 
-    if (!data) {
-      return res.json({ sessionTimeoutMinutes: 30 });
-    }
-
-    res.json({ sessionTimeoutMinutes: Number(data.value) });
+    res.json({
+      sessionTimeoutMinutes: timeoutData ? Number(timeoutData.value) : 30,
+      minOpm: minOpmData ? Number(minOpmData.value) : 2,
+      maxOpm: maxOpmData ? Number(maxOpmData.value) : 4
+    });
   } catch (err) {
     console.error('Unexpected error fetching settings:', err);
-    res.json({ sessionTimeoutMinutes: 30 });
+    res.json({ sessionTimeoutMinutes: 30, minOpm: 2, maxOpm: 4 });
   }
 });
 
@@ -299,28 +310,72 @@ router.get('/settings', async (req, res) => {
 // POST SIMULATOR SETTINGS
 //
 router.post('/settings', async (req, res) => {
-  const { sessionTimeoutMinutes } = req.body;
-  const minutes = Number(sessionTimeoutMinutes);
+  const { sessionTimeoutMinutes, minOpm, maxOpm } = req.body;
+  const updates = [];
 
-  if (!Number.isFinite(minutes) || minutes <= 0) {
-    return res.status(400).json({ error: 'sessionTimeoutMinutes must be a positive number' });
+  if (sessionTimeoutMinutes !== undefined) {
+    const minutes = Number(sessionTimeoutMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      return res.status(400).json({ error: 'sessionTimeoutMinutes must be a positive number' });
+    }
+    updates.push({
+      key: 'session_timeout_minutes',
+      value: minutes,
+      updated_at: new Date().toISOString()
+    });
+  }
+
+  if (minOpm !== undefined) {
+    const minVal = Number(minOpm);
+    if (!Number.isFinite(minVal) || minVal < 0) {
+      return res.status(400).json({ error: 'minOpm must be a non-negative number' });
+    }
+    updates.push({
+      key: 'min_opm',
+      value: minVal,
+      updated_at: new Date().toISOString()
+    });
+  }
+
+  if (maxOpm !== undefined) {
+    const maxVal = Number(maxOpm);
+    if (!Number.isFinite(maxVal) || maxVal < 0) {
+      return res.status(400).json({ error: 'maxOpm must be a non-negative number' });
+    }
+    updates.push({
+      key: 'max_opm',
+      value: maxVal,
+      updated_at: new Date().toISOString()
+    });
+  }
+
+  if (minOpm !== undefined && maxOpm !== undefined) {
+    if (Number(minOpm) > Number(maxOpm)) {
+      return res.status(400).json({ error: 'minOpm cannot be greater than maxOpm' });
+    }
   }
 
   try {
-    const { error } = await supabase
-      .from('simulator_settings')
-      .upsert({
-        key: 'session_timeout_minutes',
-        value: minutes,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'key' });
-
-    if (error) {
-      console.error('Error saving settings to database:', error);
-      return res.status(500).json({ error: error.message });
+    for (const update of updates) {
+      const { error } = await supabase
+        .from('simulator_settings')
+        .upsert(update, { onConflict: 'key' });
+      if (error) {
+        console.error(`Error saving settings key ${update.key} to database:`, error);
+        return res.status(500).json({ error: error.message });
+      }
     }
 
-    res.json({ message: 'Settings saved successfully', sessionTimeoutMinutes: minutes });
+    const { data: timeoutData } = await supabase.from('simulator_settings').select('*').eq('key', 'session_timeout_minutes').maybeSingle();
+    const { data: minOpmData } = await supabase.from('simulator_settings').select('*').eq('key', 'min_opm').maybeSingle();
+    const { data: maxOpmData } = await supabase.from('simulator_settings').select('*').eq('key', 'max_opm').maybeSingle();
+
+    res.json({
+      message: 'Settings saved successfully',
+      sessionTimeoutMinutes: timeoutData ? Number(timeoutData.value) : 30,
+      minOpm: minOpmData ? Number(minOpmData.value) : 2,
+      maxOpm: maxOpmData ? Number(maxOpmData.value) : 4
+    });
   } catch (err) {
     console.error('Unexpected error saving settings:', err);
     res.status(500).json({ error: err.message });

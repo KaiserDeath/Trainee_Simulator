@@ -33,6 +33,8 @@ export default function DashboardPage() {
   const [traineeSearch, setTraineeSearch] = useState('');
   const [operationTimeStats, setOperationTimeStats] = useState(null);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(30);
+  const [minOpm, setMinOpm] = useState(2);
+  const [maxOpm, setMaxOpm] = useState(4);
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
 
   // Load settings from backend on mount
@@ -40,8 +42,16 @@ export default function DashboardPage() {
     const loadSettings = async () => {
       try {
         const response = await getSimulatorSettings();
-        if (response.data && response.data.sessionTimeoutMinutes !== undefined) {
-          setSessionTimeoutMinutes(response.data.sessionTimeoutMinutes);
+        if (response.data) {
+          if (response.data.sessionTimeoutMinutes !== undefined) {
+            setSessionTimeoutMinutes(response.data.sessionTimeoutMinutes);
+          }
+          if (response.data.minOpm !== undefined) {
+            setMinOpm(response.data.minOpm);
+          }
+          if (response.data.maxOpm !== undefined) {
+            setMaxOpm(response.data.maxOpm);
+          }
         }
       } catch (err) {
         console.error('Failed to load simulator settings from backend', err);
@@ -59,6 +69,52 @@ export default function DashboardPage() {
     setSaveStatus('saving');
     try {
       await updateSimulatorSettings({ sessionTimeoutMinutes: val });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2500);
+    } catch (err) {
+      console.error('Failed to save settings to backend', err);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
+  };
+
+  const handleMinOpmChange = async (val) => {
+    const minVal = Number(val);
+    setMinOpm(minVal);
+    if (minVal < 0) return;
+
+    // Validate minOpm <= maxOpm, adjust max if needed
+    const newMax = Math.max(maxOpm, minVal);
+    if (newMax !== maxOpm) {
+      setMaxOpm(newMax);
+    }
+
+    setSaveStatus('saving');
+    try {
+      await updateSimulatorSettings({ minOpm: minVal, maxOpm: newMax });
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2500);
+    } catch (err) {
+      console.error('Failed to save settings to backend', err);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 4000);
+    }
+  };
+
+  const handleMaxOpmChange = async (val) => {
+    const maxVal = Number(val);
+    setMaxOpm(maxVal);
+    if (maxVal < 0) return;
+
+    // Validate maxOpm >= minOpm, adjust min if needed
+    const newMin = Math.min(minOpm, maxVal);
+    if (newMin !== minOpm) {
+      setMinOpm(newMin);
+    }
+
+    setSaveStatus('saving');
+    try {
+      await updateSimulatorSettings({ minOpm: newMin, maxOpm: maxVal });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2500);
     } catch (err) {
@@ -355,6 +411,57 @@ export default function DashboardPage() {
             </div>
             <p className="mt-2 text-xs text-slate-500">
               This value is stored in the database and applies globally to all computers.
+            </p>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-800/50">
+            <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-2">
+              Difficulty settings
+            </p>
+            <div className="space-y-3 bg-slate-950/40 p-3 rounded-lg border border-slate-800/40">
+              <div>
+                <label className="text-[11px] text-slate-400 block mb-1">
+                  Min operations per minute (OPM)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={minOpm}
+                    onChange={(event) =>
+                      handleMinOpmChange(
+                        Number(event.target.value)
+                      )
+                    }
+                    className="w-20 rounded-lg border border-slate-700 bg-slate-900 text-white px-3 py-1.5 text-xs"
+                    aria-label="Minimum operations per minute"
+                  />
+                  <span className="text-slate-500 text-xs">min rate</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-400 block mb-1">
+                  Max operations per minute (OPM)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={maxOpm}
+                    onChange={(event) =>
+                      handleMaxOpmChange(
+                        Number(event.target.value)
+                      )
+                    }
+                    className="w-20 rounded-lg border border-slate-700 bg-slate-900 text-white px-3 py-1.5 text-xs"
+                    aria-label="Maximum operations per minute"
+                  />
+                  <span className="text-slate-500 text-xs">max rate</span>
+                </div>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Sets the operations range per minute. Difficulty dynamically updates in real-time.
             </p>
           </div>
 

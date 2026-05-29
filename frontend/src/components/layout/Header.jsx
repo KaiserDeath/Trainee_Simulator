@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import client from "../../api/client";
 
-export default function Header({ session, traineeName, onSessionEnded }) {
+export default function Header({ session, traineeName, onSessionEnded, onRefreshSession }) {
   const [confirming, setConfirming] = useState(false);
   const [ending, setEnding] = useState(false);
 
@@ -49,13 +49,18 @@ export default function Header({ session, traineeName, onSessionEnded }) {
     try {
       setEnding(true);
       await client.post(`/sessions/${session.id}/stop`);
+      if (onRefreshSession) {
+        await onRefreshSession();
+      } else {
+        onSessionEnded();
+      }
     } catch (err) {
       console.error("Failed to stop session:", err);
       // Even if API fails, clear session locally
+      onSessionEnded();
     } finally {
       setEnding(false);
       setConfirming(false);
-      onSessionEnded();
     }
   };
 

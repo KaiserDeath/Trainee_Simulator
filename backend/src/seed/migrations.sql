@@ -73,6 +73,13 @@ INSERT INTO simulator_settings (key, value)
 VALUES ('session_timeout_minutes', '30'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
+-- Seed default OPM range
+INSERT INTO simulator_settings (key, value)
+VALUES 
+  ('min_opm', '2'::jsonb),
+  ('max_opm', '4'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+
 -- Store session duration on each trainee session
 ALTER TABLE trainee_sessions
   ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 30;
