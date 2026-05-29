@@ -80,6 +80,8 @@ export default function OperationsQueue({
   const [activeTab, setActiveTab] = useState('movements');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestForm, setRequestForm] = useState({});
+  // Keeps track of operation IDs that have already logged a selection action to prevent duplicates
+  const [trackedOperations, setTrackedOperations] = useState([]);
 
   const fetchOperations = useCallback(async () => {
     try {
@@ -139,7 +141,7 @@ export default function OperationsQueue({
     setRequestForm(getInitialRequestForm(operation));
   };
 
-  // ── ORIGINAL COPY LOGIC (untouched) ────────────────────────────────────
+  // ── RESTRUCTURED ACTION COPIED LOGIC ────────────────────────────────────
   const getCopiedIdentifier = operation => {
     if (operation.type === 'CREATE ACCOUNT') {
       return {
@@ -156,13 +158,11 @@ export default function OperationsQueue({
     };
   };
 
-  const copyOperationIdentifier = async operation => {
+  const logManualSelection = useCallback(async (operation) => {
     const copied = getCopiedIdentifier(operation);
     if (!copied.value) return;
 
     try {
-      await navigator.clipboard.writeText(copied.value);
-
       await logTraineeAction(session.id, copied.actionType, {
         operationId: operation.id,
         operationType: operation.type,
@@ -172,10 +172,55 @@ export default function OperationsQueue({
         copiedValue: copied.value,
         timestamp: new Date().toISOString()
       });
+      
+      // Lock this operation so it doesn't log again
+      setTrackedOperations(prev => [...prev, operation.id]);
     } catch (err) {
-      console.error('Failed to copy/log operation start', err);
+      console.error('Failed to log manual selection/operation start', err);
     }
-  };
+  }, [session.id]);
+
+  const movementOperations = useMemo(() => {
+    return operations.filter(op =>
+      op.type === 'ADD CREDITS' || op.type === 'WITHDRAW CREDITS'
+    );
+  }, [operations]);
+
+  const requestOperations = useMemo(() => {
+    return operations.filter(op =>
+      op.type === 'CREATE ACCOUNT' || op.type === 'RESET PASSWORD' || op.type === 'REFRESH BALANCE'
+    );
+  }, [operations]);
+
+  const displayedOperations =
+    activeTab === 'movements' ? movementOperations : requestOperations;
+
+  // ── SELECTION CHANGE EVENT LISTENER ─────────────────────────────────────
+  useEffect(() => {
+    if (isSessionClosed) return;
+
+    const handleSelectionChange = () => {
+      const selectedText = window.getSelection().toString().trim();
+
+      // Condition check: Selection must contain more than 4 characters
+      if (selectedText.length > 4) {
+        // Find if the selected text matches any active identifier on the current tab view
+        const matchingOperation = displayedOperations.find(op => {
+          const targetConfig = getCopiedIdentifier(op);
+          return targetConfig.value === selectedText && !trackedOperations.includes(op.id);
+        });
+
+        if (matchingOperation) {
+          logManualSelection(matchingOperation);
+        }
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  }, [displayedOperations, trackedOperations, logManualSelection, isSessionClosed]);
 
   const updateRequestForm = (field, value) => {
     setRequestForm(current => ({
@@ -194,21 +239,6 @@ export default function OperationsQueue({
       ? requestForm.gameId && requestForm.kiosk && requestForm.amount !== ''
       : requestForm.gameId && requestForm.newPassword && requestForm.kiosk;
 
-  const movementOperations = useMemo(() => {
-    return operations.filter(op =>
-      op.type === 'ADD CREDITS' || op.type === 'WITHDRAW CREDITS'
-    );
-  }, [operations]);
-
-  const requestOperations = useMemo(() => {
-    return operations.filter(op =>
-      op.type === 'CREATE ACCOUNT' || op.type === 'RESET PASSWORD' || op.type === 'REFRESH BALANCE'
-    );
-  }, [operations]);
-
-  const displayedOperations =
-    activeTab === 'movements' ? movementOperations : requestOperations;
-
   // ── Derived data helpers ───────────────────────────────────────────────
   const getOperationCode = op => op.operation_code || (op.id || '').slice(0, 8).toUpperCase() || '—';
   const getCustomerName = op => {
@@ -217,7 +247,6 @@ export default function OperationsQueue({
     return op.game_account?.game_username || '—';
   };
 
-  // Mobile Id now shows the game account username (Game ID)
   const getMobileId = op => {
     if (op.type === 'CREATE ACCOUNT') return '—';
     return op.game_account?.game_username || '—';
@@ -284,7 +313,7 @@ export default function OperationsQueue({
           {movementOperations.map(operation => {
             const theme = cardTheme(operation.type);
             const username = getUsername(operation);
-            const mobileId = getMobileId(operation); // game ID
+            const mobileId = getMobileId(operation); 
 
             return (
               <div
@@ -344,22 +373,11 @@ export default function OperationsQueue({
                     <span className="text-[#8D8D8D] break-all">{getCustomerName(operation)}</span>
                   </div>
 
-                  {/* Mobile Id with copy button */}
+                  {/* Mobile Id (Copy button erased) */}
                   <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
                     <strong>Mobile Id</strong>
                     <div className="flex items-center gap-1">
-                      <span className="text-[#8D8D8D] break-all">{mobileId}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyOperationIdentifier(operation);
-                        }}
-                        className="ml-1 px-1.5 py-0.5 text-[11px] rounded border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-                        title="Copy Game ID"
-                      >
-                        Copy
-                      </button>
+                      <span className="text-[#8D8D8D] break-all select-all">{mobileId}</span>
                     </div>
                   </div>
 
@@ -409,8 +427,7 @@ export default function OperationsQueue({
                   {/* Row 2 */}
                   <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
                     <strong>Username</strong>
-                    <span className="text-[#8D8D8D] break-all">{username}</span>
-                    {/* Copy button removed from here */}
+                    <span className="text-[#8D8D8D] break-all select-all">{username}</span>
                   </div>
                   <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
                     <strong>Email</strong>
@@ -459,7 +476,6 @@ export default function OperationsQueue({
             requestOperations.map(operation => {
               const username = getUsername(operation);
               const game = getGame(operation);
-              // Game ID is empty for CREATE ACCOUNT, otherwise the game account username
               const gameId =
                 operation.type === 'CREATE ACCOUNT'
                   ? ''
@@ -476,9 +492,6 @@ export default function OperationsQueue({
                   })
                 : '—';
 
-              // Determine which identifier will be copied
-              const isCreateAccount = operation.type === 'CREATE ACCOUNT';
-
               return (
                 <div
                   key={operation.id}
@@ -489,22 +502,9 @@ export default function OperationsQueue({
                     alignItems: 'center'
                   }}
                 >
-                  {/* Username – shows copy button only for CREATE ACCOUNT */}
-                  <div className="font-[Inter] text-center text-[#292929] text-[12px] sm:text-[13px] font-[500] flex items-center justify-center gap-1">
+                  {/* Username – Copy button erased */}
+                  <div className="font-[Inter] text-center text-[#292929] text-[12px] sm:text-[13px] font-[500] flex items-center justify-center gap-1 select-all">
                     <span>{username}</span>
-                    {isCreateAccount && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyOperationIdentifier(operation);
-                        }}
-                        className="ml-1 px-1.5 py-0.5 text-[11px] rounded border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-                        title="Copy Username"
-                      >
-                        Copy
-                      </button>
-                    )}
                   </div>
 
                   {/* Game */}
@@ -512,22 +512,9 @@ export default function OperationsQueue({
                     {game}
                   </div>
 
-                  {/* Game Id – shows copy button for RESET PASSWORD and REFRESH BALANCE */}
-                  <div className="font-[Inter] text-center text-[#292929] text-[12px] sm:text-[13px] font-[500] flex items-center justify-center gap-1">
+                  {/* Game Id – Copy button erased */}
+                  <div className="font-[Inter] text-center text-[#292929] text-[12px] sm:text-[13px] font-[500] flex items-center justify-center gap-1 select-all">
                     <span>{gameId || '—'}</span>
-                    {!isCreateAccount && gameId && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyOperationIdentifier(operation);
-                        }}
-                        className="ml-1 px-1.5 py-0.5 text-[11px] rounded border border-slate-300 text-slate-600 hover:bg-slate-100 transition"
-                        title="Copy Game ID"
-                      >
-                        Copy
-                      </button>
-                    )}
                   </div>
 
                   {/* Type */}
@@ -603,7 +590,7 @@ export default function OperationsQueue({
         </div>
       )}
 
-      {/* REQUEST MODAL (unchanged) */}
+      {/* REQUEST MODAL */}
       {selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-130 rounded-lg bg-white shadow-xl">

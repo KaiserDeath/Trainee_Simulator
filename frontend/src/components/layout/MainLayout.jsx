@@ -7,7 +7,7 @@ export default function MainLayout({
     <div className="flex h-screen bg-slate-100">
       
       {/* SIDEBAR */}
-      <aside className="w-64 bg-slate-900 text-white flex flex-col">
+      <aside className="w-64 bg-slate-900 text-white flex flex-col select-none"> {/* 👈 Added select-none here to keep layout text static */}
         
         <div className="p-5 border-b border-slate-700">
           <h1 className="text-2xl font-bold">
@@ -28,7 +28,7 @@ export default function MainLayout({
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* TOPBAR */}
-        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm">
+        <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm select-none"> {/* 👈 Added select-none to avoid accidental header selections */}
           {header}
         </header>
 

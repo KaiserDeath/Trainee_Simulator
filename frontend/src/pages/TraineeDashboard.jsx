@@ -15,6 +15,18 @@ export default function TraineeDashboard({ session, onSessionEnded }) {
   const [sessionState, setSessionState] = useState(session);
   const [sessionReport, setSessionReport] = useState(null);
 
+  // ── OPTIMIZED: MEMOIZED SELECTION CLEANUP UPON NAV VIEW NAVIGATION ──
+  const handleViewChange = useCallback((newView) => {
+    setActiveView(newView);
+    try {
+      if (window.getSelection) {
+        window.getSelection().removeAllRanges();
+      }
+    } catch (err) {
+      console.error('Failed to clear DOM text ranges safely:', err);
+    }
+  }, []);
+
   const handleMissingSession = useCallback(() => {
     onSessionEnded();
   }, [onSessionEnded]);
@@ -108,7 +120,7 @@ export default function TraineeDashboard({ session, onSessionEnded }) {
         sidebar={
           <Sidebar
             activeView={activeView}
-            onViewChange={setActiveView}
+            onViewChange={handleViewChange} // Safe, stable reference
           />
         }
         header={

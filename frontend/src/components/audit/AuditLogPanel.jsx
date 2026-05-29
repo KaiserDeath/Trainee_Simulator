@@ -25,10 +25,11 @@ export default function AuditLogPanel({ sessionId }) {
     return () => clearInterval(interval);
   }, [sessionId]);
 
+  // ── UPDATED LOG DISPLAY LABELS ──────────────────────────────────────────
   const formatActionType = (actionType) => {
     const map = {
-      USERNAME_COPIED: 'Username Copied',
-      GAME_ID_COPIED: 'Game ID Copied',
+      USERNAME_COPIED: 'Username Selected',
+      GAME_ID_COPIED: 'Game ID Selected',
       OPERATION_STARTED: 'Operation Started',
       APPROVED: 'Operation Approved',
       CANCELLED: 'Operation Cancelled',
