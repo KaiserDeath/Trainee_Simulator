@@ -91,7 +91,12 @@ export default function DashboardPage() {
 
     setSaveStatus('saving');
     try {
-      await updateSimulatorSettings({ minOpm: minVal, maxOpm: newMax });
+      // FIX: Include sessionTimeoutMinutes in the request body
+      await updateSimulatorSettings({ 
+        sessionTimeoutMinutes, 
+        minOpm: minVal, 
+        maxOpm: newMax 
+      });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2500);
     } catch (err) {
@@ -114,7 +119,12 @@ export default function DashboardPage() {
 
     setSaveStatus('saving');
     try {
-      await updateSimulatorSettings({ minOpm: newMin, maxOpm: maxVal });
+      // FIX: Include sessionTimeoutMinutes in the request body
+      await updateSimulatorSettings({ 
+        sessionTimeoutMinutes, 
+        minOpm: newMin, 
+        maxOpm: maxVal 
+      });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2500);
     } catch (err) {
