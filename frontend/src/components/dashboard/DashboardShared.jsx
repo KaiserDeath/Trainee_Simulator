@@ -159,21 +159,18 @@ function formatDurationValue(seconds) {
     return 'N/A';
   }
 
-  const totalSeconds = Math.max(
-    0,
-    Math.round(value)
-  );
-  const minutes = Math.floor(
-    totalSeconds / 60
-  );
-  const remainingSeconds =
-    totalSeconds % 60;
+  const totalSeconds = Math.max(0, value);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+  const secondsLabel = Number.isInteger(remainingSeconds)
+    ? `${remainingSeconds}s`
+    : `${remainingSeconds.toFixed(1)}s`;
 
   if (minutes > 0) {
-    return `${minutes}m ${remainingSeconds}s`;
+    return `${minutes}m ${secondsLabel}`;
   }
 
-  return `${remainingSeconds}s`;
+  return secondsLabel;
 }
 
 function OperationStatsTable({
@@ -207,15 +204,22 @@ function OperationStatsTable({
           {rows.map((row, index) => (
             <tr
               key={`${row.traineeName || 'all'}-${row.type}-${index}`}
-              className="hover:bg-slate-800/30"
+              className={row.child ? 'bg-slate-900/70' : 'hover:bg-slate-800/30'}
             >
               {showTrainee && (
                 <td className="px-4 py-3 font-medium text-slate-200">
                   {row.traineeName}
                 </td>
               )}
-              <td className="px-4 py-3 text-slate-300">
-                {row.type}
+              <td className={`px-4 py-3 text-slate-300 ${row.child ? 'pl-10 text-slate-400' : ''}`}>
+                {row.child ? (
+                  <span className="inline-flex items-center gap-2 text-slate-400">
+                    <span className="text-slate-500">↳</span>
+                    {row.type}
+                  </span>
+                ) : (
+                  row.type
+                )}
               </td>
               <td className="px-4 py-3 text-right font-mono text-slate-400">
                 {row.count}

@@ -600,7 +600,8 @@ export async function buildOperationTimeStats() {
       handling_time_seconds,
       session:trainee_sessions(
         id,
-        trainee_name
+        trainee_name,
+        started_at
       )
     `)
     .not(
@@ -652,6 +653,8 @@ export async function buildOperationTimeStats() {
     if (!traineeBuckets.has(traineeKey)) {
       traineeBuckets.set(traineeKey, {
         traineeName,
+        sessionId: session.id,
+        startedAt: session.started_at,
         byType: new Map(),
         overall: emptyDurationStats()
       });
@@ -687,6 +690,8 @@ export async function buildOperationTimeStats() {
       Array.from(traineeBuckets.values())
         .map(bucket => ({
           traineeName: bucket.traineeName,
+          sessionId: bucket.sessionId,
+          startedAt: bucket.startedAt,
           overall:
             finalizeDurationStats(
               bucket.overall
