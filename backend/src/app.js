@@ -1,14 +1,13 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
+import './config/loadEnv.js';
 
 import sessionRoutes from './routes/sessionRoutes.js';
 import operationRoutes from './routes/operationRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import gameRoutes from './routes/gameRoutes.js';
 import trainerRoutes from './routes/trainerRoutes.js';
-
-dotenv.config();
 
 const app = express();
 

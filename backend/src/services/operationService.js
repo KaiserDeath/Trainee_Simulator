@@ -18,6 +18,10 @@ import {
   logActionEvent
 } from '../engine/AuditLogger.js';
 
+import {
+  getMovementCancellationReason
+} from './operationPolicy.js';
+
 const operationSelect = `
   *,
   customer:sandbox_customers(
@@ -332,25 +336,39 @@ async function markOperationProcessed({
   action,
   traineeName,
   isCorrect,
-  processingSeconds
+  processingSeconds,
+  cancellationReason
 }) {
+  const updates = {
+    status: action,
+    processed_at:
+      new Date().toISOString(),
+    processed_by: traineeName,
+    is_correct: isCorrect,
+    processing_time_seconds:
+      processingSeconds,
+    cancellation_reason:
+      cancellationReason || null
+  };
+
   const { data, error } = await supabase
     .from('sandbox_operations')
-    .update({
-      status: action,
-      processed_at:
-        new Date().toISOString(),
-      processed_by: traineeName,
-      is_correct: isCorrect,
-      processing_time_seconds:
-        processingSeconds
-    })
+    .update(updates)
     .eq('id', operation.id)
+    .eq('status', 'PENDING')
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw error;
+  }
+
+  if (!data) {
+    const conflict = new Error(
+      'Operation already processed'
+    );
+    conflict.statusCode = 409;
+    throw conflict;
   }
 
   return data;
@@ -361,14 +379,20 @@ async function createAuditHistory({
   action,
   traineeName,
   requestData,
-  isCorrect
+  isCorrect,
+  cancellationReason
 }) {
   const details =
     isRequestOperation(operation.type)
       ? ` Submitted data: ${JSON.stringify(requestData)}.`
       : '';
 
-  const plainDescription = `Operation ${action} by ${traineeName}. Correct: ${isCorrect}.${details}`;
+  const cancellationDetails =
+    cancellationReason
+      ? ` Cancellation reason: ${cancellationReason}.`
+      : '';
+
+  const plainDescription = `Operation ${action} by ${traineeName}. Correct: ${isCorrect}.${details}${cancellationDetails}`;
 
   let description = plainDescription;
 
@@ -384,6 +408,7 @@ async function createAuditHistory({
       manager: traineeName,
       status: action === 'APPROVED' ? 'Approved' : 'Cancelled',
       isCorrect,
+      cancellationReason,
       details: plainDescription
     };
     description = JSON.stringify(descriptionObj);
@@ -518,6 +543,13 @@ export async function processOperation(
       operationId
     );
 
+  const cancellationReason =
+    getMovementCancellationReason({
+      operation,
+      action,
+      requestData
+    });
+
   const isCorrect =
     await evaluateGameBackofficeWork(
       operation,
@@ -556,7 +588,8 @@ export async function processOperation(
       action,
       traineeName,
       isCorrect,
-      processingSeconds
+      processingSeconds,
+      cancellationReason
     });
 
   await saveRequestPayload(
@@ -575,7 +608,8 @@ export async function processOperation(
     action,
     traineeName,
     requestData,
-    isCorrect
+    isCorrect,
+    cancellationReason
   });
 
   await logActionEvent({
@@ -588,7 +622,8 @@ export async function processOperation(
       isCorrect,
       processingSeconds,
       handlingStartedAt,
-      handlingSeconds
+      handlingSeconds,
+      cancellationReason
     }
   });
 

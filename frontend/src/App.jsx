@@ -13,6 +13,22 @@ const SESSION_KEY = "casino_trainer_session";
 // 🔑 Set your custom developer password here:
 const DEV_TRAINER_PASSWORD = "superctrl2023";
 
+function getDocumentTitle(path) {
+  if (/^\/games\/orion-stars\/[^/]+$/.test(path)) {
+    return 'Orion Stars';
+  }
+
+  if (/^\/games\/vblink\/[^/]+$/.test(path)) {
+    return 'Vblink';
+  }
+
+  if (/^\/games\/golden-dragon\/[^/]+$/.test(path)) {
+    return 'Golden Dragon';
+  }
+
+  return 'Simulador DOS';
+}
+
 export default function App() {
   // ⚡ Keep track of the path in a state variable so React re-renders when it shifts
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -38,6 +54,10 @@ export default function App() {
       socket.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    document.title = getDocumentTitle(currentPath);
+  }, [currentPath]);
 
   // Listen to popstate events (when browser back/forward buttons or pushState triggers occur)
   useEffect(() => {

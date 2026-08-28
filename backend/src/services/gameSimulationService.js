@@ -1,6 +1,11 @@
 import { supabase }
   from '../config/supabase.js';
 
+import {
+  GAME_HISTORY_TABLE,
+  gameHistoryMatchesOperation
+} from './historyPolicy.js';
+
 const normalizeGame = game =>
   String(game ?? '')
     .replaceAll('-', ' ')
@@ -45,6 +50,7 @@ function normalizeHistoryItem(item) {
     );
 
   const game =
+    item.game ||
     details.game ||
     inferGameFromDescription(
       item.description
@@ -239,12 +245,14 @@ async function insertGameHistory({
   description
 }) {
   const { error } = await supabase
-    .from(
-      'sandbox_transaction_history'
-    )
+    .from(GAME_HISTORY_TABLE)
     .insert({
       session_id: account.session_id,
       customer_id: account.customer_id,
+      game_account_id: account.id,
+      game: account.game,
+      game_username:
+        account.game_username,
       type,
       amount,
       description
@@ -569,7 +577,7 @@ export async function getGameAccountHistory({
   customerId
 }) {
   const { data, error } = await supabase
-    .from('sandbox_transaction_history')
+    .from(GAME_HISTORY_TABLE)
     .select('*')
     .eq('session_id', sessionId)
     .eq('customer_id', customerId)
@@ -589,10 +597,14 @@ export async function hasMatchingGameAction({
   type
 }) {
   const { data, error } = await supabase
-    .from(
-      'sandbox_transaction_history'
-    )
-    .select('id')
+    .from(GAME_HISTORY_TABLE)
+    .select(`
+      id,
+      game_account_id,
+      game,
+      game_username,
+      description
+    `)
     .eq(
       'session_id',
       operation.session_id
@@ -603,6 +615,12 @@ export async function hasMatchingGameAction({
     )
     .eq('type', type)
     .eq('amount', operation.amount)
+    .or(
+      [
+        `game_account_id.eq.${operation.game_account_id}`,
+        'game_account_id.is.null'
+      ].join(',')
+    )
     .gte(
       'created_at',
       operation.created_at
@@ -613,7 +631,12 @@ export async function hasMatchingGameAction({
     throw error;
   }
 
-  return data.length > 0;
+  return data.some(row =>
+    gameHistoryMatchesOperation(
+      row,
+      operation
+    )
+  );
 }
 
 export async function findRelatedGameAction({
@@ -621,10 +644,17 @@ export async function findRelatedGameAction({
   type
 }) {
   const { data, error } = await supabase
-    .from(
-      'sandbox_transaction_history'
-    )
-    .select('id, type, amount, created_at, description')
+    .from(GAME_HISTORY_TABLE)
+    .select(`
+      id,
+      game_account_id,
+      game,
+      game_username,
+      type,
+      amount,
+      created_at,
+      description
+    `)
     .eq(
       'session_id',
       operation.session_id
@@ -634,6 +664,12 @@ export async function findRelatedGameAction({
       operation.customer_id
     )
     .eq('type', type)
+    .or(
+      [
+        `game_account_id.eq.${operation.game_account_id}`,
+        'game_account_id.is.null'
+      ].join(',')
+    )
     .gte(
       'created_at',
       operation.created_at
@@ -645,11 +681,6 @@ export async function findRelatedGameAction({
   if (error) {
     throw error;
   }
-
-  const accountUsername =
-    operation.game_account?.game_username;
-  const accountGame =
-    operation.game_account?.game;
 
   const parsedRows = (data || []).map(row => {
     let details = {};
@@ -670,13 +701,11 @@ export async function findRelatedGameAction({
 
   return (
     parsedRows.find(row =>
-      (!accountGame ||
-        row.details.game === accountGame) &&
-      (!accountUsername ||
-        row.details.mobileId === accountUsername ||
-        row.details.playerId === accountUsername)
+      gameHistoryMatchesOperation(
+        row,
+        operation
+      )
     ) ||
-    parsedRows[0] ||
     null
   );
 }

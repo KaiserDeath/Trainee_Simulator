@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import api, { logTraineeAction } from '../../api/client';
+import MovementConfirmationModal from './MovementConfirmationModal';
 
 const requestTitles = {
   'CREATE ACCOUNT': 'Create Account',
@@ -80,6 +87,11 @@ export default function OperationsQueue({
   const [activeTab, setActiveTab] = useState('movements');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestForm, setRequestForm] = useState({});
+  const [movementDecision, setMovementDecision] = useState(null);
+  const [movementSubmitting, setMovementSubmitting] = useState(false);
+  const [movementError, setMovementError] = useState('');
+  const movementTriggerRef = useRef(null);
+  const movementFallbackRef = useRef(null);
   // Keeps track of operation IDs that have already logged a selection action to prevent duplicates
   const [trackedOperations, setTrackedOperations] = useState([]);
 
@@ -114,7 +126,12 @@ export default function OperationsQueue({
   }, [fetchOperations]);
 
   const processOperation = async (operationId, action, requestData) => {
-    if (isSessionClosed) return;
+    if (isSessionClosed) {
+      return {
+        ok: false,
+        error: 'The session is already closed.'
+      };
+    }
 
     try {
       await api.post(`/operations/${operationId}/process`, {
@@ -123,16 +140,85 @@ export default function OperationsQueue({
         requestData
       });
 
-      fetchOperations();
-      setSelectedRequest(null);
-      setRequestForm({});
+      await fetchOperations();
+
+      return { ok: true };
     } catch (err) {
       if (err.response?.status === 404) {
         onSessionMissing?.();
-        return;
       }
       console.error(err);
+
+      return {
+        ok: false,
+        error:
+          err.response?.data?.error ||
+          'Unable to process this transaction. Please try again.'
+      };
     }
+  };
+
+  const openMovementConfirmation = (
+    operation,
+    action,
+    trigger
+  ) => {
+    if (isSessionClosed) return;
+
+    movementTriggerRef.current = trigger;
+    setMovementError('');
+    setMovementDecision({
+      operation,
+      action
+    });
+  };
+
+  const closeMovementConfirmation = () => {
+    if (movementSubmitting) return;
+
+    setMovementDecision(null);
+    setMovementError('');
+
+    requestAnimationFrame(() => {
+      const focusTarget =
+        movementTriggerRef.current?.isConnected
+          ? movementTriggerRef.current
+          : movementFallbackRef.current;
+      focusTarget?.focus();
+    });
+  };
+
+  const confirmMovementDecision = async cancellationReason => {
+    if (!movementDecision || movementSubmitting) return;
+
+    setMovementSubmitting(true);
+    setMovementError('');
+
+    const requestData =
+      movementDecision.action === 'CANCELLED'
+        ? { cancellationReason }
+        : undefined;
+    const result = await processOperation(
+      movementDecision.operation.id,
+      movementDecision.action,
+      requestData
+    );
+
+    setMovementSubmitting(false);
+
+    if (result.ok) {
+      setMovementDecision(null);
+      requestAnimationFrame(() => {
+        const focusTarget =
+          movementTriggerRef.current?.isConnected
+            ? movementTriggerRef.current
+            : movementFallbackRef.current;
+        focusTarget?.focus();
+      });
+      return;
+    }
+
+    setMovementError(result.error);
   };
 
   const openRequestModal = operation => {
@@ -229,9 +315,18 @@ export default function OperationsQueue({
     }));
   };
 
-  const confirmRequest = () => {
+  const confirmRequest = async () => {
     if (!selectedRequest) return;
-    processOperation(selectedRequest.id, 'APPROVED', requestForm);
+    const result = await processOperation(
+      selectedRequest.id,
+      'APPROVED',
+      requestForm
+    );
+
+    if (result.ok) {
+      setSelectedRequest(null);
+      setRequestForm({});
+    }
   };
 
   const isRequestFormComplete =
@@ -285,6 +380,8 @@ export default function OperationsQueue({
       {/* TABS */}
       <div className="flex gap-3 mb-6">
         <button
+          ref={movementFallbackRef}
+          type="button"
           onClick={() => setActiveTab('movements')}
           className={`px-4 py-2 rounded-lg font-medium transition ${
             activeTab === 'movements' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
@@ -293,6 +390,7 @@ export default function OperationsQueue({
           Movements ({movementOperations.length})
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('requests')}
           className={`px-4 py-2 rounded-lg font-medium transition ${
             activeTab === 'requests' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
@@ -392,7 +490,11 @@ export default function OperationsQueue({
                     <div className="flex flex-wrap justify-center gap-2 mt-1 md:mt-2">
                       <button
                         type="button"
-                        onClick={() => processOperation(operation.id, 'APPROVED')}
+                        onClick={event => openMovementConfirmation(
+                          operation,
+                          'APPROVED',
+                          event.currentTarget
+                        )}
                         className="flex flex-col items-center gap-1 rounded-[10px] p-2 w-fit lg:min-w-[72px] hover:shadow-md hover:opacity-90"
                         style={{ background: '#60CA49', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
                       >
@@ -401,25 +503,16 @@ export default function OperationsQueue({
                       </button>
                       <button
                         type="button"
-                        onClick={() => processOperation(operation.id, 'CANCELLED')}
+                        onClick={event => openMovementConfirmation(
+                          operation,
+                          'CANCELLED',
+                          event.currentTarget
+                        )}
                         className="flex flex-col items-center gap-1 rounded-[10px] p-2 w-fit lg:min-w-[72px] hover:shadow-md hover:opacity-90"
                         style={{ background: '#E74F4F', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
                       >
                         <img src="/svg/cancel-fill.svg" className="h-4 w-4" alt="" />
                         <span className="text-xs text-white font-semibold">Cancel</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm('Delete this operation permanently?')) {
-                            processOperation(operation.id, 'CANCELLED');
-                          }
-                        }}
-                        className="flex flex-col items-center gap-1 rounded-[10px] p-2 w-fit lg:min-w-[72px] hover:shadow-md hover:opacity-90"
-                        style={{ background: '#9C9C9C', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                      >
-                        <img src="/svg/trash-fill.svg" className="h-4 w-4" alt="" />
-                        <span className="text-xs text-white font-semibold">Delete</span>
                       </button>
                     </div>
                   </div>
@@ -675,6 +768,16 @@ export default function OperationsQueue({
             </div>
           </div>
         </div>
+      )}
+
+      {movementDecision && (
+        <MovementConfirmationModal
+          action={movementDecision.action}
+          error={movementError}
+          isSubmitting={movementSubmitting}
+          onClose={closeMovementConfirmation}
+          onConfirm={confirmMovementDecision}
+        />
       )}
     </div>
   );

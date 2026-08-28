@@ -1,6 +1,11 @@
 import { supabase }
   from '../config/supabase.js';
 
+import {
+  filterBackendHistoryRows,
+  GAME_HISTORY_TYPE_PATTERN
+} from './historyPolicy.js';
+
 export async function searchSessionCustomers({
   sessionId,
   query = ''
@@ -183,6 +188,11 @@ export async function getCustomerHistory({
     .select('*')
     .eq('session_id', sessionId)
     .eq('customer_id', customerId)
+    .not(
+      'type',
+      'like',
+      GAME_HISTORY_TYPE_PATTERN
+    )
     .order('created_at', {
       ascending: false
     });
@@ -197,5 +207,11 @@ export async function getCustomerHistory({
     .eq('session_id', sessionId)
     .eq('customer_id', customerId);
 
-  return data.map(item => normalizeCustomerHistoryItem(item, gameAccounts || []));
+  return filterBackendHistoryRows(data)
+    .map(item =>
+      normalizeCustomerHistoryItem(
+        item,
+        gameAccounts || []
+      )
+    );
 }
