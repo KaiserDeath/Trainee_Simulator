@@ -5,7 +5,8 @@ import {
   evaluateOperation,
   evaluateRequestOperation,
   isRequestOperation,
-  isValidAction
+  isValidAction,
+  MOVEMENT_TYPES
 } from './scoringService.js';
 
 import {
@@ -43,6 +44,16 @@ const fullOperationSelect = `
   customer:sandbox_customers(*),
   game_account:sandbox_game_accounts(*)
 `;
+
+function operationAlreadyProcessed() {
+  const error = new Error(
+    'Operation already processed'
+  );
+  error.statusCode = 409;
+  error.code =
+    'OPERATION_ALREADY_PROCESSED';
+  return error;
+}
 
 async function getSessionStatus(
   sessionId
@@ -105,12 +116,7 @@ async function getOperationForProcessing(id) {
   }
 
   if (data.status !== 'PENDING') {
-    const alreadyProcessed =
-      new Error(
-        'Operation already processed'
-      );
-    alreadyProcessed.statusCode = 400;
-    throw alreadyProcessed;
+    throw operationAlreadyProcessed();
   }
 
   const sessionStatus = await getSessionStatus(
@@ -126,57 +132,6 @@ async function getOperationForProcessing(id) {
   }
 
   return data;
-}
-
-async function updateBalance(
-  table,
-  id,
-  balance
-) {
-  const { error } = await supabase
-    .from(table)
-    .update({ balance })
-    .eq('id', id);
-
-  if (error) {
-    throw error;
-  }
-}
-
-async function applyMovementSideEffects(
-  operation,
-  action
-) {
-  if (action !== 'APPROVED') {
-    return;
-  }
-
-  if (
-    operation.type === 'ADD CREDITS'
-  ) {
-    await updateBalance(
-      'sandbox_customers',
-      operation.customer_id,
-      Number(
-        operation.customer.balance
-      ) - Number(operation.amount)
-    );
-
-  }
-
-  if (
-    operation.type ===
-    'WITHDRAW CREDITS'
-  ) {
-    await updateBalance(
-      'sandbox_customers',
-      operation.customer_id,
-      Number(
-        operation.customer.balance
-      ) + Number(operation.amount)
-    );
-
-  }
 }
 
 async function evaluateGameBackofficeWork(
@@ -311,13 +266,6 @@ async function applyApprovalSideEffects(
 
     return;
   }
-
-  if (!isRequestOperation(operation.type)) {
-    await applyMovementSideEffects(
-      operation,
-      action
-    );
-  }
 }
 
 function getProcessingSeconds(operation) {
@@ -364,17 +312,13 @@ async function markOperationProcessed({
   }
 
   if (!data) {
-    const conflict = new Error(
-      'Operation already processed'
-    );
-    conflict.statusCode = 409;
-    throw conflict;
+    throw operationAlreadyProcessed();
   }
 
   return data;
 }
 
-async function createAuditHistory({
+function buildAuditHistoryDescription({
   operation,
   action,
   traineeName,
@@ -414,6 +358,14 @@ async function createAuditHistory({
     description = JSON.stringify(descriptionObj);
   }
 
+  return description;
+}
+
+async function createAuditHistory(context) {
+  const { operation } = context;
+  const description =
+    buildAuditHistoryDescription(context);
+
   const { error } = await supabase
     .from(
       'sandbox_transaction_history'
@@ -432,6 +384,48 @@ async function createAuditHistory({
   if (error) {
     throw error;
   }
+}
+
+function throwMovementSettlementError(error) {
+  if (/operation already processed/i.test(error.message)) {
+    throw operationAlreadyProcessed();
+  }
+
+  if (/operation not found/i.test(error.message)) {
+    error.statusCode = 404;
+    error.code = 'OPERATION_NOT_FOUND';
+  } else if (
+    /invalid action|required|must be|insufficient|session is no longer active|reserved movement/i
+      .test(error.message)
+  ) {
+    error.statusCode = 400;
+  }
+
+  throw error;
+}
+
+async function settleAtomicMovement({
+  operation,
+  action,
+  traineeName,
+  cancellationReason
+}) {
+  const { data, error } = await supabase.rpc(
+    'settle_backend_movement_operation',
+    {
+      p_operation_id: operation.id,
+      p_action: action,
+      p_trainee_name: traineeName,
+      p_cancellation_reason:
+        cancellationReason
+    }
+  );
+
+  if (error) {
+    throwMovementSettlementError(error);
+  }
+
+  return data;
 }
 
 async function saveRequestPayload(
@@ -549,6 +543,15 @@ export async function processOperation(
       action,
       requestData
     });
+
+  if (MOVEMENT_TYPES.includes(operation.type)) {
+    return settleAtomicMovement({
+      operation,
+      action,
+      traineeName,
+      cancellationReason
+    });
+  }
 
   const isCorrect =
     await evaluateGameBackofficeWork(

@@ -218,26 +218,6 @@ export async function getGameAccount(
   return data;
 }
 
-async function updateGameBalance(
-  account,
-  nextBalance
-) {
-  const { data, error } = await supabase
-    .from('sandbox_game_accounts')
-    .update({
-      balance: nextBalance
-    })
-    .eq('id', account.id)
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
 async function insertGameHistory({
   account,
   type,
@@ -282,6 +262,49 @@ function buildGameHistoryDescription({
   });
 }
 
+function throwGameMovementError(error) {
+  if (/game account not found/i.test(error.message)) {
+    error.statusCode = 404;
+  } else if (
+    /valid amount|required|unsupported|insufficient/i
+      .test(error.message)
+  ) {
+    error.statusCode = 400;
+  }
+
+  throw error;
+}
+
+async function applyAtomicGameMovement({
+  account,
+  type,
+  amount,
+  action
+}) {
+  const description =
+    buildGameHistoryDescription({
+      account,
+      action,
+      amount
+    });
+
+  const { error } = await supabase.rpc(
+    'apply_sandbox_game_movement',
+    {
+      p_account_id: account.id,
+      p_type: type,
+      p_amount: amount,
+      p_description: description
+    }
+  );
+
+  if (error) {
+    throwGameMovementError(error);
+  }
+
+  return getGameAccount(account.id);
+}
+
 export async function rechargeAccount({
   accountId,
   amount
@@ -301,30 +324,12 @@ export async function rechargeAccount({
     throw error;
   }
 
-  const newBalance =
-    account.game === 'Golden Dragon'
-      ? Number(account.balance)
-      : Number(account.balance) + value;
-
-  const updated =
-    await updateGameBalance(
-      account,
-      newBalance
-    );
-
-  await insertGameHistory({
+  return applyAtomicGameMovement({
     account,
     type: 'GAME ADD CREDITS',
     amount: value,
-    description:
-      buildGameHistoryDescription({
-        account,
-        action: 'Purchase',
-        amount: value
-      })
+    action: 'Purchase'
   });
-
-  return updated;
 }
 
 export async function redeemAccount({
@@ -355,25 +360,12 @@ export async function redeemAccount({
     throw error;
   }
 
-  const updated =
-    await updateGameBalance(
-      account,
-      Number(account.balance) - value
-    );
-
-  await insertGameHistory({
+  return applyAtomicGameMovement({
     account,
     type: 'GAME WITHDRAW CREDITS',
     amount: value,
-    description:
-      buildGameHistoryDescription({
-        account,
-        action: 'Redeem',
-        amount: value
-      })
+    action: 'Redeem'
   });
-
-  return updated;
 }
 
 export async function resetGamePassword({

@@ -49,7 +49,8 @@ router.post('/:id/process', async (
     res
       .status(err.statusCode || 500)
       .json({
-        error: err.message
+        error: err.message,
+        code: err.code
       });
   }
 });

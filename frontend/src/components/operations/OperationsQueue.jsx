@@ -90,8 +90,10 @@ export default function OperationsQueue({
   const [movementDecision, setMovementDecision] = useState(null);
   const [movementSubmitting, setMovementSubmitting] = useState(false);
   const [movementError, setMovementError] = useState('');
+  const [movementStatus, setMovementStatus] = useState('');
   const movementTriggerRef = useRef(null);
   const movementFallbackRef = useRef(null);
+  const movementSubmitLockRef = useRef(false);
   // Keeps track of operation IDs that have already logged a selection action to prevent duplicates
   const [trackedOperations, setTrackedOperations] = useState([]);
 
@@ -134,15 +136,23 @@ export default function OperationsQueue({
     }
 
     try {
-      await api.post(`/operations/${operationId}/process`, {
+      const response = await api.post(`/operations/${operationId}/process`, {
         action,
         traineeName: session.trainee_name,
         requestData
       });
 
-      await fetchOperations();
+      setOperations(current =>
+        current.filter(
+          operation => operation.id !== operationId
+        )
+      );
+      void fetchOperations();
 
-      return { ok: true };
+      return {
+        ok: true,
+        data: response.data
+      };
     } catch (err) {
       if (err.response?.status === 404) {
         onSessionMissing?.();
@@ -151,6 +161,12 @@ export default function OperationsQueue({
 
       return {
         ok: false,
+        status: err.response?.status,
+        code: err.response?.data?.code,
+        conflict:
+          err.response?.status === 409 ||
+          err.response?.data?.code ===
+            'OPERATION_ALREADY_PROCESSED',
         error:
           err.response?.data?.error ||
           'Unable to process this transaction. Please try again.'
@@ -167,6 +183,7 @@ export default function OperationsQueue({
 
     movementTriggerRef.current = trigger;
     setMovementError('');
+    setMovementStatus('');
     setMovementDecision({
       operation,
       action
@@ -189,8 +206,13 @@ export default function OperationsQueue({
   };
 
   const confirmMovementDecision = async cancellationReason => {
-    if (!movementDecision || movementSubmitting) return;
+    if (
+      !movementDecision ||
+      movementSubmitting ||
+      movementSubmitLockRef.current
+    ) return;
 
+    movementSubmitLockRef.current = true;
     setMovementSubmitting(true);
     setMovementError('');
 
@@ -198,13 +220,18 @@ export default function OperationsQueue({
       movementDecision.action === 'CANCELLED'
         ? { cancellationReason }
         : undefined;
-    const result = await processOperation(
-      movementDecision.operation.id,
-      movementDecision.action,
-      requestData
-    );
+    let result;
 
-    setMovementSubmitting(false);
+    try {
+      result = await processOperation(
+        movementDecision.operation.id,
+        movementDecision.action,
+        requestData
+      );
+    } finally {
+      movementSubmitLockRef.current = false;
+      setMovementSubmitting(false);
+    }
 
     if (result.ok) {
       setMovementDecision(null);
@@ -214,6 +241,26 @@ export default function OperationsQueue({
             ? movementTriggerRef.current
             : movementFallbackRef.current;
         focusTarget?.focus();
+      });
+      return;
+    }
+
+    if (result.conflict) {
+      setOperations(current =>
+        current.filter(
+          operation =>
+            operation.id !==
+            movementDecision.operation.id
+        )
+      );
+      setMovementDecision(null);
+      setMovementError('');
+      setMovementStatus(
+        'This operation was already processed. The queue was refreshed.'
+      );
+      void fetchOperations();
+      requestAnimationFrame(() => {
+        movementFallbackRef.current?.focus();
       });
       return;
     }
@@ -399,6 +446,16 @@ export default function OperationsQueue({
           Requests ({requestOperations.length})
         </button>
       </div>
+
+      {movementStatus && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mb-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800"
+        >
+          {movementStatus}
+        </p>
+      )}
 
       {/* EMPTY */}
       {displayedOperations.length === 0 && (
