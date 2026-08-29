@@ -5,9 +5,9 @@ import {
   ChartGlyph,
   OperationStatsTable,
   OperationVisualGrid,
-  StatCard,
-  formatDurationValue
+  StatCard
 } from './DashboardShared';
+import { formatDurationValue } from './dashboardFormatters';
 
 export default function GlobalOperationStatistics() {
   const [stats, setStats] = useState(null);

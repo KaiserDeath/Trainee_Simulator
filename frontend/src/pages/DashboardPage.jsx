@@ -478,13 +478,13 @@ export default function DashboardPage() {
             </div>
 
             {selectedSession.status === 'active' && effectiveViewMode === 'live' ? (
-              <LiveSessionView sessionId={selectedSession.id} />
+              <LiveSessionView key={selectedSession.id} sessionId={selectedSession.id} />
             ) : effectiveViewMode === 'audit' ? (
-              <AuditLogPanel sessionId={selectedSession.id} />
+              <AuditLogPanel key={selectedSession.id} sessionId={selectedSession.id} />
             ) : effectiveViewMode === 'session-statistics' ? (
-              <SessionStatisticsView sessionId={selectedSession.id} />
+              <SessionStatisticsView key={selectedSession.id} sessionId={selectedSession.id} />
             ) : (
-              <CompletedSessionReport sessionId={selectedSession.id} />
+              <CompletedSessionReport key={selectedSession.id} sessionId={selectedSession.id} />
             )}
           </div>
         ) : (

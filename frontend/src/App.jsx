@@ -7,15 +7,27 @@ import TrainerDashboard from "./pages/DashboardPage";     // renamed alias for c
 import OrionStarsPanel from "./components/games/OrionStarsPanel";
 import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
 import VblinkPanel from "./components/games/VblinkPanel";
+import HubPage from "./pages/HubPage";
 
 const SESSION_KEY = "casino_trainer_session";
 
 // 🔑 Set your custom developer password here:
 const DEV_TRAINER_PASSWORD = "superctrl2023";
 
+const titleForPath = path => {
+  if (/^\/games\/orion-stars\//.test(path)) return 'Orion Stars';
+  if (/^\/games\/golden-dragon\//.test(path)) return 'Golden Dragon';
+  if (/^\/games\/vblink\//.test(path)) return 'Vblink';
+  if (path === '/hub' || path.startsWith('/hub/')) return 'Trez Training Hub';
+  if (path === '/trainer') return 'Trez Trainer Dashboard';
+  return 'Trez Operator Simulator';
+};
+
 export default function App() {
   // ⚡ Keep track of the path in a state variable so React re-renders when it shifts
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const hubEnabled = import.meta.env.VITE_TREZ_HUB_ENABLED === 'true';
+  const isHubRoute = hubEnabled && (currentPath === '/hub' || currentPath.startsWith('/hub/'));
 
   // Restore session from localStorage on first load
   const [session, setSession] = useState(() => {
@@ -28,6 +40,8 @@ export default function App() {
   });
 
   useEffect(() => {
+    if (isHubRoute) return undefined;
+
     socket.connect();
 
     socket.on('connect', () => {
@@ -37,7 +51,7 @@ export default function App() {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [isHubRoute]);
 
   // Listen to popstate events (when browser back/forward buttons or pushState triggers occur)
   useEffect(() => {
@@ -53,6 +67,10 @@ export default function App() {
       window.removeEventListener('locationchange', handleLocationChange);
     };
   }, []);
+
+  useEffect(() => {
+    document.title = titleForPath(currentPath);
+  }, [currentPath]);
 
   // Persist session to localStorage whenever it changes
   useEffect(() => {
@@ -82,6 +100,8 @@ export default function App() {
   const goldenDragonMatch = currentPath.match(/^\/games\/golden-dragon\/([^/]+)$/);
   const vblinkMatch = currentPath.match(/^\/games\/vblink\/([^/]+)$/);
   const isTrainer = currentPath === "/trainer";
+
+  if (isHubRoute) return <HubPage />;
 
   if (gameMatch) return <OrionStarsPanel session={session} sessionId={gameMatch[1]} />;
   if (goldenDragonMatch) return <GoldenDragonPanel session={session} sessionId={goldenDragonMatch[1]} />;

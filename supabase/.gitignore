@@ -1,0 +1,9 @@
+# Supabase
+.branches
+.temp
+migrations/20260820001000_milestone0_generated.sql
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local

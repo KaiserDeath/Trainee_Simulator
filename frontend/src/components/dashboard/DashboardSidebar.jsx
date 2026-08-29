@@ -14,9 +14,9 @@ import {
 
 import {
   CompactOperationBars,
-  MiniStat,
-  formatDurationValue
+  MiniStat
 } from './DashboardShared';
+import { formatDurationValue } from './dashboardFormatters';
 
 export default function DashboardSidebar({
   activeSessionCount,
@@ -41,7 +41,6 @@ export default function DashboardSidebar({
   sidebarOperationRows,
   sidebarTopOperation,
   toggleSelectAll,
-  toggleSessionSelection,
   traineeSearch
 }) {
   return (
@@ -110,7 +109,6 @@ export default function DashboardSidebar({
           sessionTimeoutMinutes={sessionTimeoutMinutes}
           setTraineeSearch={setTraineeSearch}
           toggleSelectAll={toggleSelectAll}
-          toggleSessionSelection={toggleSessionSelection}
           traineeSearch={traineeSearch}
         />
       ) : (
@@ -141,7 +139,6 @@ function TraineeSidebarContent({
   sessionTimeoutMinutes,
   setTraineeSearch,
   toggleSelectAll,
-  toggleSessionSelection,
   traineeSearch
 }) {
   return (

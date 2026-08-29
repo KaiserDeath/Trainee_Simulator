@@ -14,6 +14,12 @@ import {
   hasCreatedAccount,
   hasMatchingGameAction
 } from '../services/gameSimulationService.js';
+import {
+  buildReservationRequirement,
+  buildSecretMatchRequirement,
+  sanitizeRequestEvidence,
+  stripRawRequestPayload
+} from '../domain/trainerEvidence.js';
 
 export async function getSessionById(
   sessionId
@@ -163,20 +169,6 @@ function buildRequirement({
   };
 }
 
-function alignRequirementsWithScore(
-  operation,
-  requirements
-) {
-  if (operation.is_correct !== true) {
-    return requirements;
-  }
-
-  return requirements.map(requirement => ({
-    ...requirement,
-    ok: true
-  }));
-}
-
 async function buildValidationRequirements({
   operation,
   requestData,
@@ -241,10 +233,16 @@ async function buildValidationRequirements({
       }
     }
 
-    return alignRequirementsWithScore(
-      operation,
-      checks
-    );
+    const reservationRequirement =
+      buildReservationRequirement(
+        operation
+      );
+
+    if (reservationRequirement) {
+      checks.push(reservationRequirement);
+    }
+
+    return checks;
   }
 
   const expectedContext =
@@ -330,17 +328,11 @@ async function buildValidationRequirements({
           : 'Missing',
         ok: Boolean(submittedPassword)
       }),
-      buildRequirement({
+      buildSecretMatchRequirement({
         label: 'Backoffice password',
-        expected: submittedPassword || 'Submitted password',
-        sent:
-          operation.game_account?.password ||
-          'Not updated',
-        ok:
-          Boolean(submittedPassword) &&
-          operation.game_account
-            ?.password ===
-            submittedPassword
+        submittedValue: submittedPassword,
+        storedValue:
+          operation.game_account?.password
       })
     );
   }
@@ -385,16 +377,17 @@ async function buildValidationRequirements({
     );
   }
 
-  return alignRequirementsWithScore(
-    operation,
-    checks
-  );
+  return checks;
 }
 
 async function buildOperationReportRows(operations) {
   return Promise.all(operations.map(async operation => {
     const requestData =
       parseRequestData(operation);
+    const requestEvidence =
+      sanitizeRequestEvidence(
+        requestData
+      );
     const expectedResult =
       await getReportExpectedResult(
         operation
@@ -426,13 +419,17 @@ async function buildOperationReportRows(operations) {
               operation.game_account.balance
           }
         : operation.game_account;
+    const safeOperation =
+      stripRawRequestPayload(
+        operation
+      );
 
     return {
-      ...operation,
+      ...safeOperation,
       game_account:
         safeGameAccount,
-      requestData,
-      request_data: requestData,
+      requestData: requestEvidence,
+      request_data: requestEvidence,
       customerName:
         formatCustomerName(
           operation.customer

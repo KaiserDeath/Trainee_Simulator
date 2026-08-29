@@ -9,6 +9,7 @@ import {
 } from './scoringService.js';
 
 import {
+  getConfirmedCreatedAccountEvidence,
   hasCreatedAccount,
   hasMatchingGameAction
 } from './gameSimulationService.js';
@@ -17,6 +18,10 @@ import {
   getOperationHandlingStart,
   logActionEvent
 } from '../engine/AuditLogger.js';
+import { CUSTOMER_MOVEMENT_HISTORY_TABLE }
+  from '../domain/historyStores.js';
+import { sanitizeRequestEvidence }
+  from '../domain/trainerEvidence.js';
 
 const operationSelect = `
   *,
@@ -145,19 +150,6 @@ async function applyMovementSideEffects(
 ) {
   if (action !== 'APPROVED') {
     return;
-  }
-
-  if (
-    operation.type === 'ADD CREDITS'
-  ) {
-    await updateBalance(
-      'sandbox_customers',
-      operation.customer_id,
-      Number(
-        operation.customer.balance
-      ) - Number(operation.amount)
-    );
-
   }
 
   if (
@@ -356,7 +348,7 @@ async function markOperationProcessed({
   return data;
 }
 
-async function createAuditHistory({
+function buildAuditHistoryDescription({
   operation,
   action,
   traineeName,
@@ -365,7 +357,9 @@ async function createAuditHistory({
 }) {
   const details =
     isRequestOperation(operation.type)
-      ? ` Submitted data: ${JSON.stringify(requestData)}.`
+      ? ` Submitted evidence: ${JSON.stringify(
+          sanitizeRequestEvidence(requestData)
+        )}.`
       : '';
 
   const plainDescription = `Operation ${action} by ${traineeName}. Correct: ${isCorrect}.${details}`;
@@ -389,10 +383,27 @@ async function createAuditHistory({
     description = JSON.stringify(descriptionObj);
   }
 
+  return description;
+}
+
+async function createAuditHistory({
+  operation,
+  action,
+  traineeName,
+  requestData,
+  isCorrect
+}) {
+  const description =
+    buildAuditHistoryDescription({
+      operation,
+      action,
+      traineeName,
+      requestData,
+      isCorrect
+    });
+
   const { error } = await supabase
-    .from(
-      'sandbox_transaction_history'
-    )
+    .from(CUSTOMER_MOVEMENT_HISTORY_TABLE)
     .insert({
       session_id:
         operation.session_id,
@@ -407,6 +418,51 @@ async function createAuditHistory({
   if (error) {
     throw error;
   }
+}
+
+async function settleReservedAddCredits({
+  operation,
+  action,
+  traineeName,
+  requestData,
+  isCorrect,
+  processingSeconds,
+  handlingStartedAt,
+  handlingSeconds
+}) {
+  const description =
+    buildAuditHistoryDescription({
+      operation,
+      action,
+      traineeName,
+      requestData,
+      isCorrect
+    });
+
+  const { data, error } = await supabase.rpc(
+    'settle_reserved_add_credits_operation',
+    {
+      p_operation_id: operation.id,
+      p_action: action,
+      p_trainee_name: traineeName,
+      p_is_correct: isCorrect,
+      p_processing_seconds:
+        processingSeconds,
+      p_handling_started_at:
+        handlingStartedAt,
+      p_handling_seconds:
+        handlingSeconds,
+      p_history_description: description
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.isArray(data)
+    ? data[0]
+    : data;
 }
 
 async function saveRequestPayload(
@@ -550,33 +606,49 @@ export async function processOperation(
         ) / 1000
       : null;
 
+  const isReservedAddCredits =
+    operation.type === 'ADD CREDITS';
+
   const updatedOperation =
-    await markOperationProcessed({
-      operation,
-      action,
-      traineeName,
-      isCorrect,
-      processingSeconds
-    });
+    isReservedAddCredits
+      ? await settleReservedAddCredits({
+          operation,
+          action,
+          traineeName,
+          requestData,
+          isCorrect,
+          processingSeconds,
+          handlingStartedAt,
+          handlingSeconds
+        })
+      : await markOperationProcessed({
+          operation,
+          action,
+          traineeName,
+          isCorrect,
+          processingSeconds
+        });
 
   await saveRequestPayload(
     operation.id,
     requestData
   );
 
-  await saveHandlingMetrics({
-    operationId: operation.id,
-    handlingStartedAt,
-    handlingSeconds
-  });
+  if (!isReservedAddCredits) {
+    await saveHandlingMetrics({
+      operationId: operation.id,
+      handlingStartedAt,
+      handlingSeconds
+    });
 
-  await createAuditHistory({
-    operation,
-    action,
-    traineeName,
-    requestData,
-    isCorrect
-  });
+    await createAuditHistory({
+      operation,
+      action,
+      traineeName,
+      requestData,
+      isCorrect
+    });
+  }
 
   await logActionEvent({
     sessionId: operation.session_id,
@@ -592,10 +664,23 @@ export async function processOperation(
     }
   });
 
+  const completionEvidence =
+    operation.type === 'CREATE ACCOUNT' &&
+    action === 'APPROVED' &&
+    isCorrect
+      ? await getConfirmedCreatedAccountEvidence({
+          operation,
+          requestData,
+          backendConfirmedAt:
+            updatedOperation.processed_at
+        })
+      : null;
+
   return {
     message: 'Operation processed',
     isCorrect,
     processingSeconds,
-    operation: updatedOperation
+    operation: updatedOperation,
+    completionEvidence
   };
 }

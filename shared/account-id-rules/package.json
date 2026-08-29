@@ -1,0 +1,16 @@
+{
+  "name": "@trez-training/account-id-rules",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Framework-independent Account ID construction and validation primitives",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test test/rules.test.js test/evaluations-parity.test.js"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}

@@ -1,6 +1,13 @@
 import { supabase }
   from '../config/supabase.js';
 
+import { buildIlikeFilter }
+  from '../utils/search.js';
+import {
+  CUSTOMER_MOVEMENT_HISTORY_TABLE,
+  isGameHistoryType
+} from '../domain/historyStores.js';
+
 export async function searchSessionCustomers({
   sessionId,
   query = ''
@@ -21,17 +28,18 @@ export async function searchSessionCustomers({
       ascending: true
     });
 
-  const term = query.trim();
+  const searchFilter = buildIlikeFilter(
+    [
+      'username',
+      'first_name',
+      'last_name',
+      'email'
+    ],
+    query
+  );
 
-  if (term) {
-    request = request.or(
-      [
-        `username.ilike.%${term}%`,
-        `first_name.ilike.%${term}%`,
-        `last_name.ilike.%${term}%`,
-        `email.ilike.%${term}%`
-      ].join(',')
-    );
+  if (searchFilter) {
+    request = request.or(searchFilter);
   }
 
   const { data, error } =
@@ -179,7 +187,7 @@ export async function getCustomerHistory({
   customerId
 }) {
   const { data, error } = await supabase
-    .from('sandbox_transaction_history')
+    .from(CUSTOMER_MOVEMENT_HISTORY_TABLE)
     .select('*')
     .eq('session_id', sessionId)
     .eq('customer_id', customerId)
@@ -197,5 +205,14 @@ export async function getCustomerHistory({
     .eq('session_id', sessionId)
     .eq('customer_id', customerId);
 
-  return data.map(item => normalizeCustomerHistoryItem(item, gameAccounts || []));
+  return data
+    .filter(item =>
+      !isGameHistoryType(item.type)
+    )
+    .map(item =>
+      normalizeCustomerHistoryItem(
+        item,
+        gameAccounts || []
+      )
+    );
 }

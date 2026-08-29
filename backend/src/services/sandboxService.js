@@ -1,5 +1,14 @@
 import { supabase } from '../config/supabase.js';
 
+import { buildGameWalletSeeds }
+  from '../domain/gameWallet.js';
+
+const SEEDED_GAMES = [
+  'Orion Stars',
+  'Vblink',
+  'Golden Dragon'
+];
+
 const botManagers = [
   'Bot-V2',
   'Bot-V3',
@@ -144,7 +153,7 @@ export async function createSandboxSession(traineeName) {
       username: 'johndoe',
       first_name: 'John',
       last_name: 'Doe',
-      email: 'john@test.com',
+      email: 'john.doe@example.test',
       balance: 500
     },
     {
@@ -152,7 +161,7 @@ export async function createSandboxSession(traineeName) {
       username: 'janesmith',
       first_name: 'Jane',
       last_name: 'Smith',
-      email: 'jane@test.com',
+      email: 'jane.smith@example.test',
       balance: 1200
     },
     {
@@ -160,7 +169,7 @@ export async function createSandboxSession(traineeName) {
       username: 'tattedboymama',
       first_name: 'Ryann',
       last_name: 'Bailey',
-      email: 'ryannbailey0624@gmail.com',
+      email: 'ryann.bailey@example.test',
       balance: 0.53
     },
     {
@@ -168,7 +177,7 @@ export async function createSandboxSession(traineeName) {
       username: 'mariacashier',
       first_name: 'Maria',
       last_name: 'Lopez',
-      email: 'maria.lopez@test.com',
+      email: 'maria.lopez@example.test',
       balance: 340.75
     },
     {
@@ -176,7 +185,7 @@ export async function createSandboxSession(traineeName) {
       username: 'devinplays',
       first_name: 'Devin',
       last_name: 'Stone',
-      email: 'devin.stone@test.com',
+      email: 'devin.stone@example.test',
       balance: 860
     },
     {
@@ -184,7 +193,7 @@ export async function createSandboxSession(traineeName) {
       username: 'ninagold',
       first_name: 'Nina',
       last_name: 'Patel',
-      email: 'nina.patel@test.com',
+      email: 'nina.patel@example.test',
       balance: 215.4
     },
     {
@@ -192,7 +201,7 @@ export async function createSandboxSession(traineeName) {
       username: 'carlosspin',
       first_name: 'Carlos',
       last_name: 'Rivera',
-      email: 'carlos.rivera@test.com',
+      email: 'carlos.rivera@example.test',
       balance: 1580
     }
   ];
@@ -206,7 +215,23 @@ export async function createSandboxSession(traineeName) {
     throw customerError;
   }
 
-  // 3. Create game accounts
+  // 3. Create independent game loading wallets.
+  // These balances belong to each game backoffice, not to a customer.
+  const { error: walletError } =
+    await supabase
+      .from('sandbox_game_wallets')
+      .insert(
+        buildGameWalletSeeds({
+          sessionId: session.id,
+          games: SEEDED_GAMES
+        })
+      );
+
+  if (walletError) {
+    throw walletError;
+  }
+
+  // 4. Create customer game accounts
   const gameAccounts = [];
   const customerGameUsernames = {};
 
@@ -254,7 +279,7 @@ export async function createSandboxSession(traineeName) {
     throw gameError;
   }
 
-  // 4. Generate seeded transaction history
+  // 5. Generate seeded Backend customer movement history
   const history = [];
 
   for (const [customerIndex, customer]

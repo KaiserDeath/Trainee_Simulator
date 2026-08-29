@@ -8,17 +8,27 @@ export default function CompletedSessionReport({ sessionId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchReport = async () => {
       try {
         const response = await api.get(`/trainer/sessions/${sessionId}/report`);
-        setReport(response.data);
+        if (mounted) {
+          setReport(response.data);
+        }
       } catch (err) {
         console.error('Failed to fetch report', err);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
     fetchReport();
+
+    return () => {
+      mounted = false;
+    };
   }, [sessionId]);
 
   if (loading) return <div className="text-slate-500 animate-pulse mt-8">Generating performance report...</div>;
@@ -163,15 +173,11 @@ export default function CompletedSessionReport({ sessionId }) {
     return `${remainingSeconds}s`;
   };
 
-  let grade = 'F';
-  let gradeColor = 'text-red-500';
-  if (accValue >= 95) { grade = 'S'; gradeColor = 'text-purple-400'; }
-  else if (accValue >= 90) { grade = 'A'; gradeColor = 'text-emerald-400'; }
-  else if (accValue >= 80) { grade = 'B'; gradeColor = 'text-blue-400'; }
-  else if (accValue >= 70) { grade = 'C'; gradeColor = 'text-amber-400'; }
-
   return (
     <div className="space-y-8 animate-fade-in-up">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+        Prototype evaluation metrics. Final grading thresholds require Trez approval.
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Overall Score" value={overallScore} suffix="/ 100" />
         <StatCard title="Accuracy" value={`${accValue.toFixed(1)}%`} />
@@ -179,7 +185,7 @@ export default function CompletedSessionReport({ sessionId }) {
         <div className="bg-slate-800/40 border border-slate-700/50 p-6 rounded-2xl flex flex-col justify-center items-center backdrop-blur-sm relative overflow-hidden group">
           <div className="absolute inset-0 bg-linear-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           <span className="text-sm text-slate-400 mb-2 font-medium">Final Grade</span>
-          <span className={`text-6xl font-black drop-shadow-lg ${gradeColor}`}>{grade}</span>
+          <span className="text-xl font-bold text-amber-300">Pending approval</span>
         </div>
       </div>
       

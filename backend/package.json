@@ -6,13 +6,19 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test \"test/characterization/*.test.js\" \"test/database/*.test.js\"",
+    "test:characterization": "node --test \"test/characterization/*.test.js\"",
+    "test:database:safety": "node --test \"test/database/*.test.js\"",
+    "test:database:integration": "node test/integration/runMilestone0Database.mjs",
+    "audit:pending:read-only": "node scripts/audit-pending-operations.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
+    "cookie": "1.0.2",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

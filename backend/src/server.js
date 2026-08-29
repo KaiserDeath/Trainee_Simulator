@@ -4,10 +4,28 @@ import http from 'http';
 import { Server } from 'socket.io';
 
 import app from './app.js';
+import {
+  assertLocalE2EBackendEnvironment
+} from './config/localE2EGuard.js';
 
-dotenv.config();
+if (process.env.TREZ_LOCAL_E2E !== '1') {
+  dotenv.config();
+}
+
+if (
+  process.env.TREZ_LOCAL_E2E !==
+    undefined ||
+  process.env
+    .TREZ_E2E_DISABLE_RANDOM_OPERATIONS !==
+    undefined
+) {
+  assertLocalE2EBackendEnvironment(
+    process.env
+  );
+}
 
 const PORT = process.env.PORT || 8080;
+const HOST = process.env.HOST || undefined;
 
 /*
   Create HTTP server
@@ -44,6 +62,8 @@ io.on('connection', (socket) => {
 /*
   Start server
 */
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(
+    `Server running on ${HOST || 'all interfaces'}:${PORT}`
+  );
 });

@@ -73,8 +73,9 @@ export default function SessionStartPage({ onSessionCreated }) {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">First Name</label>
+                  <label htmlFor="trainee-first-name" className="block text-xs font-medium text-slate-400 mb-1">First Name</label>
                   <input
+                    id="trainee-first-name"
                     type="text"
                     placeholder="First name"
                     value={firstName}
@@ -84,8 +85,9 @@ export default function SessionStartPage({ onSessionCreated }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Last Name</label>
+                  <label htmlFor="trainee-last-name" className="block text-xs font-medium text-slate-400 mb-1">Last Name</label>
                   <input
+                    id="trainee-last-name"
                     type="text"
                     placeholder="Last name"
                     value={lastName}
@@ -126,7 +128,7 @@ export default function SessionStartPage({ onSessionCreated }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-blue-400">🎯</span>
-                  <span>Target accuracy: <span className="font-semibold text-white">85%</span> to pass</span>
+                  <span>Performance is reviewed using approved evaluation criteria</span>
                 </div>
               </div>
 

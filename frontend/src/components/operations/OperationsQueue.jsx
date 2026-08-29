@@ -318,6 +318,7 @@ export default function OperationsQueue({
             return (
               <div
                 key={operation.id}
+                data-testid={`operation-${operation.id}`}
                 className={`rounded-xl shadow-[0_0_4px_rgba(0,0,0,0.2)] ${theme.border} ${theme.bg}`}
               >
                 {/* ── Top bar ── */}
@@ -364,31 +365,31 @@ export default function OperationsQueue({
                 {/* ── Details grid ── */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[1fr_1fr_1fr_1fr_1.25fr] px-6 pb-4 gap-y-2">
                   {/* Row 1 */}
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Operation code</strong>
-                    <span className="text-[#8D8D8D] break-all">{getOperationCode(operation)}</span>
+                    <span className="text-[#292929] break-all">{getOperationCode(operation)}</span>
                   </div>
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Name</strong>
-                    <span className="text-[#8D8D8D] break-all">{getCustomerName(operation)}</span>
+                    <span className="text-[#292929] break-all">{getCustomerName(operation)}</span>
                   </div>
 
                   {/* Mobile Id (Copy button erased) */}
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Mobile Id</strong>
                     <div className="flex items-center gap-1">
-                      <span className="text-[#8D8D8D] break-all select-all">{mobileId}</span>
+                      <span className="text-[#292929] break-all select-all">{mobileId}</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Kiosk</strong>
-                    <span className="text-[#8D8D8D] break-all">{getKiosk(operation)}</span>
+                    <span className="text-[#292929] break-all">{getKiosk(operation)}</span>
                   </div>
 
                   {/* Actions column – spans 2 rows */}
                   <div className="flex flex-col px-3 py-1 items-center border-0 md:row-span-2">
-                    <strong className="text-[13px]">Actions</strong>
+                    <strong className="text-[13px] text-[#292929]">Actions</strong>
                     <div className="flex flex-wrap justify-center gap-2 mt-1 md:mt-2">
                       <button
                         type="button"
@@ -425,21 +426,21 @@ export default function OperationsQueue({
                   </div>
 
                   {/* Row 2 */}
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Username</strong>
-                    <span className="text-[#8D8D8D] break-all select-all">{username}</span>
+                    <span className="text-[#292929] break-all select-all">{username}</span>
                   </div>
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Email</strong>
-                    <span className="text-[#8D8D8D] break-all">{getEmail(operation)}</span>
+                    <span className="text-[#292929] break-all">{getEmail(operation)}</span>
                   </div>
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Game</strong>
-                    <span className="text-[#8D8D8D] break-all">{getGame(operation)}</span>
+                    <span className="text-[#292929] break-all">{getGame(operation)}</span>
                   </div>
-                  <div className="flex flex-col px-3 pt-1 text-[13px] border-r border-[#E0E0E0]">
+                  <div className="flex flex-col px-3 pt-1 text-[13px] text-[#292929] border-r border-[#E0E0E0]">
                     <strong>Amount</strong>
-                    <span className="text-[#8D8D8D] break-all">{operation.amount ?? '—'}</span>
+                    <span className="text-[#292929] break-all">{operation.amount ?? '—'}</span>
                   </div>
                 </div>
               </div>
@@ -495,6 +496,7 @@ export default function OperationsQueue({
               return (
                 <div
                   key={operation.id}
+                  data-testid={`operation-${operation.id}`}
                   className="items-center justify-center mx-auto h-[48px] sm:h-[56px] transition-all cursor-pointer"
                   style={{
                     display: 'grid',
@@ -617,7 +619,7 @@ export default function OperationsQueue({
                     value={requestForm.gameId || ''}
                     onChange={event => updateRequestForm('gameId', event.target.value)}
                     placeholder="New Game ID"
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 caret-slate-900 placeholder:text-slate-500 outline-none focus:border-blue-500"
                   />
                 </label>
 
@@ -628,7 +630,7 @@ export default function OperationsQueue({
                       value={requestForm.newPassword || ''}
                       onChange={event => updateRequestForm('newPassword', event.target.value)}
                       placeholder="New Password"
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 caret-slate-900 placeholder:text-slate-500 outline-none focus:border-blue-500"
                     />
                   </label>
                 )}
@@ -639,7 +641,7 @@ export default function OperationsQueue({
                     value={requestForm.kiosk || ''}
                     onChange={event => updateRequestForm('kiosk', event.target.value)}
                     placeholder="Kiosk"
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                    className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 caret-slate-900 placeholder:text-slate-500 outline-none focus:border-blue-500"
                   />
                 </label>
 
@@ -651,7 +653,7 @@ export default function OperationsQueue({
                       value={requestForm.amount || ''}
                       onChange={event => updateRequestForm('amount', event.target.value)}
                       placeholder="Amount"
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 caret-slate-900 placeholder:text-slate-500 outline-none focus:border-blue-500"
                     />
                   </label>
                 )}
