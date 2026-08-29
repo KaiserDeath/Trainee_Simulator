@@ -2,25 +2,58 @@ import { supabase }
   from '../config/supabase.js';
 
 import {
-  GAME_HISTORY_TABLE,
-  gameHistoryMatchesOperation
-} from './historyPolicy.js';
+  buildIlikeFilter,
+  gameNamesMatch
+} from '../utils/search.js';
+import { GAME_HISTORY_TABLE }
+  from '../domain/historyStores.js';
+import {
+  assertOrionAccountCreationPolicyBoundary,
+  buildOrionAccountCreationOutcome,
+  ORION_STARS_GAME,
+  ORION_STARS_TRAINING_MODES
+} from '../domain/gameAdapters/orionStarsAdapter.js';
 
-const normalizeGame = game =>
-  String(game ?? '')
-    .replaceAll('-', ' ')
-    .trim()
-    .toLowerCase();
+export async function getGameWallet({
+  sessionId,
+  game
+}) {
+  const { data, error } = await supabase
+    .from('sandbox_game_wallets')
+    .select('id, balance')
+    .eq('session_id', sessionId)
+    .eq('game', game)
+    .single();
 
-const gameMatches = (
-  accountGame,
-  requestedGame
-) => {
-  return (
-    normalizeGame(accountGame) ===
-    normalizeGame(requestedGame)
-  );
-};
+  if (error || !data) {
+    const notFound = new Error(
+      'Game loading wallet not found'
+    );
+    notFound.statusCode = 404;
+    throw notFound;
+  }
+
+  return data;
+}
+
+async function attachGameWalletBalance(
+  accounts
+) {
+  if (!accounts.length) {
+    return accounts;
+  }
+
+  const wallet = await getGameWallet({
+    sessionId: accounts[0].session_id,
+    game: accounts[0].game
+  });
+
+  return accounts.map(account => ({
+    ...account,
+    game_wallet_balance:
+      Number(wallet.balance)
+  }));
+}
 
 function parseHistoryDetails(description) {
   try {
@@ -166,15 +199,13 @@ export async function searchGameAccounts({
       ascending: true
     });
 
-  const term = query.trim();
+  const searchFilter = buildIlikeFilter(
+    ['game_username', 'nickname', 'game'],
+    query
+  );
 
-  if (term) {
-    request = request.or(
-      [
-        `game_username.ilike.%${term}%`,
-        `game.ilike.%${term}%`
-      ].join(',')
-    );
+  if (searchFilter) {
+    request = request.or(searchFilter);
   }
 
   const { data, error } =
@@ -184,8 +215,12 @@ export async function searchGameAccounts({
     throw error;
   }
 
-  return data.filter(account =>
-    gameMatches(account.game, game)
+  const matchingAccounts = data.filter(account =>
+    gameNamesMatch(account.game, game)
+  );
+
+  return attachGameWalletBalance(
+    matchingAccounts
   );
 }
 
@@ -215,7 +250,10 @@ export async function getGameAccount(
     throw notFound;
   }
 
-  return data;
+  const [enriched] =
+    await attachGameWalletBalance([data]);
+
+  return enriched;
 }
 
 async function insertGameHistory({
@@ -246,9 +284,10 @@ async function insertGameHistory({
 function buildGameHistoryDescription({
   account,
   action,
-  amount
+  amount,
+  note
 }) {
-  return JSON.stringify({
+  const description = {
     kind: 'GAME_HISTORY',
     game: account.game,
     mobileId:
@@ -259,7 +298,15 @@ function buildGameHistoryDescription({
       new Date().toISOString(),
     manager: 'TrainingStore',
     status: 'Approved'
-  });
+  };
+
+  const normalizedNote =
+    String(note ?? '').trim();
+  if (normalizedNote) {
+    description.note = normalizedNote;
+  }
+
+  return JSON.stringify(description);
 }
 
 function throwGameMovementError(error) {
@@ -275,39 +322,10 @@ function throwGameMovementError(error) {
   throw error;
 }
 
-async function applyAtomicGameMovement({
-  account,
-  type,
-  amount,
-  action
-}) {
-  const description =
-    buildGameHistoryDescription({
-      account,
-      action,
-      amount
-    });
-
-  const { error } = await supabase.rpc(
-    'apply_sandbox_game_movement',
-    {
-      p_account_id: account.id,
-      p_type: type,
-      p_amount: amount,
-      p_description: description
-    }
-  );
-
-  if (error) {
-    throwGameMovementError(error);
-  }
-
-  return getGameAccount(account.id);
-}
-
 export async function rechargeAccount({
   accountId,
-  amount
+  amount,
+  note
 }) {
   const account =
     await getGameAccount(accountId);
@@ -324,17 +342,34 @@ export async function rechargeAccount({
     throw error;
   }
 
-  return applyAtomicGameMovement({
-    account,
-    type: 'GAME ADD CREDITS',
-    amount: value,
-    action: 'Purchase'
-  });
+  const description =
+    buildGameHistoryDescription({
+      account,
+      action: 'Purchase',
+      amount: value,
+      note
+    });
+
+  const { error } = await supabase.rpc(
+    'recharge_sandbox_game_account',
+    {
+      p_account_id: accountId,
+      p_amount: value,
+      p_description: description
+    }
+  );
+
+  if (error) {
+    throwGameMovementError(error);
+  }
+
+  return getGameAccount(accountId);
 }
 
 export async function redeemAccount({
   accountId,
-  amount
+  amount,
+  note
 }) {
   const account =
     await getGameAccount(accountId);
@@ -360,12 +395,28 @@ export async function redeemAccount({
     throw error;
   }
 
-  return applyAtomicGameMovement({
-    account,
-    type: 'GAME WITHDRAW CREDITS',
-    amount: value,
-    action: 'Redeem'
-  });
+  const description =
+    buildGameHistoryDescription({
+      account,
+      action: 'Redeem',
+      amount: value,
+      note
+    });
+
+  const { error } = await supabase.rpc(
+    'redeem_sandbox_game_account',
+    {
+      p_account_id: accountId,
+      p_amount: value,
+      p_description: description
+    }
+  );
+
+  if (error) {
+    throwGameMovementError(error);
+  }
+
+  return getGameAccount(accountId);
 }
 
 export async function resetGamePassword({
@@ -408,7 +459,7 @@ export async function resetGamePassword({
       `${account.game} password reset for ${account.game_username}`
   });
 
-  return data;
+  return getGameAccount(data.id);
 }
 
 export async function createGameAccount({
@@ -416,14 +467,21 @@ export async function createGameAccount({
   customerId,
   game,
   gameUsername,
+  nickname,
   password,
-  customerName
+  customerName,
+  trainingMode = ORION_STARS_TRAINING_MODES.FREE_SIMULATOR,
+  accountPolicyEvaluation
 }) {
   const username =
     String(gameUsername ?? '').trim();
 
   const nextPassword =
     String(password ?? '').trim();
+
+  const nextNickname =
+    String(nickname ?? '').trim() ||
+    username;
 
   if (
     !username ||
@@ -435,6 +493,13 @@ export async function createGameAccount({
       );
     error.statusCode = 400;
     throw error;
+  }
+
+  if (game === ORION_STARS_GAME) {
+    assertOrionAccountCreationPolicyBoundary({
+      trainingMode,
+      accountPolicyEvaluation
+    });
   }
 
   let resolvedCustomerId =
@@ -483,6 +548,7 @@ export async function createGameAccount({
       customer_id: resolvedCustomerId,
       game,
       game_username: username,
+      nickname: nextNickname,
       password: nextPassword,
       balance: 0
     })
@@ -501,7 +567,19 @@ export async function createGameAccount({
       `${game} account created: ${username}`
   });
 
-  return data;
+  const createdAccount = await getGameAccount(data.id);
+
+  if (game !== ORION_STARS_GAME) {
+    return createdAccount;
+  }
+
+  return {
+    ...createdAccount,
+    adapterOutcome: buildOrionAccountCreationOutcome({
+      account: createdAccount,
+      trainingMode
+    })
+  };
 }
 
 async function resolveOrCreateSandboxCustomer({
@@ -566,7 +644,8 @@ async function resolveOrCreateSandboxCustomer({
 
 export async function getGameAccountHistory({
   sessionId,
-  customerId
+  customerId,
+  game
 }) {
   const { data, error } = await supabase
     .from(GAME_HISTORY_TABLE)
@@ -581,7 +660,14 @@ export async function getGameAccountHistory({
     throw error;
   }
 
-  return data.map(normalizeHistoryItem);
+  return data
+    .map(normalizeHistoryItem)
+    .filter(item =>
+      !game || gameNamesMatch(
+        item.game,
+        game
+      )
+    );
 }
 
 export async function hasMatchingGameAction({
@@ -590,13 +676,7 @@ export async function hasMatchingGameAction({
 }) {
   const { data, error } = await supabase
     .from(GAME_HISTORY_TABLE)
-    .select(`
-      id,
-      game_account_id,
-      game,
-      game_username,
-      description
-    `)
+    .select('id')
     .eq(
       'session_id',
       operation.session_id
@@ -607,11 +687,9 @@ export async function hasMatchingGameAction({
     )
     .eq('type', type)
     .eq('amount', operation.amount)
-    .or(
-      [
-        `game_account_id.eq.${operation.game_account_id}`,
-        'game_account_id.is.null'
-      ].join(',')
+    .eq(
+      'game_account_id',
+      operation.game_account_id
     )
     .gte(
       'created_at',
@@ -623,12 +701,7 @@ export async function hasMatchingGameAction({
     throw error;
   }
 
-  return data.some(row =>
-    gameHistoryMatchesOperation(
-      row,
-      operation
-    )
-  );
+  return data.length > 0;
 }
 
 export async function findRelatedGameAction({
@@ -637,16 +710,7 @@ export async function findRelatedGameAction({
 }) {
   const { data, error } = await supabase
     .from(GAME_HISTORY_TABLE)
-    .select(`
-      id,
-      game_account_id,
-      game,
-      game_username,
-      type,
-      amount,
-      created_at,
-      description
-    `)
+    .select('id, type, amount, created_at, description')
     .eq(
       'session_id',
       operation.session_id
@@ -656,11 +720,9 @@ export async function findRelatedGameAction({
       operation.customer_id
     )
     .eq('type', type)
-    .or(
-      [
-        `game_account_id.eq.${operation.game_account_id}`,
-        'game_account_id.is.null'
-      ].join(',')
+    .eq(
+      'game_account_id',
+      operation.game_account_id
     )
     .gte(
       'created_at',
@@ -673,6 +735,11 @@ export async function findRelatedGameAction({
   if (error) {
     throw error;
   }
+
+  const accountUsername =
+    operation.game_account?.game_username;
+  const accountGame =
+    operation.game_account?.game;
 
   const parsedRows = (data || []).map(row => {
     let details = {};
@@ -693,11 +760,13 @@ export async function findRelatedGameAction({
 
   return (
     parsedRows.find(row =>
-      gameHistoryMatchesOperation(
-        row,
-        operation
-      )
+      (!accountGame ||
+        row.details.game === accountGame) &&
+      (!accountUsername ||
+        row.details.mobileId === accountUsername ||
+        row.details.playerId === accountUsername)
     ) ||
+    parsedRows[0] ||
     null
   );
 }
@@ -730,4 +799,50 @@ export async function hasCreatedAccount({
   }
 
   return data.length > 0;
+}
+
+export async function getConfirmedCreatedAccountEvidence({
+  operation,
+  requestData = {},
+  backendConfirmedAt
+}) {
+  const gameUsername =
+    String(requestData.gameId ?? '').trim();
+
+  if (
+    operation.type !== 'CREATE ACCOUNT' ||
+    operation.game_account?.game !== ORION_STARS_GAME ||
+    !gameUsername
+  ) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('sandbox_game_accounts')
+    .select('id, session_id, customer_id, game, game_username, created_at')
+    .eq('session_id', operation.session_id)
+    .eq('customer_id', operation.customer_id)
+    .eq('game', ORION_STARS_GAME)
+    .eq('game_username', gameUsername)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const outcome = buildOrionAccountCreationOutcome({
+    account: data,
+    trainingMode: ORION_STARS_TRAINING_MODES.FREE_SIMULATOR
+  });
+
+  return {
+    ...outcome.evidence,
+    originatingOperationId: operation.id,
+    backendConfirmedAt: backendConfirmedAt || null,
+    publicationStatus: 'CANDIDATE_ONLY'
+  };
 }

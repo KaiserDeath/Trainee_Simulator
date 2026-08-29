@@ -4,11 +4,19 @@ Status: Draft extraction for Trez validation
 Source: `C:/Users/OS/Downloads/Guia de Operador Backend.pptx`  
 Source reviewed: All 18 slides on 2026-08-19
 
+Supplemental daily-training documents reviewed on 2026-08-27 are partial source
+material: `Training Day 1 (2).docx`, `Day 2 - Operations Training (3).docx`,
+`Day 3 - Movements Training (2).docx`, and
+`Day 4 Customer Experience Uiux (1).docx`. Backend information was intentionally
+withdrawn from those documents. Their omissions must not be interpreted as
+removing Backend requirements from the broader structure or this extraction.
+
 ## Purpose and precedence
 
 This document translates the Operator Backend guide into product requirements for Trez Training Hub. It does not treat slide screenshots, example credentials, example passwords, or temporary production data as implementation instructions.
 
-Direct decisions from Trez take precedence. The confirmed curriculum order is:
+Direct decisions from Trez take precedence. The earlier confirmed content
+baseline is:
 
 1. Module 1: explanation of the work, how the casino ecosystem operates, and what Trez expects from operators.
 2. Module 2: practical operator orientation, video, guided content, or quick simulation that previews the complete job and the operations taught later.
@@ -20,7 +28,13 @@ Direct decisions from Trez take precedence. The confirmed curriculum order is:
 8. Module 8: Reset Password.
 9. Module 9: Exceptional and advanced operations.
 10. Module 10: Mixed-operation practice.
-11. Module 11: Final full-shift assessment.
+11. Module 11: earlier final-assessment scaffold.
+
+Trez later approved an expanded, module-based pre-training curriculum with three
+scored checkpoint modules and a scored final readiness module. The final
+assessment moves to the new last module; its exact expanded module number remains
+pending the complete content map. These four evaluations prepare a POSTULANTE for
+onsite training and do not replace that onsite training.
 
 The Basic Actions / Game Functionalities slide is a capability inventory, not a module sequence. Its reusable capabilities include:
 
@@ -35,6 +49,84 @@ The Basic Actions / Game Functionalities slide is a capability inventory, not a 
 Module 2 previews the complete operator job. Each later module references the capabilities it needs to teach and assess its operation or applied skill. Capability definitions and game-specific mappings must be maintained once and reused without redundancy.
 
 Module 3 Account Creation uses the existing Account ID Lab at `C:/Users/OS/PROYECTOS/Evaluations` to teach account structures. The trainee then applies that learning inside the Operator Training Simulator at `C:/Users/OS/PROYECTOS/Simulador-dos` and completes the originating Trez Backend request. The created training account is preserved for Module 4, where the trainee learns to search for and positively confirm that same customer.
+
+## Approved training delivery and audit boundary
+
+The guide supplies workflow evidence, while the following direct Trez decisions
+govern how the Hub delivers and audits that workflow:
+
+- POSTULANTE learning content and locale are English only;
+- TRAINER, ADMIN, and RRHH experiences are approved for delivery in
+  English and Spanish;
+- TRAINER and RRHH see and manage every Postulante, including course assignment;
+- RRHH may read every Postulante's Hub module-completion status and the
+  original simulator operation/failure evidence needed for audit. Those report
+  surfaces are read-only even though RRHH may create, edit, deactivate, and
+  assign courses to Postulantes.
+
+### Approved formal-evaluation rules
+
+- Standard content and practice have unlimited attempts.
+- Each of the three checkpoint modules and the final readiness module requires
+  100% and permits three scored attempts per attempt set.
+- Teaching and guided practice are separate from the scored section. The scored
+  section contains no guidance or hints.
+- After attempts one and two, POSTULANTE sees the numerical score and attempts
+  remaining and may submit the latest result. Submitting closes the evaluation
+  and forfeits unused attempts. A 100% score still requires confirmation.
+- Attempt three is submitted automatically when no earlier result was submitted.
+- POSTULANTE sees no answer-level or action-level failure details. TRAINER sees
+  detailed failures; RRHH may audit them through read-only reporting.
+- Every attempt and attempt set is retained. The submitted latest attempt is the
+  official result; earlier attempts remain audit evidence.
+- TRAINER may reopen an evaluation only with a required reason. Reopening grants
+  a new three-attempt set. Only TRAINER and RRHH may see the reason and reopening
+  history.
+- The default score composition is 20% theory and 80% practical execution.
+  TRAINER may change those weights only in Advanced Settings on a new version,
+  and the exact version is bound to the attempt.
+
+Checkpoint 1's default action allocation within that profile is Create Account
+15%, Search User 10%, Verify Balance 10%, Add Credits 15%, Withdraw Credits 15%,
+Review Transaction Records 10%, and Reset Password or Edit Information 5%. When
+multiple families are selected, the practical 80% is divided equally between
+them and this relative action allocation is applied inside each family. All
+seven actions remain required even if TRAINER changes their versioned weights.
+
+### Checkpoint 1 game-platform boundary
+
+Checkpoint 1 assesses all seven required game-platform actions, in a fixed
+sequence, for every selected verified game family: Create Account, Search User,
+Verify Balance, Add Credits, Withdraw Credits, Review Transaction Records, and
+Reset Password or Edit Information according to the adapter. The POSTULANTE
+finishes the entire sequence for one family before beginning the next.
+
+All currently verified families are selected by default when TRAINER creates a
+new checkpoint version. TRAINER may change the family selection, but cannot
+select an unverified family or remove any of the seven actions. The contract is
+open to future game families through verified adapters rather than a hardcoded
+three-game limit.
+
+Transaction-history review defaults to all available relevant movements from
+the previous seven days. TRAINER may configure a different time window or recent
+record count in Advanced Settings. An unsuccessful attempt restarts the complete
+theory-and-practical checkpoint on the next attempt. The family selection, adapter versions, history
+rule, and score weights are preserved in the attempt snapshot. Checkpoint 1 is
+game-platform-only; missing Backend material in the supplemental sources is not
+to be inferred or invented inside this checkpoint.
+
+Original simulator evidence must remain attributable without inventing identity
+lineage. Only the explicit nullable
+`hub_attempts.legacy_trainee_session_id` relationship links a Hub attempt to a
+legacy session. A matching trainee/display name is not durable identity evidence,
+so sessions and attempts without that relationship remain visibly unlinked.
+
+Audit visibility does not authorize disclosure of credentials or raw sensitive
+payloads. RRHH projections preserve operation outcome, correctness, timing,
+validation status, and useful failure points while recursively excluding raw
+request payload aliases and password-, token-, secret-, cookie-, and
+authorization-like values. Password evidence may reveal only whether a value was
+provided, never the submitted or stored literal.
 
 ## Module 1 business foundation
 
@@ -162,6 +254,14 @@ Module 3 must maintain one continuous request and player-creation lifecycle acro
 8. The simulator preserves the returned username/Mobile ID and created account.
 9. The trainee copies and records that exact identifier as Module 3 output.
 10. The trainee returns to Trez Backend and completes the original request with the required information.
+
+Trez selected Orion Stars as the first reference implementation. A successful
+Orion player creation displays a prompt styled as part of the Orion Stars
+backoffice. The originating Backend request is finished by opening its pencil
+form, entering the created game ID, password, and Orion kiosk information, and
+clicking Confirm. Account-structure rules are evaluated only in the Game Account
+Creation module and final assessment; Free Simulator account creation does not
+grade or enforce the structure.
 
 Module 3 must record the request context, account-policy version, Account ID Lab checkpoint, created identifier, copy event, Backend information, and final decision. It must detect a wrong structure, wrong game/license, unnecessary duplicate creation, or completing the wrong Backend request. Module 4 then adds the search and positive-identification evidence for that same player.
 

@@ -3,9 +3,9 @@
 import api from '../../api/client';
 import {
   ChartGlyph,
-  StatCard,
-  formatDurationValue
+  StatCard
 } from './DashboardShared';
+import { formatDurationValue } from './dashboardFormatters';
 
 export default function SessionStatisticsView({ sessionId }) {
   const [report, setReport] = useState(null);

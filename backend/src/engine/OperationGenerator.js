@@ -61,6 +61,9 @@ export function generateOperation(
     game_account_id:
       gameAccount.id,
 
+    game:
+      gameAccount.game,
+
     type:
       operationType,
 

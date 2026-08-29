@@ -311,7 +311,8 @@ export default function GoldenDragonPanel({
       const response =
         await getGameAccountHistory(
           activeSessionId,
-          selectedCustomerId
+          selectedCustomerId,
+          GAME
         );
 
       setHistory(response.data);
@@ -374,7 +375,9 @@ export default function GoldenDragonPanel({
     if (updated && selected) {
       setSelected(current => ({
         ...current,
-        balance: updated.balance
+        balance: updated.balance,
+        game_wallet_balance:
+          updated.game_wallet_balance
       }));
     }
   };
@@ -437,10 +440,25 @@ export default function GoldenDragonPanel({
 
     try {
       if (modal === 'purchase') {
+        const value =
+          Number(form.amount || 0);
+        const gameWalletBalance =
+          Number(
+            selected.game_wallet_balance || 0
+          );
+
+        if (value > gameWalletBalance) {
+          showNotice(
+            'Message',
+            'Purchase amount exceeds game loading balance'
+          );
+          return;
+        }
+
         const response =
           await rechargeGameAccount(
             selected.id,
-            form.amount
+            value
           );
 
         closeModal();
@@ -543,7 +561,8 @@ export default function GoldenDragonPanel({
     const response =
       await getGameAccountHistory(
         activeSessionId,
-        account.customer_id
+        account.customer_id,
+        GAME
       );
 
     setReportHistory(response.data);
@@ -918,6 +937,11 @@ export default function GoldenDragonPanel({
           form={form}
           history={goldenHistory}
           selected={selected}
+          gameWalletBalance={Number(
+            selected?.game_wallet_balance ??
+            accounts[0]?.game_wallet_balance ??
+            0
+          )}
           closeModal={closeModal}
           updateForm={updateForm}
           saveCustomer={saveCustomer}
@@ -1242,6 +1266,7 @@ function GoldenDragonModal({
   form,
   history,
   selected,
+  gameWalletBalance,
   closeModal,
   updateForm,
   saveCustomer,
@@ -1384,8 +1409,10 @@ function GoldenDragonModal({
               )})`}
             />
             <RedeemRow
-              label="Drawer Balance"
-              value="$ 9,999.00"
+              label="Game Loading Balance"
+              value={`$ ${toCurrency(
+                gameWalletBalance
+              )}`}
             />
 
             <div className="grid grid-cols-[140px_1fr] items-center border-b border-dashed border-slate-300 pb-4">

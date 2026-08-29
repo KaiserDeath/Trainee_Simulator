@@ -3,26 +3,39 @@ import { getSessionAuditLog } from '../../api/client';
 
 export default function AuditLogPanel({ sessionId }) {
   const [auditLog, setAuditLog] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!sessionId) return;
 
+    let mounted = true;
+
     const fetchAuditLog = async () => {
-      setLoading(true);
       try {
         const response = await getSessionAuditLog(sessionId);
-        setAuditLog(response.data);
+        if (mounted) {
+          setAuditLog(response.data);
+          setError('');
+        }
       } catch (err) {
         console.error('Failed to fetch audit log:', err);
+        if (mounted) {
+          setError('Audit log is currently unavailable.');
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchAuditLog();
     const interval = setInterval(fetchAuditLog, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [sessionId]);
 
   // ── UPDATED LOG DISPLAY LABELS ──────────────────────────────────────────
@@ -86,12 +99,25 @@ export default function AuditLogPanel({ sessionId }) {
     return <div className="text-slate-400">Loading audit log...</div>;
   }
 
+  if (error && auditLog.length === 0) {
+    return (
+      <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+        {error}
+      </div>
+    );
+  }
+
   if (auditLog.length === 0) {
     return <div className="text-slate-400">No trainee actions recorded yet</div>;
   }
 
   return (
     <div className="overflow-x-auto">
+      {error && (
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+          {error} Showing the last successfully loaded entries.
+        </div>
+      )}
       <table className="w-full text-sm text-slate-300">
         <thead>
           <tr className="border-b border-slate-700">

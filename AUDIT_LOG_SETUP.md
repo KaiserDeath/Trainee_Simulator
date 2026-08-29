@@ -9,24 +9,19 @@ This system records and displays all significant actions taken by trainees durin
 
 ## Database Setup
 
-### 1. Create the trainee_action_logs table
+### 1. Apply the canonical database migrations
 
-Run the migration SQL in your Supabase SQL editor:
-
-```bash
-# Option A: Through Supabase UI
-1. Go to Supabase Dashboard → SQL Editor
-2. Open a new query
-3. Copy the contents of backend/src/seed/migrations.sql
-4. Execute the query
-```
-
-**OR**
+The project now uses the ordered migration chain under `supabase/migrations`.
+For local development, stop the backend before resetting the database, then
+run:
 
 ```bash
-# Option B: Using psql CLI
-psql postgresql://[user]:[password]@[host]/[database] < backend/src/seed/migrations.sql
+npm run local:reset
 ```
+
+Do not run the removed legacy `backend/src/seed/migrations.sql` script. For a
+shared or hosted database, review and deploy the numbered Supabase migrations
+in order using the approved deployment workflow.
 
 ### SQL Migration Details
 

@@ -201,7 +201,11 @@ export default function VblinkPanel({ session, sessionId }) {
   const showNotAvailable = () =>
     setNotice({ title: 'Message', message: NOT_AVAILABLE_MSG });
 
-  const customerBalance = Number(selected?.customer?.balance || 0);
+  const gameWalletBalance = Number(
+    selected?.game_wallet_balance ??
+    accounts[0]?.game_wallet_balance ??
+    0
+  );
   const playerScore = Number(selected?.balance || 0);
 
   // =================== HANDLE TOP SEARCH ===================
@@ -270,8 +274,8 @@ export default function VblinkPanel({ session, sessionId }) {
 
     try {
       if (value > 0) {
-        if (value > customerBalance) {
-          setFormError(`Maximum allowed: ${customerBalance.toFixed(2)}`);
+        if (value > gameWalletBalance) {
+          setFormError(`Maximum allowed: ${gameWalletBalance.toFixed(2)}`);
           return;
         }
         await rechargeGameAccount(selected.id, value);
@@ -318,7 +322,8 @@ export default function VblinkPanel({ session, sessionId }) {
     setSelected(account);
     const response = await getGameAccountHistory(
       activeSessionId,
-      account.customer_id
+      account.customer_id,
+      GAME
     );
     setScoreLog(
       response.data.filter(item => item.game === GAME)
@@ -415,7 +420,7 @@ export default function VblinkPanel({ session, sessionId }) {
           submit={submitSetScore}
           close={closeModal}
           error={formError}
-          customerBalance={customerBalance}
+          gameWalletBalance={gameWalletBalance}
           playerScore={playerScore}
         />
       )}
@@ -1024,7 +1029,7 @@ function SetScoreModal({
   submit,
   close,
   error,
-  customerBalance,
+  gameWalletBalance,
   playerScore
 }) {
   return (
@@ -1038,9 +1043,9 @@ function SetScoreModal({
             </span>
           </div>
           <div>
-            <span className="font-semibold text-slate-700">Customer Balance (Max load): </span>
+            <span className="font-semibold text-slate-700">Game Loading Balance (Max load): </span>
             <span className="font-mono font-medium" data-testid="vblink-set-score-max">
-              {customerBalance.toFixed(2)}
+              {gameWalletBalance.toFixed(2)}
             </span>
           </div>
         </div>

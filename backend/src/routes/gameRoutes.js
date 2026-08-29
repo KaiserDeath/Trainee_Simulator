@@ -4,6 +4,7 @@ import {
   createGameAccount,
   getGameAccount,
   getGameAccountHistory,
+  getGameWallet,
   rechargeAccount,
   redeemAccount,
   resetGamePassword,
@@ -11,6 +12,28 @@ import {
 } from '../services/gameSimulationService.js';
 
 const router = Router();
+
+router.get(
+  '/:sessionId/:game/wallet',
+  async (req, res) => {
+    try {
+      const wallet = await getGameWallet({
+        sessionId: req.params.sessionId,
+        game: req.params.game
+      });
+
+      res.json({
+        game: req.params.game,
+        balance: Number(wallet.balance)
+      });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(err.statusCode || 500)
+        .json({ error: err.message });
+    }
+  }
+);
 
 router.get(
   '/:sessionId/:game/accounts',
@@ -64,7 +87,8 @@ router.post(
         await rechargeAccount({
           accountId:
             req.params.accountId,
-          amount: req.body.amount
+          amount: req.body.amount,
+          note: req.body.note
         });
 
       res.json(account);
@@ -87,7 +111,8 @@ router.post(
         await redeemAccount({
           accountId:
             req.params.accountId,
-          amount: req.body.amount
+          amount: req.body.amount,
+          note: req.body.note
         });
 
       res.json(account);
@@ -139,6 +164,8 @@ router.post(
             req.body.customerId,
           gameUsername:
             req.body.gameUsername,
+          nickname:
+            req.body.nickname,
           password:
             req.body.password,
           customerName:
@@ -166,7 +193,9 @@ router.get(
           sessionId:
             req.params.sessionId,
           customerId:
-            req.params.customerId
+            req.params.customerId,
+          game:
+            req.query.game || ''
         });
 
       res.json(history);

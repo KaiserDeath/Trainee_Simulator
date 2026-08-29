@@ -6,6 +6,14 @@ import {
   QUEUE_LIMITS
 } from './QueueManager.js';
 import { completeSession } from './SessionEngine.js';
+import {
+  canQueueOperation,
+  createPendingOperationOccupancy,
+  occupyPendingOperation
+} from '../domain/operationQueuePolicy.js';
+import {
+  shouldDisableRandomOperationGeneration
+} from '../config/localE2EGuard.js';
 
 class GameMaster {
 
@@ -54,14 +62,25 @@ class GameMaster {
       `GameMaster started for ${sessionId}`
     );
 
-    // Generate initial operations immediately
-    await this.generateOperations(sessionId);
+    const randomGenerationDisabled =
+      shouldDisableRandomOperationGeneration();
 
-    const interval = setInterval(async () => {
-      await this.generateOperations(
-        sessionId
+    let interval = null;
+
+    if (!randomGenerationDisabled) {
+      // Generate initial operations immediately
+      await this.generateOperations(sessionId);
+
+      interval = setInterval(async () => {
+        await this.generateOperations(
+          sessionId
+        );
+      }, QUEUE_LIMITS.generationIntervalMs);
+    } else {
+      console.log(
+        `Random operation generation disabled for guarded local E2E session ${sessionId}`
       );
-    }, QUEUE_LIMITS.generationIntervalMs);
+    }
 
     const timeout = this.scheduleAutoClose(
       sessionId,
@@ -164,65 +183,45 @@ class GameMaster {
     return 'RESET PASSWORD';
   }
 
-  async getPendingAddCreditExposure(sessionId) {
+  async getPendingOperations(sessionId) {
     const { data, error } = await supabase
       .from('sandbox_operations')
-      .select('customer_id, amount')
+      .select(
+        'customer_id, game_account_id, game, type, status'
+      )
       .eq('session_id', sessionId)
-      .eq('type', 'ADD CREDITS')
       .eq('status', 'PENDING');
 
     if (error) {
       throw error;
     }
 
-    return (data || []).reduce((map, operation) => {
-      const current =
-        map.get(operation.customer_id) || 0;
-      map.set(
-        operation.customer_id,
-        current + Number(operation.amount || 0)
-      );
-      return map;
-    }, new Map());
+    return data || [];
   }
 
-  async ensureAddCreditBalance({
-    customer,
-    pendingExposure
-  }) {
-    const balance =
-      Number(customer.balance) || 0;
-    const reserved =
-      pendingExposure.get(customer.id) || 0;
-    const available =
-      balance - reserved;
-
-    if (available >= 50) {
-      return customer;
-    }
-
-    const injectedBalance =
-      reserved + 500;
-
+  async insertGeneratedOperation(operation) {
     const { data, error } = await supabase
-      .from('sandbox_customers')
-      .update({
-        balance: injectedBalance
-      })
-      .eq('id', customer.id)
-      .select()
-      .single();
+      .rpc(
+        'create_reserved_sandbox_operation',
+        { p_operation: operation }
+      );
 
     if (error) {
+      const isOccupiedSlot =
+        error.code === '23505' ||
+        /pending movement|pending request|unique/i
+          .test(error.message || '');
+
+      if (isOccupiedSlot) {
+        return null;
+      }
+
       throw error;
     }
 
-    console.log(
-      `Injected customer balance for ADD CREDITS generation: ${customer.id}`
-    );
-
-    return data;
+    return Array.isArray(data)
+      ? data[0]
+      : data;
   }
 
   //
@@ -328,10 +327,23 @@ class GameMaster {
       }
 
       const operations = [];
-      const pendingAddExposure =
-        await this.getPendingAddCreditExposure(
+      const pendingOperations =
+        await this.getPendingOperations(
           sessionId
         );
+      const occupancy =
+        createPendingOperationOccupancy(
+          pendingOperations
+        );
+      const remainingCapacity = Math.max(
+        0,
+        QUEUE_LIMITS.maxPendingOperations -
+          pendingOperations.length
+      );
+      const generationTarget = Math.min(
+        numberOfOperations,
+        remainingCapacity
+      );
 
       // =========================
       // CREATE OPERATIONS
@@ -339,130 +351,120 @@ class GameMaster {
 
       for (
         let i = 0;
-        i < numberOfOperations;
+        i < generationTarget;
         i++
       ) {
-
-        let customer =
-          customers[
-            Math.floor(
-              Math.random() *
-              customers.length
-            )
-          ];
-
-        const customerGames =
-          gameAccounts.filter(
-            game =>
-              game.customer_id ===
-              customer.id
-          );
-
-        if (!customerGames.length) {
-          continue;
-        }
-
-        const selectedGame =
-          customerGames[
-            Math.floor(
-              Math.random() *
-              customerGames.length
-            )
-          ];
-
         // Weighted operation type
         const operationType =
           this.generateWeightedOperationType();
 
-        if (operationType === 'ADD CREDITS') {
-          customer =
-            await this.ensureAddCreditBalance({
+        const candidates = [];
+
+        for (const customer of customers) {
+          const customerGames =
+            gameAccounts.filter(
+              game =>
+                game.customer_id ===
+                customer.id
+            );
+
+          for (const gameAccount of customerGames) {
+            const candidate = {
+              customer_id: customer.id,
+              game_account_id:
+                gameAccount.id,
+              game: gameAccount.game,
+              type: operationType,
+              status: 'PENDING'
+            };
+
+            if (
+              !canQueueOperation(
+                occupancy,
+                candidate
+              )
+            ) {
+              continue;
+            }
+
+            if (
+              operationType ===
+                'ADD CREDITS' &&
+              Number(customer.balance) < 1
+            ) {
+              continue;
+            }
+
+            if (
+              operationType ===
+                'WITHDRAW CREDITS' &&
+              Number(gameAccount.balance) < 1
+            ) {
+              continue;
+            }
+
+            candidates.push({
               customer,
-              pendingExposure:
-                pendingAddExposure
+              gameAccount,
+              candidate
             });
+          }
         }
 
-        const generationCustomer =
-          operationType === 'ADD CREDITS'
-            ? {
-                ...customer,
-                balance: Math.max(
-                  0,
-                  Number(customer.balance || 0) -
-                    (pendingAddExposure.get(customer.id) || 0)
-                )
-              }
-            : customer;
+        if (!candidates.length) {
+          continue;
+        }
+
+        const selected = candidates[
+          Math.floor(
+            Math.random() *
+            candidates.length
+          )
+        ];
 
         const generated = generateOperation(
-            generationCustomer,
-            selectedGame,
+            selected.customer,
+            selected.gameAccount,
             sessionId,
             operationType
           );
 
         if (generated) {
-          operations.push(generated);
-          if (operationType === 'ADD CREDITS') {
-            pendingAddExposure.set(
-              customer.id,
-              (pendingAddExposure.get(customer.id) || 0) +
-                Number(generated.amount || 0)
+          const inserted =
+            await this.insertGeneratedOperation(
+              generated
             );
+
+          if (inserted) {
+            operations.push(inserted);
+            occupyPendingOperation(
+              occupancy,
+              generated
+            );
+
+            if (
+              operationType ===
+              'ADD CREDITS'
+            ) {
+              selected.customer.balance =
+                Number(
+                  selected.customer.balance
+                ) -
+                Number(generated.amount);
+            }
           }
         }
       }
 
       // =========================
-      // INSERT OPERATIONS
+      // REPORT OPERATIONS
       // =========================
 
       if (operations.length > 0) {
 
-        let { error } =
-          await supabase
-            .from('sandbox_operations')
-            .insert(operations);
-
-        if (
-          error &&
-          /customer_balance_at_request|game_balance_at_request|column .* does not exist|field .* not found/i
-            .test(error.message)
-        ) {
-          const legacyOperations =
-            operations.map(operation => {
-              const legacyOperation = {
-                ...operation
-              };
-              delete legacyOperation
-                .customer_balance_at_request;
-              delete legacyOperation
-                .game_balance_at_request;
-              return legacyOperation;
-            });
-
-          const retry =
-            await supabase
-              .from('sandbox_operations')
-              .insert(legacyOperations);
-
-          error = retry.error;
-        }
-
-        if (error) {
-
-          console.error(
-            'Operation generation error:',
-            error
-          );
-
-        } else {
-
-          console.log(
-            `${operations.length} operations generated for ${sessionId}`
-          );
-        }
+        console.log(
+          `${operations.length} operations generated for ${sessionId}`
+        );
       }
     } catch (err) {
 

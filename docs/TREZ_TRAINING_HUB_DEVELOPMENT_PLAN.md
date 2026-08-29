@@ -1,16 +1,17 @@
 # Trez Training Hub — Development Plan
 
-Status: Proposed for execution approval  
-Company: Trez  
-Prepared: 2026-08-20  
-Primary repository: `C:/Users/OS/PROYECTOS/Simulador-dos`  
+Status: Proposed for execution approval
+Company: Trez
+Prepared: 2026-08-20
+Primary repository: `C:/Users/OS/PROYECTOS/Simulador-dos`
 Account-structure reference application: `C:/Users/OS/PROYECTOS/Evaluations`
 
 ## 1. Objective
 
 Build Trez Training Hub as the central platform for teaching, practicing, and evaluating the operator workflow. The Hub must combine conceptual learning, the Account ID Lab, focused operational exercises, and the existing full simulator without duplicating business rules.
 
-The delivery must preserve the confirmed curriculum:
+The delivery must preserve the earlier confirmed content baseline while applying
+the approved expansion:
 
 1. Module 1 — Understanding the Work.
 2. Module 2 — Complete Workflow Orientation.
@@ -22,7 +23,13 @@ The delivery must preserve the confirmed curriculum:
 8. Module 8 — Reset Password.
 9. Module 9 — Exceptional and Advanced Operations.
 10. Module 10 — Mixed-Operation Practice.
-11. Module 11 — Final Full-Shift Assessment.
+11. Module 11 — Earlier Final Full-Shift Assessment scaffold.
+
+This list is the earlier content baseline. The approved expanded curriculum adds
+three scored checkpoint modules and moves the scored final pre-training readiness
+evaluation to the new last module. Exact expanded numbering must be finalized
+from the complete content map without treating the partial daily-training
+documents as replacements for omitted Backend content.
 
 ## 2. Delivery principles
 
@@ -31,6 +38,9 @@ The delivery must preserve the confirmed curriculum:
 - Keep course progress and assessment evidence durable; keep simulation worlds disposable.
 - Preserve the game backoffices' authentic terminology while exposing a standard adapter contract internally.
 - Separate demonstration, guided practice, independent practice, and formal assessment.
+- Keep standard learning/practice retries unlimited while enforcing the approved
+  three-attempt-set lifecycle only for the three checkpoints and final readiness
+  evaluation.
 - Require verification before mutation in every financial or credential workflow.
 - Use the player created in Module 3 as the primary search target in Module 4.
 - Teach and assess `Ctrl+F` followed by `Ctrl+V` in Module 4; later modules reuse that skill without repeating the full lesson unless remediation is required.
@@ -150,12 +160,16 @@ Module 4 consumes this artifact as its expected search target. Modules 5–8 may
 Security work is a prerequisite, not a final cleanup phase.
 
 - Use authenticated Trez identities or an approved identity provider.
-- Implement server-enforced roles for trainee, trainer, administrator, and future auditor.
+- Implement server-enforced roles for POSTULANTE, TRAINER, ADMIN, and RRHH.
 - Remove the browser-embedded trainer password and local-storage authorization token.
 - Authorize every course, attempt, sandbox, evidence, and trainer endpoint by user and role.
 - Keep service-role database credentials on the server only.
 - Define tenant/company/license visibility rules before real organizational data is introduced.
 - Protect credentials and sensitive evidence from logs, browser storage, screenshots, and analytics payloads.
+- Preserve explicit legacy identity lineage: a simulator session with no Hub
+  identity link remains unlinked and is never matched by trainee-name text.
+- Keep RRHH completion/evidence reporting read-only, while allowing the approved
+  global Postulante creation, editing, deactivation, and course-assignment paths.
 - Apply database constraints and row-level policies where appropriate.
 - Record administrative policy changes and trainer overrides in an immutable audit trail.
 - Add rate limits, input validation, secure headers, controlled CORS, and dependency scanning.
@@ -196,7 +210,7 @@ Deliverables:
 - Role-based trainee, trainer, and administrator navigation.
 - Course catalogue, assigned learning path, module pages, prerequisites, and progress.
 - Activity renderer for articles, videos, quizzes, guided exercises, practice, and assessment.
-- Trainer view for assignments and learner progress.
+- TRAINER/RRHH view for all-Postulante management, course assignments, and progress.
 
 Exit gate: a trainee sees only assigned modules and cannot bypass prerequisites; trainers cannot perform trainee attempts.
 
@@ -240,6 +254,12 @@ Deliverables:
 
 Exit gate: exercise definitions call capabilities without hardcoded component or service branches for the chosen game.
 
+Approved implementation boundary (2026-08-24): Orion Stars is first. Its
+account-structure rule is enforced only in Game Account Creation and the final
+assessment, not Free Simulator mode. Successful creation uses the Orion-styled
+prompt; Backend completion is the pencil form plus created information and
+Confirm.
+
 ### Workstream G — Durable simulation runtime
 
 Deliverables:
@@ -253,7 +273,7 @@ Deliverables:
 
 Exit gate: restarting the API or worker does not lose, duplicate, or incorrectly complete active work.
 
-### Workstream H — Trainer analytics and operations
+### Workstream H — TRAINER/RRHH analytics and operations
 
 Deliverables:
 
@@ -262,8 +282,12 @@ Deliverables:
 - Operation, game, cohort, and trainee trends.
 - Assignment, retry, remediation, and trainer-review controls.
 - Export and retention behavior approved by Trez.
+- A read-only RRHH reporting projection covering every Postulante's module completion and
+  original simulator operation/failure evidence without raw sensitive payloads.
 
-Exit gate: trainers can explain why a trainee passed or failed from retained evidence.
+Exit gate: TRAINER can explain all Postulantes' results, and RRHH can
+inspect all Postulantes' completion and sanitized original evidence without gaining
+mutation authority.
 
 ## 7. Milestone sequence
 
@@ -329,6 +353,14 @@ Exit criteria:
 
 Scope:
 
+- Use a native, focused game surface inside the Hub rather than redirecting the
+  trainee into the time-limited full simulator. The surface calls an
+  authenticated server endpoint and records the observed game-side values back
+  to the Hub attempt.
+- Keep one shared game-tab shell for Orion Stars, Vblink, and Golden Dragon.
+  Orion Stars is the first available adapter; the other two tabs remain
+  visibly unavailable and must not issue requests until their balance surfaces
+  are implemented.
 - Define the complete Refresh Balance operation and scoring contract.
 - Deliver demonstration, guided practice, independent practice, and assessment.
 - Support consistent, stale, and unverifiable balance scenarios.
@@ -343,7 +375,10 @@ Exit criteria:
 
 Scope:
 
-- Deliver Add Credits before Withdraw Credits.
+- Deliver Add Credits before Withdraw Credits. Both are now untimed Orion Stars
+  focused practices in the Hub; Vblink and Golden Dragon remain adapter-gated.
+- Reuse the existing reservation, game recharge, approval, and cancellation
+  semantics; the Hub does not introduce a second customer or game balance.
 - Add transactional balance mutations and idempotency protection.
 - Support not-completed, already-completed, and inconsistent-evidence branches.
 - Require pre-action history, exact amount, post-action evidence, and correct Backend decision.
@@ -384,19 +419,25 @@ Exit criteria:
 - The trainee can succeed by refusing to mutate state when evidence is insufficient.
 - No scenario invents an escalation or financial rule absent from Trez policy.
 
-### Milestone 7 — Modules 10 and 11
+### Milestone 7 — Mixed practice, checkpoints, and final readiness evaluation
 
 Scope:
 
 - Deliver mixed-operation practice with controlled difficulty and optional remediation.
 - Move accepted scenario scheduling to the durable worker.
-- Deliver the full-shift assessment with controlled timing, workload, and attempt rules.
+- Deliver the three prerequisite checkpoint modules and the final readiness
+  evaluation with the approved versioned scoring and attempt-set rules.
 - Complete trainer reporting, retention, and certification behavior.
 
 Exit criteria:
 
 - Mixed practice contains only operations for which prerequisites are complete.
 - The final assessment is reproducible from retained evidence and definition versions.
+- Every formal evaluation enforces 100%, three attempts per set, optional
+  submission of the latest result after attempts one or two, and automatic
+  submission after attempt three.
+- TRAINER reopening requires an auditable reason and grants a new three-attempt
+  set without rewriting earlier attempts.
 - Session isolation and load tests pass at the approved concurrency target.
 - Sandbox cleanup retains scores, evidence, reviews, and certification records.
 
@@ -482,6 +523,8 @@ Mutating endpoints must accept idempotency keys or enforce equivalent uniqueness
 - Resume after refresh, logout/login, API restart, and worker restart.
 - Keyboard-only completion, including the Module 4 search procedure.
 - Trainer assignment, evidence review, and remediation.
+- RRHH all-Postulante completion/evidence reads, reporting mutation-denial, and
+  allowed Postulante-management checks.
 - Responsive behavior at the approved workstation sizes.
 
 ### Non-functional tests
@@ -489,6 +532,9 @@ Mutating endpoints must accept idempotency keys or enforce equivalent uniqueness
 - Accessibility against WCAG 2.2 AA for core flows.
 - Load and isolation at the approved concurrent-trainee target.
 - Security tests for RBAC, direct-object access, injection, secrets, and sensitive logs.
+- Legacy-lineage tests that keep an unlinked simulator session unlinked, plus
+  regression tests excluding passwords and raw sensitive evidence from RRHH
+  responses.
 - Backup/restore and active-attempt recovery.
 
 ### Required continuous-integration gates
@@ -518,7 +564,8 @@ Mutating endpoints must accept idempotency keys or enforce equivalent uniqueness
 3. Pilot cohort for Modules 1–4.
 4. Expand the pilot one accepted operation module at a time.
 5. Run Module 10 mixed practice only after Modules 3–9 prerequisites are available.
-6. Enable Module 11 only after scoring, load, retention, and recovery gates pass.
+6. Enable the new last-module readiness evaluation only after all three
+   checkpoints and the scoring, load, retention, and recovery gates pass.
 7. Roll out broadly using cohort feature flags.
 
 Each rollout step must define success metrics, rollback triggers, a support owner, and a feedback review date.
@@ -538,22 +585,48 @@ Each rollout step must define success metrics, rollback triggers, a support owne
 | Expanding games before the adapter is stable | Repeated rework | Approve one reference adapter before adding platforms |
 | Curriculum content and code drift | Training no longer matches operations | Versioned definitions, owners, effective dates, periodic review |
 
-## 14. Decisions required before Milestone 1 implementation
+## 14. Milestone 1 decision status
 
-Trez must confirm or assign owners for:
+Trez approved username/password authentication backed by Supabase Auth JWT
+sessions, later revised so TRAINER/RRHH create and manage all Postulantes while
+ADMIN creates TRAINER accounts, assigned-course delivery, separate-author content approval, two-year
+retention, English-only POSTULANTE content, English/Spanish TRAINER, ADMIN, and
+RRHH experiences, and read-only RRHH reporting across all Postulantes to module
+completion and sanitized original simulator
+operation/failure evidence on 2026-08-21. The local implementation and guarded
+verification command do not constitute hosted deployment approval.
 
-1. Authentication source and user provisioning.
-2. Trainer, administrator, and auditor permissions.
-3. Approved first game family for Modules 3 and 4.
-4. Canonical game catalogue, families, initials, and account formulas.
-5. Password policies and credential-display rules.
-6. Pass, retry, hint, remediation, and trainer-override policies.
-7. Content authoring and approval ownership.
-8. Required launch language or languages.
-9. Attempt, evidence, media, and report retention periods.
-10. Expected pilot and production concurrency.
-11. Hosting, environment, backup, and monitoring ownership.
-12. Exact Module 9 scope.
+Trez also approved four formal scored evaluations: three prerequisite
+checkpoints plus the final readiness evaluation. Standard modules retain
+unlimited practice. Formal evaluations require 100%, use three attempts per set,
+allow POSTULANTE to submit the latest result after attempt one or two, and
+auto-submit attempt three. POSTULANTE sees the numerical score and remaining
+attempts but no diagnostic failure details. All attempts remain available to
+TRAINER and RRHH; only TRAINER may reopen with a required TRAINER/RRHH-visible
+reason, granting a new three-attempt set. The default 20% theory / 80% practical
+weighting is versioned and TRAINER-adjustable only through Advanced Settings.
+
+Checkpoint 1 applies the fixed seven-action sequence to every selected verified
+game family, defaults new versions to all verified families, and remains open to
+future verified adapters. Transaction-history review defaults to the previous
+seven days and is configurable by time window or record count. The uploaded
+daily-training documents are partial sources and cannot be used to invent or
+remove omitted Backend requirements.
+
+The remaining decisions or owners are:
+
+1. Exact expanded module numbering and the module associated with each checkpoint.
+2. Canonical game catalogue, families, initials, and account formulas.
+3. Any future password complexity, lockout, recovery, or credential-display
+   rules beyond the approved username-as-initial-password and staff reset behavior.
+4. Checkpoint-specific question banks, server-held answer keys, and authoritative
+   adapter evidence rules beyond the approved common attempt and scoring lifecycle.
+5. Expected pilot and production concurrency.
+6. Hosting, environment, first-administrator provisioning, backup, and monitoring ownership.
+7. Completion of bilingual trainer and administrator interfaces beyond the
+   currently implemented shells.
+8. Operational deletion after the two-year retention period.
+9. Exact Module 9 scope.
 
 ## 15. Immediate implementation backlog after plan approval
 
@@ -574,7 +647,8 @@ No game expansion or advanced simulation work should begin before this increment
 
 Trez Training Hub is production-ready only when:
 
-- The confirmed Modules 1–11 can be assigned and completed in order.
+- The expanded module curriculum, including all three checkpoints and the final
+  readiness module, can be assigned and completed in order.
 - Prerequisites are enforced by the server.
 - Approved policies are versioned and bound to attempts.
 - Modules 3 and 4 preserve the created player across the module boundary.
@@ -588,4 +662,3 @@ Trez Training Hub is production-ready only when:
 - Trainer reports support remediation and certification decisions.
 - Security, accessibility, load, backup, restore, and operational runbook gates pass.
 - Trez trainers approve the curriculum, workflows, terminology, and scoring.
-

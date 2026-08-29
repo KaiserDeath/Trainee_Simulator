@@ -1,5 +1,163 @@
 # Casino Operator Training Simulator (Sandbox)
 
+## Local foundation verification
+
+The reproducible local Supabase bootstrap and all foundation commands are
+documented in `docs/LOCAL_SETUP_AND_VERIFICATION.md`. The ordinary browser gate
+is fast and mocked:
+
+```powershell
+npm run verify:foundation
+```
+
+The fully real browser flow is deliberately opt-in and fails closed unless its
+Supabase API, PostgreSQL, backend, and frontend URLs are loopback-only:
+
+```powershell
+npm run local:start
+$env:TREZ_LOCAL_E2E = '1'
+npm run test:e2e:local
+Remove-Item Env:TREZ_LOCAL_E2E
+```
+
+Do not run `local:reset` while a backend process is active. Nothing in the real
+local E2E command targets the configured hosted Supabase project.
+
+The Training Hub is available behind an explicit frontend flag. Local setup now
+configures username/password authentication backed by Supabase Auth JWT sessions;
+missing Auth configuration still fails closed with `503`:
+
+```powershell
+$env:VITE_TREZ_HUB_ENABLED = 'true'
+npm run dev:frontend
+```
+
+Run the real local Hub persistence/RBAC verification after starting or resetting
+the isolated stack:
+
+```powershell
+npm run verify:local:hub
+```
+
+This gate uses only loopback Supabase URLs and an in-process test verifier. It
+proves assignment, the Module 1–4 prerequisite chain, Module 1/2 completion,
+Module 3 policy/artifact fail-closed behavior, idempotent writes, direct-object
+isolation, restart/second-client persistence, reporting through a test-only
+visibility resolver, browser-role database denial, and guarded fixture cleanup.
+It is not a production authentication configuration.
+
+Run the separate real local Supabase Auth/governance gate with the local stack
+running and port `8080` free:
+
+```powershell
+npm run verify:local:hub:auth
+```
+
+That runner sources only the named local Supabase stack, creates and cleans up
+reserved-prefix accounts, and checks username/password login, generated usernames,
+staff password controls, `HttpOnly` session cookies, CSRF, server-derived roles,
+all-Postulante TRAINER/RRHH visibility, two-year attempt-retention metadata, and
+two-person publication. It does not bootstrap or mutate hosted Supabase. Hosted
+HTTPS origin values and a controlled first-ADMIN procedure are
+still deployment inputs; see `docs/LOCAL_SETUP_AND_VERIFICATION.md`.
+
+Create the repeatable local ADMIN fixture after a reset with
+`npm run local:bootstrap:admin`. Its local-only credentials are `Ladmin` / `Ladmin`.
+TRAINER and RRHH create Postulante accounts from a first name and first surname;
+ADMIN creates TRAINER accounts. `Juan Pérez` becomes
+`Jperez`, then `Jperez2` on collision, and the initial password equals the final
+username. POSTULANTE passwords cannot be changed or reset. ADMIN, TRAINER, and
+RRHH may change their own password, and ADMIN may reset another staff account to
+its username. No user-facing email credential or recovery flow exists.
+
+The approved locale boundary is English-only for Postulantes and English/Spanish
+for TRAINER, ADMIN, and RRHH. TRAINER and RRHH can manage all Postulantes and
+their course assignments. RRHH reporting remains read-only across all
+Postulantes' module completion plus sanitized original simulator operation/failure
+evidence. Legacy sessions remain unlinked unless a Hub attempt carries an
+explicit `legacy_trainee_session_id`; names are not identity links. Password
+literals, raw request payloads, tokens, cookies, and authorization values are
+excluded from RRHH projections.
+
+The approved curriculum policy now distinguishes unlimited standard learning and
+practice from four formal scored evaluations: three prerequisite checkpoints and
+the final pre-training readiness evaluation. Each formal evaluation requires
+100% and permits three attempts per set. After attempt one or two, POSTULANTE may
+submit the latest numerical result and close the evaluation; attempt three
+auto-submits. All attempts remain auditable, while POSTULANTE sees no detailed
+failure evidence. TRAINER may reopen an evaluation only with a required reason,
+which grants a new set of three attempts and is visible only to TRAINER and RRHH.
+The default score composition is 20% theory and 80% practical, adjustable by
+TRAINER only through versioned Advanced Settings.
+
+## Milestone 2 guarded scaffold
+
+The local Hub now seeds draft, provisional, non-scored Modules 3 through 5 after the
+completed Module 1/2 foundation. Module 3 includes a native Account ID Lab shell
+that consumes only a server-assigned versioned policy. Module 4 includes an
+application-controlled exact-player search that observes `Ctrl+F`, a real paste,
+the exact query/match, and positive confirmation.
+
+Module 5 begins a focused Orion Stars Refresh Balance exercise inside the Hub.
+It opens only a bounded game-balance surface and calls an authenticated Hub
+endpoint; it does not open or start the time-limited full simulator. The Hub
+server verifies the observed game Credit and Available Balance before recording
+the activity attempt. The practice surface includes tabs for Orion Stars,
+Vblink, and Golden Dragon so the same activity shell can be extended across
+all three games. Orion Stars is available now; Vblink and Golden Dragon remain
+clearly marked “Coming soon” and their disabled tabs cannot call an endpoint or
+start a simulator session.
+
+Orion Stars is the approved first reference adapter. Its Free Simulator account
+creation remains ungraded, shows an Orion-styled success prompt, and returns a
+password-free artifact candidate. Account-structure enforcement is reserved for
+the Game Account Creation module and final assessment. The Backend request ends
+through its pencil form after the operator enters the created game ID, password,
+and Orion kiosk and clicks Confirm.
+
+The seeded policy and created-account artifact are deliberately marked
+`required`, so these activities cannot be completed in the UI or by calling the
+service-role-backed completion RPC with forged browser state. Finishing this
+vertical slice still requires Trez to approve Orion's exact
+account-identifier/credential policy and the secure Hub-to-simulator attempt
+link that will publish the durable artifact. See
+`docs/TREZ_TRAINING_HUB_MILESTONE2_STATUS.md`.
+
+Module 6 now adds a focused, untimed Orion Stars Add Credits exercise. It uses
+the existing reservation RPC, shows the customer hold separately from the game
+wallet, records one game-side credit, and requires an explicit Backend approve
+or cancel decision. Approval is rejected until game evidence exists; cancel
+releases the customer reservation exactly once. The activity remains
+provisional and non-scored, and the Vblink and Golden Dragon tabs are visible
+but unavailable until their adapters are implemented.
+
+Module 7 adds the matching focused, untimed Orion Stars Withdraw Credits exercise.
+The game account decreases and the independent game wallet increases; the
+existing Backend movement is approved or cancelled exactly once. It remains
+provisional and non-scored, with Vblink and Golden Dragon unavailable.
+
+Module 10 is seeded as a provisional mixed-operation orientation and checklist.
+Its executable practice remains blocked until Trez approves scenario scheduling,
+difficulty, timing, remediation, and attempt rules.
+
+The current Module 11 scaffold predates the approved expanded curriculum. Its
+guarded assessment foundation must move to the new last readiness module after
+the three checkpoint modules are placed. TRAINER and RRHH can
+configure a 30-minute default duration and, under Advanced Settings, a random
+2–6 operation range and eligible operation types. Every attempt retains a
+database-revisioned configuration snapshot. The separate scored-evaluation
+governance foundation now enforces three-attempt sets, explicit/automatic
+submission, TRAINER-only reasoned reopening, private staff evidence, immutable
+published policy, exact required family/action matrices, and the 20/80 default.
+All four evaluations remain draft and provisional: the app cannot execute or
+publish them until approved theory answer keys, checkpoint-to-module mapping,
+and adapter-derived action evidence replace caller-supplied correctness. The
+reporting screen filters attempts by Postulante,
+date, outcome, score, duration, operation/category/game/failure, and configuration
+revision, and shows pass, score, duration, accuracy, failure, readiness, and trend
+statistics. Execution remains blocked until the Reset Password, exceptional-
+operation, scheduling, scoring-evidence, and recovery policies are approved.
+
 ## Project Vision
 
 This project is not a real casino platform.
@@ -306,7 +464,9 @@ flowchart TB
     TS[(trainee_sessions)]
     SCU[(sandbox_customers)]
     SGA[(sandbox_game_accounts)]
-    STH[(sandbox_transaction_history)]
+    STH[(sandbox_transaction_history<br/>customer movements)]
+    SGH[(sandbox_game_history)]
+    SGW[(sandbox_game_wallets)]
     SO[(sandbox_operations)]
     TAL[(trainee_action_logs)]
   end
@@ -337,12 +497,15 @@ flowchart TB
   SS --> TS
   SS --> SCU
   SS --> SGA
+  SS --> SGW
   SS --> STH
   GM --> SO
   OS --> SO
   CS --> SCU
   CS --> STH
   GSS --> SGA
+  GSS --> SGH
+  GSS --> SGW
   AL --> TAL
   SE --> TS
 ```
@@ -365,6 +528,7 @@ sequenceDiagram
   API->>Sandbox: createSandboxSession()
   Sandbox->>DB: Insert trainee_sessions
   Sandbox->>DB: Seed sandbox_customers
+  Sandbox->>DB: Seed one 20,000 loading wallet per game
   Sandbox->>DB: Seed sandbox_game_accounts
   Sandbox->>DB: Seed sandbox_transaction_history (pre-session history)
   API->>GM: startSession(sessionId, durationMs)
@@ -374,7 +538,7 @@ sequenceDiagram
   API-->>Trainee: session object (stored in localStorage)
 
   loop While session active
-    GM->>DB: Insert PENDING sandbox_operations
+    GM->>DB: Atomically insert PENDING operation<br/>and reserve Add Credits when applicable
     Trainee->>API: GET /api/operations/:sessionId
     Trainee->>API: POST /api/operations/:id/process { action }
     API->>DB: Update operation, balances, game accounts
@@ -402,7 +566,8 @@ When `createSandboxSession()` runs, the environment is **never empty**:
 1. **Session record** — `trainee_sessions` (trainee name, timestamps, status).
 2. **Customers** — cloned baseline profiles with balances in `sandbox_customers`.
 3. **Game accounts** — Orion Stars, Vblink, and Golden Dragon accounts per customer in `sandbox_game_accounts`.
-4. **Movement history** — pre-generated deposits/withdrawals in `sandbox_transaction_history` (operators validate against this before the first live request).
+4. **Game loading wallets** — an independent 20,000 operational balance per game in `sandbox_game_wallets`; these are not customer balances.
+5. **Movement history** — pre-generated Backend customer deposits/withdrawals in `sandbox_transaction_history` (operators validate against this before the first live request).
 
 Only after seeding does **Game Master** begin injecting live `sandbox_operations` into the queue.
 
@@ -508,7 +673,8 @@ frontend/src/
 | `/api/operations/:sessionId` | Pending operation queue for a session |
 | `/api/operations/:id/process` | Trainee decision on a single operation |
 | `/api/customers/:sessionId` | Customer search within sandbox |
-| `/api/customers/:sessionId/:customerId/history` | Movement + game history |
+| `/api/customers/:sessionId/:customerId/history` | Backend customer movement history only |
+| `/api/games/:sessionId/customers/:customerId/history?game=...` | Game action history for the selected game |
 | `/api/games/:sessionId/:game/accounts` | Game account search and creation |
 | `/api/games/accounts/:id/recharge` | Simulated add credits on game account |
 | `/api/games/accounts/:id/redeem` | Simulated withdraw credits |
@@ -519,13 +685,19 @@ frontend/src/
 
 ## Data Model (Sandbox vs Persistent)
 
+The separated history, wallet, reservation, and queue constraints below require
+the tracked local Milestone 0 migration. It has not been applied to a shared
+database; disposable-database rehearsal remains an exit gate.
+
 ```mermaid
 erDiagram
   trainee_sessions ||--o{ sandbox_customers : contains
   trainee_sessions ||--o{ sandbox_operations : generates
   trainee_sessions ||--o{ trainee_action_logs : audits
   sandbox_customers ||--o{ sandbox_game_accounts : owns
-  sandbox_customers ||--o{ sandbox_transaction_history : has
+  sandbox_customers ||--o{ sandbox_transaction_history : has_customer_movements
+  sandbox_customers ||--o{ sandbox_game_history : has_game_actions
+  trainee_sessions ||--o{ sandbox_game_wallets : funds_games
   sandbox_operations }o--|| sandbox_customers : references
   sandbox_operations }o--o| sandbox_game_accounts : references
 
@@ -559,12 +731,31 @@ erDiagram
     numeric amount
   }
 
+  sandbox_game_history {
+    uuid id PK
+    uuid session_id FK
+    uuid customer_id FK
+    uuid game_account_id FK
+    text game
+    text type
+    numeric amount
+  }
+
+  sandbox_game_wallets {
+    uuid id PK
+    uuid session_id FK
+    text game
+    numeric balance
+  }
+
   sandbox_operations {
     uuid id PK
     uuid session_id FK
     text type
     text status
     numeric amount
+    numeric reserved_customer_amount
+    text customer_reservation_status
   }
 
   trainee_action_logs {
@@ -577,7 +768,7 @@ erDiagram
 
 | Data | Lifetime |
 |------|----------|
-| `sandbox_customers`, `sandbox_game_accounts`, `sandbox_transaction_history`, `sandbox_operations` | **Disposable** — tied to the active sandbox; deleted when the session is torn down |
+| `sandbox_customers`, `sandbox_game_accounts`, `sandbox_game_wallets`, `sandbox_transaction_history`, `sandbox_game_history`, `sandbox_operations` | **Disposable** — tied to the active sandbox; deleted when the session is torn down |
 | `trainee_sessions` (scores, performance), `trainee_action_logs` | **Persistent** — used for evaluation, trainer review, and analytics |
 
 ---

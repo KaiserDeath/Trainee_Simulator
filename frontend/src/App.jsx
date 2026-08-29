@@ -7,6 +7,7 @@ import TrainerDashboard from "./pages/DashboardPage";     // renamed alias for c
 import OrionStarsPanel from "./components/games/OrionStarsPanel";
 import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
 import VblinkPanel from "./components/games/VblinkPanel";
+import HubPage from "./pages/HubPage";
 
 const SESSION_KEY = "casino_trainer_session";
 
@@ -26,12 +27,22 @@ function getDocumentTitle(path) {
     return 'Golden Dragon';
   }
 
-  return 'Simulador DOS';
+  if (path === '/hub' || path.startsWith('/hub/')) {
+    return 'Trez Training Hub';
+  }
+
+  if (path === '/trainer') {
+    return 'Trez Trainer Dashboard';
+  }
+
+  return 'Trez Operator Simulator';
 }
 
 export default function App() {
   // ⚡ Keep track of the path in a state variable so React re-renders when it shifts
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const hubEnabled = import.meta.env.VITE_TREZ_HUB_ENABLED === 'true';
+  const isHubRoute = hubEnabled && (currentPath === '/hub' || currentPath.startsWith('/hub/'));
 
   // Restore session from localStorage on first load
   const [session, setSession] = useState(() => {
@@ -44,16 +55,20 @@ export default function App() {
   });
 
   useEffect(() => {
-    socket.connect();
+    if (isHubRoute) return undefined;
 
-    socket.on('connect', () => {
+    const handleConnect = () => {
       console.log('Socket connected:', socket.id);
-    });
+    };
+
+    socket.connect();
+    socket.on('connect', handleConnect);
 
     return () => {
+      socket.off('connect', handleConnect);
       socket.disconnect();
     };
-  }, []);
+  }, [isHubRoute]);
 
   useEffect(() => {
     document.title = getDocumentTitle(currentPath);
@@ -102,6 +117,8 @@ export default function App() {
   const goldenDragonMatch = currentPath.match(/^\/games\/golden-dragon\/([^/]+)$/);
   const vblinkMatch = currentPath.match(/^\/games\/vblink\/([^/]+)$/);
   const isTrainer = currentPath === "/trainer";
+
+  if (isHubRoute) return <HubPage />;
 
   if (gameMatch) return <OrionStarsPanel session={session} sessionId={gameMatch[1]} />;
   if (goldenDragonMatch) return <GoldenDragonPanel session={session} sessionId={goldenDragonMatch[1]} />;

@@ -14,5 +14,23 @@ if (!supabaseUrl || !supabaseKey) {
 
 export const supabase = createClient(
   supabaseUrl,
-  supabaseKey
+  supabaseKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  }
 );
+
+export function createSupabaseAuthClient({ url, anonKey }) {
+  return createClient(url, anonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+      flowType: 'pkce',
+    },
+  });
+}

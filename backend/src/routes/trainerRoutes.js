@@ -7,7 +7,6 @@ import {
   buildOperationTimeStats,
   buildSessionReport,
   deleteSession,
-  deleteSessionsWithoutActivity,
   submitSession
 } from '../engine/SessionEngine.js';
 import {
@@ -72,13 +71,6 @@ router.get('/sessions', async (
   req,
   res
 ) => {
-
-  try {
-    const deletedIds = await deleteSessionsWithoutActivity();
-    deletedIds.forEach(id => GameMaster.stopSession(id));
-  } catch (cleanupError) {
-    console.error('Failed to clean inactive sessions', cleanupError);
-  }
 
   const { data, error } =
     await supabase

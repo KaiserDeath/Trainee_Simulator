@@ -10,6 +10,11 @@ import {
 } from './scoringService.js';
 
 import {
+  getMovementCancellationReason
+} from './operationPolicy.js';
+
+import {
+  getConfirmedCreatedAccountEvidence,
   hasCreatedAccount,
   hasMatchingGameAction
 } from './gameSimulationService.js';
@@ -18,10 +23,10 @@ import {
   getOperationHandlingStart,
   logActionEvent
 } from '../engine/AuditLogger.js';
-
-import {
-  getMovementCancellationReason
-} from './operationPolicy.js';
+import { CUSTOMER_MOVEMENT_HISTORY_TABLE }
+  from '../domain/historyStores.js';
+import { sanitizeRequestEvidence }
+  from '../domain/trainerEvidence.js';
 
 const operationSelect = `
   *,
@@ -284,24 +289,19 @@ async function markOperationProcessed({
   action,
   traineeName,
   isCorrect,
-  processingSeconds,
-  cancellationReason
+  processingSeconds
 }) {
-  const updates = {
-    status: action,
-    processed_at:
-      new Date().toISOString(),
-    processed_by: traineeName,
-    is_correct: isCorrect,
-    processing_time_seconds:
-      processingSeconds,
-    cancellation_reason:
-      cancellationReason || null
-  };
-
   const { data, error } = await supabase
     .from('sandbox_operations')
-    .update(updates)
+    .update({
+      status: action,
+      processed_at:
+        new Date().toISOString(),
+      processed_by: traineeName,
+      is_correct: isCorrect,
+      processing_time_seconds:
+        processingSeconds
+    })
     .eq('id', operation.id)
     .eq('status', 'PENDING')
     .select()
@@ -323,20 +323,16 @@ function buildAuditHistoryDescription({
   action,
   traineeName,
   requestData,
-  isCorrect,
-  cancellationReason
+  isCorrect
 }) {
   const details =
     isRequestOperation(operation.type)
-      ? ` Submitted data: ${JSON.stringify(requestData)}.`
+      ? ` Submitted evidence: ${JSON.stringify(
+          sanitizeRequestEvidence(requestData)
+        )}.`
       : '';
 
-  const cancellationDetails =
-    cancellationReason
-      ? ` Cancellation reason: ${cancellationReason}.`
-      : '';
-
-  const plainDescription = `Operation ${action} by ${traineeName}. Correct: ${isCorrect}.${details}${cancellationDetails}`;
+  const plainDescription = `Operation ${action} by ${traineeName}. Correct: ${isCorrect}.${details}`;
 
   let description = plainDescription;
 
@@ -352,7 +348,6 @@ function buildAuditHistoryDescription({
       manager: traineeName,
       status: action === 'APPROVED' ? 'Approved' : 'Cancelled',
       isCorrect,
-      cancellationReason,
       details: plainDescription
     };
     description = JSON.stringify(descriptionObj);
@@ -361,15 +356,24 @@ function buildAuditHistoryDescription({
   return description;
 }
 
-async function createAuditHistory(context) {
-  const { operation } = context;
+async function createAuditHistory({
+  operation,
+  action,
+  traineeName,
+  requestData,
+  isCorrect
+}) {
   const description =
-    buildAuditHistoryDescription(context);
+    buildAuditHistoryDescription({
+      operation,
+      action,
+      traineeName,
+      requestData,
+      isCorrect
+    });
 
   const { error } = await supabase
-    .from(
-      'sandbox_transaction_history'
-    )
+    .from(CUSTOMER_MOVEMENT_HISTORY_TABLE)
     .insert({
       session_id:
         operation.session_id,
@@ -387,7 +391,10 @@ async function createAuditHistory(context) {
 }
 
 function throwMovementSettlementError(error) {
-  if (/operation already processed/i.test(error.message)) {
+  if (
+    /operation already processed/i
+      .test(error.message)
+  ) {
     throw operationAlreadyProcessed();
   }
 
@@ -395,7 +402,7 @@ function throwMovementSettlementError(error) {
     error.statusCode = 404;
     error.code = 'OPERATION_NOT_FOUND';
   } else if (
-    /invalid action|required|must be|insufficient|session is no longer active|reserved movement/i
+    /invalid action|required|must be|insufficient|session is no longer active|only supports/i
       .test(error.message)
   ) {
     error.statusCode = 400;
@@ -591,8 +598,7 @@ export async function processOperation(
       action,
       traineeName,
       isCorrect,
-      processingSeconds,
-      cancellationReason
+      processingSeconds
     });
 
   await saveRequestPayload(
@@ -611,8 +617,7 @@ export async function processOperation(
     action,
     traineeName,
     requestData,
-    isCorrect,
-    cancellationReason
+    isCorrect
   });
 
   await logActionEvent({
@@ -625,15 +630,27 @@ export async function processOperation(
       isCorrect,
       processingSeconds,
       handlingStartedAt,
-      handlingSeconds,
-      cancellationReason
+      handlingSeconds
     }
   });
+
+  const completionEvidence =
+    operation.type === 'CREATE ACCOUNT' &&
+    action === 'APPROVED' &&
+    isCorrect
+      ? await getConfirmedCreatedAccountEvidence({
+          operation,
+          requestData,
+          backendConfirmedAt:
+            updatedOperation.processed_at
+        })
+      : null;
 
   return {
     message: 'Operation processed',
     isCorrect,
     processingSeconds,
-    operation: updatedOperation
+    operation: updatedOperation,
+    completionEvidence
   };
 }

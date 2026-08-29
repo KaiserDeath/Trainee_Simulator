@@ -30,24 +30,19 @@ export async function logActionEvent({
 }
 
 export async function getSessionActionLog(sessionId) {
-  try {
-    const { data, error } = await supabase
-      .from('trainee_action_logs')
-      .select('*')
-      .eq('session_id', sessionId)
-      .order('timestamp', {
-        ascending: true
-      });
+  const { data, error } = await supabase
+    .from('trainee_action_logs')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('timestamp', {
+      ascending: true
+    });
 
-    if (error) {
-      throw error;
-    }
-
-    return data || [];
-  } catch (err) {
-    console.error('Failed to fetch action log:', err);
-    return [];
+  if (error) {
+    throw error;
   }
+
+  return data || [];
 }
 
 export function parseActionDetails(details) {

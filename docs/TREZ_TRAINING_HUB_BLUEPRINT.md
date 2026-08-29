@@ -1,12 +1,24 @@
 # Trez Training Hub — Product and Architecture Blueprint
 
-Status: Draft for business validation  
-Company: Trez  
-Working product name: Trez Training Hub  
+Status: Draft for business validation
+Company: Trez
+Working product name: Trez Training Hub
 Existing application: Operator Training Simulator (`Simulador-dos`)
 Existing learning application: Account ID Lab (`C:/Users/OS/PROYECTOS/Evaluations`)
 Business-process reference: `C:/Users/OS/Downloads/Guia de Operador Backend.pptx` (18 slides, reviewed 2026-08-19)
 Execution roadmap: `docs/TREZ_TRAINING_HUB_DEVELOPMENT_PLAN.md`
+
+Supplemental onsite-training references reviewed on 2026-08-27:
+
+- `C:/Users/OS/Downloads/Training Day 1 (2).docx`
+- `C:/Users/OS/Downloads/Day 2 - Operations Training (3).docx`
+- `C:/Users/OS/Downloads/Day 3 - Movements Training (2).docx`
+- `C:/Users/OS/Downloads/Day 4 Customer Experience Uiux (1).docx`
+
+These four daily documents are partial references. In particular, Backend
+material was intentionally removed from them. Their omissions or differences do
+not remove Backend learning requirements established by the broader training
+structure, the Operator Backend guide, or direct Trez decisions.
 
 ## 1. Purpose
 
@@ -22,9 +34,18 @@ The product must apply business inputs in this order:
 
 1. Direct instructions confirmed by Trez in this project.
 2. The Operator Backend guide for workflow, terminology, game families, and operational rules.
-3. Existing simulator and Account ID Lab behavior as reusable prototype evidence, not as the business source of truth.
+3. Supplemental daily-training documents as detailed but partial references;
+   their omissions are not evidence that a broader requirement was removed.
+4. Existing simulator and Account ID Lab behavior as reusable prototype evidence, not as the business source of truth.
 
-Therefore, the curriculum order confirmed by Trez is: Module 1 explains the work and operator expectations; Module 2 demonstrates the complete practical workflow and previews everything taught later; Modules 3–8 teach Account Creation, Search for Customer, Refresh Balance, Add Credits, Withdraw Credits, and Reset Password in that order; Module 9 covers exceptional or advanced operations; Module 10 provides mixed-operation practice; and Module 11 is the final full-shift assessment. Screenshots and examples in the guide are reference material; credentials, example passwords, and transient production data must not be copied into source code or training fixtures.
+The 11-module order below remains the earlier content baseline. Trez subsequently
+approved expanding the pre-training curriculum to include three prerequisite
+checkpoint evaluations plus a final readiness evaluation. The final evaluation
+therefore moves to the last module in the expanded curriculum and is no longer
+fixed to Module 11. Exact expanded module numbering must be defined without
+dropping the omitted Backend content. Screenshots and examples in the references
+remain source material; credentials, example passwords, and transient production
+data must not be copied into source code or training fixtures.
 
 ## 2. Real operator workflow
 
@@ -46,12 +67,14 @@ The final Backend decision alone is not enough to establish correctness. Scoring
 
 ### Training Hub owns
 
-- Trainee, trainer, administrator, and future auditor identities.
+- POSTULANTE, TRAINER, ADMIN, and RRHH identities.
 - Courses, modules, lessons, and activity sequencing.
 - Learning content and training resources.
 - Prerequisites, progress, attempts, completion, and certification.
 - Assignment of training to individuals or cohorts.
 - Trainer-facing progress and performance reporting.
+- Read-only RRHH access across all Postulantes to module-completion status and
+  sanitized original simulator operation/failure evidence.
 
 ### Exercise engine owns
 
@@ -105,9 +128,9 @@ The Hub should support these activity types:
 
 This model allows Trez to add training that is not related to the simulator without creating a separate platform.
 
-## 5. Confirmed learning progression
+## 5. Learning-progression baseline and approved expansion
 
-The confirmed curriculum order is:
+The earlier confirmed content baseline is:
 
 1. **Module 1 — Understanding the work:** how the casino and gaming ecosystem operates, Trez's role, the operator's role, how customer funds and game balances relate, and the standards expected from operators.
 2. **Module 2 — Complete workflow orientation:** game families, Backend access, licenses, customer information, operation categories, and a demonstration or quick simulation that previews everything taught in later modules.
@@ -119,9 +142,17 @@ The confirmed curriculum order is:
 8. **Module 8 — Reset Password:** verify the correct account, apply the game-specific reset policy, and complete the Backend request safely.
 9. **Module 9 — Exceptional and advanced operations:** handle approved exceptions, inconsistent evidence, escalations, and any advanced Transaction or Request workflows Trez places in scope.
 10. **Module 10 — Mixed-operation practice:** process a realistic combination of learned operations with reduced guidance.
-11. **Module 11 — Final full-shift assessment:** complete a controlled, scored simulation of the operator workload.
+11. **Module 11 — Earlier final-assessment position:** this was the original
+    final full-shift-assessment position and remains a scaffold only. In the
+    expanded curriculum, three checkpoint modules are inserted as prerequisites
+    and the final pre-training readiness evaluation becomes the new last module.
 
 The game-functionality list is a shared capability inventory, not a curriculum order and not a one-capability-per-module design. Each complete operation module references only the capabilities it requires and reuses their authoritative definitions without copying them.
+
+The four formal scored evaluations are three checkpoint modules and one final
+pre-training readiness evaluation. They measure readiness to continue into the
+real onsite course; passing the Hub does not replace onsite training or certify a
+production operator.
 
 ### Module 1 — Understanding the work
 
@@ -167,6 +198,14 @@ Account Creation must combine two existing applications into one continuous lear
 8. The trainee returns to Trez Backend and completes the Create Account request with the required information.
 9. The Hub scores the complete workflow, including license and game selection, structure accuracy, duplicate prevention, credential capture, Backend completion, assistance used, and time.
 
+Orion Stars is the approved first reference adapter. Its simulated website must
+show an Orion-styled success prompt after the player is created, and its browser
+tab title must be `Orion Stars`. The Backend terminal interaction is the request
+pencil form followed by the created game ID, password, Orion kiosk information,
+and Confirm. Account-structure validation is active only in Module 3 and the
+final assessment; Free Simulator mode records creation without grading the
+identifier structure.
+
 The Account ID Lab is the teaching and formative-practice stage of this module. `Simulador-dos` remains the application stage where the trainee performs the operation. Attempt identity, scenario data, progress, and scoring must remain continuous across both stages, and the created identifier must remain available to Module 4.
 
 ### Module 4 — Search for Customer
@@ -194,6 +233,59 @@ Every simulator-backed activity should declare one mode:
 | Independent practice | No mandatory guidance; retry allowed | Formative | Build confidence and speed |
 | Assessment | No hints; controlled attempt rules | Formal | Module completion |
 | Full simulation | Mixed operations and time pressure | Formal | Capstone evaluation |
+
+### Approved practice and scored-evaluation policy
+
+Standard learning modules, guided practice, and independent practice allow
+unlimited attempts. Each formal scored evaluation is a separate prerequisite
+module, requires a score of 100%, and contains a teaching/practice section that
+is distinct from its scored section. The scored section provides no procedural
+guidance, hints, highlighted controls, step-by-step prompts, or answer-level
+correction.
+
+Each scored-evaluation attempt set follows these rules:
+
+1. The POSTULANTE receives at most three scored attempts.
+2. After attempt one or two, the POSTULANTE sees the numerical score and attempts
+   remaining and may submit the latest result. Submission closes the evaluation
+   and forfeits unused attempts.
+3. A 100% result still requires the POSTULANTE to confirm submission unless it
+   is the third attempt.
+4. If no result was submitted earlier, attempt three is submitted automatically
+   and closes the evaluation.
+5. The POSTULANTE sees the numerical score and whether the checkpoint was
+   successful, but not failed answers, failed actions, correct answers, or other
+   diagnostic failure details.
+6. All attempts, scores, evidence, submission events, configuration versions,
+   and prior attempt sets are retained for TRAINER review and RRHH read-only
+   audit. The submitted latest attempt is the official result; retention does
+   not make earlier attempts official.
+7. Only TRAINER may reopen a closed or exhausted scored evaluation. Reopening
+   requires a reason and creates a new set of three attempts without deleting or
+   rewriting any earlier set. The reason and reopening history are visible only
+   to TRAINER and RRHH.
+
+The default score composition is 20% digital theory and 80% practical execution.
+TRAINER may adjust those weights only in Advanced Settings on a new version. The
+exact weight configuration is bound to every attempt. Because 100% is required,
+weighting supports numerical reporting and diagnosis; it does not make any
+required theory answer or practical action optional.
+
+Checkpoint 1's default numerical profile is:
+
+- Digital theory: 20%.
+- Create Account: 15%.
+- Search User: 10%.
+- Verify Balance: 10%.
+- Add Credits: 15%.
+- Withdraw Credits: 15%.
+- Review Transaction Records: 10%.
+- Reset Password or Edit Information: 5%.
+
+When more than one game family is selected, the practical 80% is divided equally
+between the selected families and the same relative action profile is applied
+inside each family. Every action remains a required completion condition even
+when TRAINER publishes a different versioned weighting.
 
 ## 7. Operation definition contract
 
@@ -361,6 +453,36 @@ Scoring should be derived from immutable evidence using the operation-definition
 
 Changing the wrong player, using the wrong license, or duplicating an already completed financial movement must be modeled as critical errors. Correctly choosing not to mutate the game is a successful outcome when the evidence proves that the operation was already completed.
 
+### Checkpoint 1 practical contract
+
+Checkpoint 1 uses only game-platform work; it must not invent or evaluate the
+Backend steps omitted from the supplemental daily documents. TRAINER selects
+from game families whose simulator adapters are verified. A new published
+version selects all currently verified families by default, remains extensible
+to future verified families, and must not allow an unverified family to be
+selected.
+
+For every selected family, the POSTULANTE completes all seven required actions
+in this fixed sequence before moving to the next family:
+
+1. Create Account.
+2. Search User.
+3. Verify Balance.
+4. Add Credits.
+5. Withdraw Credits.
+6. Review Transaction Records.
+7. Reset Password or Edit Information, according to the verified adapter.
+
+Review Transaction Records is not intrinsically limited to the last three
+movements. Its default evaluation window is all available relevant movements
+from the previous seven days. TRAINER may configure a different time window or a
+specific recent-record count in Advanced Settings. The selected families,
+adapter versions, history rule, action sequence, score weights, and all other
+evaluation parameters must be retained in the attempt configuration snapshot.
+Failure does not remove the evidence or score, and a later attempt restarts the
+entire checkpoint, including theory and all selected families and required
+actions.
+
 ## 11. Recommended architecture
 
 The first production architecture should be a modular monolith with a separate durable simulation worker, not microservices.
@@ -512,26 +634,43 @@ This slice validates the Hub, Account ID Lab integration, reusable exercise engi
 12. Expand through Modules 5–9 and then across supported games.
 13. Deliver mixed-operation practice and the final full-shift assessment as Modules 10 and 11.
 
-## 16. Open business decisions
+## 16. Business-decision status
 
-Trez must confirm these decisions before runtime implementation begins:
+Trez approved the following foundation decisions beginning 2026-08-21, with the
+role-management revision approved 2026-08-27: username/password authentication
+backed by Supabase Auth JWT sessions; TRAINER/RRHH-created Postulantes and
+ADMIN-created TRAINER accounts with
+generated usernames and initial password equal to username; the role/visibility
+boundary in ADR 0001; assigned courses; ADMIN-authored content with a different
+ADMIN required for approval; two-year retention; English-only POSTULANTE content;
+English/Spanish TRAINER, ADMIN, and RRHH experiences; global TRAINER/RRHH
+Postulante management; and read-only RRHH reporting across all Postulantes for module completion and
+sanitized original simulator operation/failure evidence. Implementation of
+retention deletion operations, bilingual authoring/account-administration
+interfaces beyond the implemented administrator progress shell, and hosted
+configuration still require deployment acceptance.
+
+Legacy simulator sessions without an explicit Hub identity link retain an
+`unlinked` lineage state; trainee-name text is not an identity mapping rule.
+RRHH evidence must preserve the original operation outcome and useful failure
+facts while excluding password literals, raw request payloads, tokens, cookies,
+authorization headers, and comparable secrets.
+
+The remaining open business decisions are:
 
 1. Final public or internal name of the Training Hub.
 2. Complete list of current and planned operations, including whether Purchases and Cashouts will ever be simulated or remain learning-only.
 3. Canonical platform catalogue, the seven family memberships, and approved abbreviations.
 4. Correct workflow, eligible states, bot timeout behavior, and exceptions for each operation/game combination.
-5. Required roles and how Trez users authenticate.
-6. Whether courses are sequential, assigned, self-service, or a mixture.
-7. Whether trainers author content in the Hub or content is initially maintained by developers.
-8. Formal pass, retry, hint, partial-credit, and instructor-approval rules.
-9. Expected trainee concurrency and training volume.
-10. Required retention period for attempts, scores, videos, and audit evidence.
-11. Languages required at launch and later.
-12. Deployment, privacy, and reporting requirements.
-13. Source and maintenance process for company/license assignments and game access.
-14. Escalation behavior when histories are inconsistent or the operator cannot verify completion.
-15. Approved account-creation naming formulas and reset-password policies per platform.
-16. Whether Account ID Lab configuration is managed only by Trez administrators or through a separate approval workflow.
+5. Checkpoint-specific question banks, evidence rubrics, critical-error rules,
+   and content for Checkpoints 2 and 3 and the final readiness evaluation beyond
+   the approved common scoring and attempt policy.
+6. Expected trainee concurrency and training volume.
+7. Deployment, privacy, reporting, backup, monitoring, and first-administrator provisioning requirements.
+8. Source and maintenance process for company/license assignments and game access.
+9. Escalation behavior when histories are inconsistent or the operator cannot verify completion.
+10. Approved account-creation naming formulas and reset-password policies per platform.
+11. Whether Account ID Lab configuration is managed only by Trez administrators or through a separate approval workflow.
 
 ## 17. Naming rule pending brand approval
 

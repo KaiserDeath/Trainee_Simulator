@@ -1,0 +1,39 @@
+{
+  "name": "trez-training-hub-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "setup": "npm ci && npm ci --prefix backend && npm ci --prefix frontend && npm ci --prefix shared/account-id-rules",
+    "setup:browser": "npm --prefix frontend run test:browser:install",
+    "local:prepare": "node scripts/prepare-local-supabase.mjs",
+    "local:start": "npm run local:prepare && supabase start && node scripts/write-local-env.mjs",
+    "local:reset": "npm run local:prepare && supabase db reset && node scripts/write-local-env.mjs",
+    "local:status": "supabase status",
+    "local:stop": "supabase stop",
+    "local:bootstrap:admin": "node backend/scripts/bootstrap-local-hub-admin.mjs",
+    "verify:local:data": "node backend/scripts/verify-local-runtime.mjs",
+    "verify:local:hub": "node scripts/run-local-hub-verification.mjs",
+    "verify:local:hub:auth": "node scripts/run-local-hub-auth-verification.mjs",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "test:backend": "npm test --prefix backend",
+    "test:shared": "npm test --prefix shared/account-id-rules",
+    "test:database:safety": "npm run test:database:safety --prefix backend",
+    "test:database:integration": "npm run test:database:integration --prefix backend",
+    "test:database": "npm run test:database:safety && npm run test:database:integration",
+    "test:browser": "npm --prefix frontend run test:browser",
+    "test:e2e:local": "node scripts/run-local-playwright-e2e.mjs",
+    "lint:frontend": "npm run lint --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "verify:baseline": "npm run test:backend && npm run lint:frontend && npm run build:frontend",
+    "verify:foundation": "npm run verify:baseline && npm run test:shared && npm run test:database:safety && npm run test:browser",
+    "verify:milestone0": "npm run verify:foundation && npm run test:database:integration"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "devDependencies": {
+    "supabase": "2.115.0"
+  }
+}
