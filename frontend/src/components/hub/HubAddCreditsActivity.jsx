@@ -4,6 +4,7 @@ import {
   rechargeHubAddCreditsPractice,
   startHubAddCreditsPractice,
 } from '../../api/client';
+import MovementConfirmationModal from '../operations/MovementConfirmationModal';
 
 const DEFAULT_GAME_TABS = [
   { id: 'orion-stars', label: 'Orion Stars', status: 'available' },
@@ -36,6 +37,7 @@ export default function HubAddCreditsActivity({ activity, disabled, onComplete }
   const [selectedGame] = useState('orion-stars');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
   const gameTabs = useMemo(() => gameTabsFor(activity), [activity]);
 
   const startPractice = async () => {
@@ -68,7 +70,7 @@ export default function HubAddCreditsActivity({ activity, disabled, onComplete }
     }
   };
 
-  const settle = async (action) => {
+  const settle = async (action, cancellationReason = null) => {
     setBusy(true);
     setError('');
     try {
@@ -77,9 +79,14 @@ export default function HubAddCreditsActivity({ activity, disabled, onComplete }
         accountId: view.account.id,
         amount: view.operation.amount,
         gameActionExecuted: view.operation.gameActionExecuted,
+        ...(action === 'CANCELLED'
+          ? { cancellationReason }
+          : {}),
       });
+      return true;
     } catch (settleError) {
       setError(settleError?.response?.data?.error?.message || 'The Backend movement could not be settled.');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -155,8 +162,8 @@ export default function HubAddCreditsActivity({ activity, disabled, onComplete }
               <h4>Backend decision</h4>
               <p>{view.operation.gameActionExecuted ? 'Game evidence exists. Approve the existing request once.' : 'If the movement must stop before the game action, cancel the existing request once.'}</p>
               <div className="hub-inline-actions">
-                <button className="hub-primary-button" type="button" disabled={disabled || busy || !view.operation.gameActionExecuted} onClick={() => settle('APPROVED')}>Approve movement</button>
-                <button className="hub-secondary-button" type="button" disabled={disabled || busy} onClick={() => settle('CANCELLED')}>Cancel movement</button>
+                <button className="hub-primary-button" type="button" disabled={disabled || busy || !view.operation.gameActionExecuted} onClick={() => setPendingAction('APPROVED')}>Approve movement</button>
+                <button className="hub-secondary-button" type="button" disabled={disabled || busy} onClick={() => setPendingAction('CANCELLED')}>Cancel movement</button>
               </div>
             </section>
           )}
@@ -164,6 +171,19 @@ export default function HubAddCreditsActivity({ activity, disabled, onComplete }
       )}
 
       {error && <p className="hub-inline-error" role="alert">{error}</p>}
+      {pendingAction && (
+        <MovementConfirmationModal
+          action={pendingAction}
+          error={error}
+          isSubmitting={busy}
+          onClose={() => setPendingAction(null)}
+          onConfirm={async (cancellationReason) => {
+            if (await settle(pendingAction, cancellationReason)) {
+              setPendingAction(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

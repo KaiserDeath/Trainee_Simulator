@@ -8,6 +8,7 @@ const identity = { subjectId: 'postulante-focused', displayName: 'Focused Postul
 
 function createService(overrides = {}) {
   const calls = [];
+  const repositoryCalls = [];
   const practiceRepository = {
     async start() {
       return { created: true, game: 'Orion Stars', surface: 'balance', timedSimulator: false };
@@ -33,10 +34,18 @@ function createService(overrides = {}) {
     async rechargeAddCredits() {
       return { game: 'Orion Stars', surface: 'add_credits', operation: { gameActionExecuted: true } };
     },
-    async settleAddCredits() {
+    async settleAddCredits(args) {
+      repositoryCalls.push(['settleAddCredits', args]);
       return {
         context: { activityAttemptId: 'activity-attempt-add', operationId: 'operation-add', game: 'Orion Stars' },
         operation: { status: 'APPROVED' },
+      };
+    },
+    async settleWithdrawCredits(args) {
+      repositoryCalls.push(['settleWithdrawCredits', args]);
+      return {
+        context: { activityAttemptId: 'activity-attempt-withdraw', operationId: 'operation-withdraw', game: 'Orion Stars' },
+        operation: { status: 'CANCELLED' },
       };
     },
     ...overrides.practiceRepository,
@@ -50,6 +59,7 @@ function createService(overrides = {}) {
   return {
     service: createHubFocusedPracticeService({ practiceRepository, hubService }),
     calls,
+    repositoryCalls,
   };
 }
 
@@ -111,4 +121,32 @@ test('focused Add Credits validates the exact game amount before recharge', asyn
     service.rechargeAddCredits(identity, 'activity-add', { accountId: 'account-add', amount: '', }),
     (error) => error instanceof HubError && error.code === 'HUB_VALIDATION_ERROR',
   );
+});
+
+test('focused credit cancellations preserve the reason for the atomic movement settlement', async () => {
+  const { service, repositoryCalls } = createService();
+
+  await service.cancelAddCredits(identity, 'activity-add', {
+    cancellationReason: '  duplicate game credit  ',
+    idempotencyKey: 'add-cancel',
+  });
+  await service.cancelWithdrawCredits(identity, 'activity-withdraw', {
+    cancellationReason: '  customer asked to stop  ',
+    idempotencyKey: 'withdraw-cancel',
+  });
+
+  assert.deepEqual(repositoryCalls, [
+    ['settleAddCredits', {
+      identity,
+      activityId: 'activity-add',
+      action: 'CANCELLED',
+      cancellationReason: '  duplicate game credit  ',
+    }],
+    ['settleWithdrawCredits', {
+      identity,
+      activityId: 'activity-withdraw',
+      action: 'CANCELLED',
+      cancellationReason: '  customer asked to stop  ',
+    }],
+  ]);
 });

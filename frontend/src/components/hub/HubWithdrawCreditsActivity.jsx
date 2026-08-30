@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { redeemHubWithdrawCreditsPractice, startHubWithdrawCreditsPractice } from '../../api/client';
+import MovementConfirmationModal from '../operations/MovementConfirmationModal';
 
 const games = [
   { id: 'orion-stars', label: 'Orion Stars', status: 'available' },
@@ -12,6 +13,7 @@ export default function HubWithdrawCreditsActivity({ activity, disabled, onCompl
   const [view, setView] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
   const tabs = useMemo(() => games.map((fallback) => ({ ...fallback, ...(activity.content?.gameOptions || []).find((option) => option.id === fallback.id) })), [activity]);
   const start = async () => {
     setBusy(true); setError('');
@@ -25,10 +27,19 @@ export default function HubWithdrawCreditsActivity({ activity, disabled, onCompl
     catch (e) { setError(e?.response?.data?.error?.message || 'The game-side withdrawal could not be completed.'); }
     finally { setBusy(false); }
   };
-  const settle = async (action) => {
+  const settle = async (action, cancellationReason = null) => {
     setBusy(true); setError('');
-    try { await onComplete({ action, accountId: view.account.id, amount: view.operation.amount, gameActionExecuted: view.operation.gameActionExecuted }); }
-    catch (e) { setError(e?.response?.data?.error?.message || 'The Backend movement could not be settled.'); }
+    try {
+      await onComplete({
+        action,
+        accountId: view.account.id,
+        amount: view.operation.amount,
+        gameActionExecuted: view.operation.gameActionExecuted,
+        ...(action === 'CANCELLED' ? { cancellationReason } : {}),
+      });
+      return true;
+    }
+    catch (e) { setError(e?.response?.data?.error?.message || 'The Backend movement could not be settled.'); return false; }
     finally { setBusy(false); }
   };
   return <div className="hub-focused-balance">
@@ -43,8 +54,9 @@ export default function HubWithdrawCreditsActivity({ activity, disabled, onCompl
         <p className="hub-game-surface-note">Customer balance and game wallet are independent. This focused surface does not start the timed simulator.</p>
       </section>
       <section className="hub-backend-update hub-add-credits-actions" aria-label="Withdraw Credits game action"><h4>Game-side operation</h4><p>Use the assigned account and exact requested amount once. The server records the game history separately.</p><button className="hub-primary-button" type="button" disabled={disabled || busy || view.operation.status !== 'PENDING' || view.operation.gameActionExecuted} onClick={redeem}>{view.operation.gameActionExecuted ? 'Game withdrawal recorded' : (busy ? 'Processing…' : `Withdraw ${view.operation.amount} credits in Orion Stars`)}</button></section>
-      {view.operation.status === 'PENDING' && <section className="hub-backend-update hub-add-credits-actions" aria-label="Withdraw Credits Backend decision"><h4>Backend decision</h4><p>{view.operation.gameActionExecuted ? 'Game evidence exists. Approve the existing request once.' : 'If the movement must stop before the game action, cancel the existing request once.'}</p><div className="hub-inline-actions"><button className="hub-primary-button" type="button" disabled={disabled || busy || !view.operation.gameActionExecuted} onClick={() => settle('APPROVED')}>Approve movement</button><button className="hub-secondary-button" type="button" disabled={disabled || busy} onClick={() => settle('CANCELLED')}>Cancel movement</button></div></section>}
+      {view.operation.status === 'PENDING' && <section className="hub-backend-update hub-add-credits-actions" aria-label="Withdraw Credits Backend decision"><h4>Backend decision</h4><p>{view.operation.gameActionExecuted ? 'Game evidence exists. Approve the existing request once.' : 'If the movement must stop before the game action, cancel the existing request once.'}</p><div className="hub-inline-actions"><button className="hub-primary-button" type="button" disabled={disabled || busy || !view.operation.gameActionExecuted} onClick={() => setPendingAction('APPROVED')}>Approve movement</button><button className="hub-secondary-button" type="button" disabled={disabled || busy} onClick={() => setPendingAction('CANCELLED')}>Cancel movement</button></div></section>}
     </>}
     {error && <p className="hub-inline-error" role="alert">{error}</p>}
+    {pendingAction && <MovementConfirmationModal action={pendingAction} error={error} isSubmitting={busy} onClose={() => setPendingAction(null)} onConfirm={async (cancellationReason) => { if (await settle(pendingAction, cancellationReason)) setPendingAction(null); }} />}
   </div>;
 }

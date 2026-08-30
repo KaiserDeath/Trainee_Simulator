@@ -427,7 +427,7 @@ export function createSupabaseHubFocusedPracticeRepository({
     return loadAddCreditsView(result.row);
   }
 
-  async function settleAddCredits({ identity, activityId, action }) {
+  async function settleAddCredits({ identity, activityId, action, cancellationReason }) {
     await assertFocusedAddCreditsActivity(activityId);
     const result = await findContext(identity, activityId);
     if (!result.row) throw new HubError(404, 'HUB_ADD_CREDITS_NOT_STARTED', 'Start the Add Credits practice before settling the movement.');
@@ -439,7 +439,12 @@ export function createSupabaseHubFocusedPracticeRepository({
     return processOperation(operation.id, {
       action,
       traineeName: identity.displayName || identity.subjectId,
-      requestData: { focusedPractice: true, operationId: operation.id, action },
+      requestData: {
+        focusedPractice: true,
+        operationId: operation.id,
+        action,
+        ...(action === 'CANCELLED' ? { cancellationReason } : {}),
+      },
     }).then(() => loadAddCreditsView(result.row));
   }
 
@@ -528,14 +533,23 @@ export function createSupabaseHubFocusedPracticeRepository({
     return loadWithdrawCreditsView(result.row);
   }
 
-  async function settleWithdrawCredits({ identity, activityId, action }) {
+  async function settleWithdrawCredits({ identity, activityId, action, cancellationReason }) {
     await assertFocusedWithdrawCreditsActivity(activityId);
     const result = await findContext(identity, activityId);
     if (!result.row) throw new HubError(404, 'HUB_WITHDRAW_CREDITS_NOT_STARTED', 'Start the Withdraw Credits practice before settling the movement.');
     const operation = await readWithdrawOperation(result.row);
     if (operation.status === 'PENDING' && action === 'APPROVED' && !(await withdrawGameActionExists(operation))) throw new HubError(409, 'HUB_GAME_ACTION_REQUIRED', 'Perform the game-side Withdraw Credits action before approving the Backend movement.');
     if (operation.status !== 'PENDING') return loadWithdrawCreditsView(result.row);
-    await processOperation(operation.id, { action, traineeName: identity.displayName || identity.subjectId, requestData: { focusedPractice: true, operationId: operation.id, action } });
+    await processOperation(operation.id, {
+      action,
+      traineeName: identity.displayName || identity.subjectId,
+      requestData: {
+        focusedPractice: true,
+        operationId: operation.id,
+        action,
+        ...(action === 'CANCELLED' ? { cancellationReason } : {}),
+      },
+    });
     return loadWithdrawCreditsView(result.row);
   }
 

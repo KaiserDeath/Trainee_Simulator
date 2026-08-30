@@ -94,6 +94,7 @@ export function createHubFocusedPracticeService({ practiceRepository, hubService
         identity,
         activityId,
         action,
+        cancellationReason: body.cancellationReason,
       });
       const completion = await hubService.completeActivityAttempt(
         identity,
@@ -140,7 +141,12 @@ export function createHubFocusedPracticeService({ practiceRepository, hubService
     },
 
     async settleWithdrawCredits(identity, activityId, body = {}, action) {
-      const settled = await practiceRepository.settleWithdrawCredits({ identity, activityId, action });
+      const settled = await practiceRepository.settleWithdrawCredits({
+        identity,
+        activityId,
+        action,
+        cancellationReason: body.cancellationReason,
+      });
       const completion = await hubService.completeActivityAttempt(identity, settled.context.activityAttemptId, {
         state: {
           focusedPractice: true,
