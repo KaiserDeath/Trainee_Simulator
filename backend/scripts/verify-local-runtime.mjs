@@ -8,6 +8,7 @@ import { buildSessionReport } from '../src/engine/SessionEngine.js';
 import {
   createSandboxSession,
   SEEDED_CUSTOMER_COUNT,
+  SEEDED_GAME_ACCOUNT_CUSTOMER_COUNT,
 } from '../src/services/sandboxService.js';
 
 const target = new URL(process.env.SUPABASE_URL);
@@ -83,7 +84,17 @@ try {
   );
 
   assert.equal(customers.length, SEEDED_CUSTOMER_COUNT);
-  assert.equal(accounts.length, customers.length * 3);
+  assert.equal(
+    accounts.length,
+    SEEDED_GAME_ACCOUNT_CUSTOMER_COUNT * 3
+  );
+  assert.equal(
+    customers.filter(customer => !accounts.some(
+      account => account.customer_id === customer.id
+    )).length,
+    SEEDED_CUSTOMER_COUNT -
+      SEEDED_GAME_ACCOUNT_CUSTOMER_COUNT
+  );
   assert.equal(wallets.length, 3);
   assert.ok(wallets.every(wallet => Number(wallet.balance) >= 20000));
 
@@ -417,7 +428,7 @@ try {
 
   console.log([
     'Local data verification passed:',
-    `- ${SEEDED_CUSTOMER_COUNT} seeded customers and 3 independent game wallets`,
+    `- ${SEEDED_CUSTOMER_COUNT} seeded customers (${SEEDED_GAME_ACCOUNT_CUSTOMER_COUNT} with game accounts) and 3 independent game wallets`,
     '- game wallets open at 20,000 or more',
     '- one pending movement per customer',
     '- requests coexist across games but not within the same game',

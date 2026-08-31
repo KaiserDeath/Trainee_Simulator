@@ -5,7 +5,8 @@ export function generateOperation(
   customer,
   gameAccount,
   sessionId,
-  operationType
+  operationType,
+  targetGame = gameAccount?.game
 ) {
 
   let amount = null;
@@ -21,6 +22,10 @@ export function generateOperation(
     operationType ===
       'WITHDRAW CREDITS'
   ) {
+    if (!gameAccount) {
+      return null;
+    }
+
     const maxAvailable =
       operationType ===
       'ADD CREDITS'
@@ -59,10 +64,10 @@ export function generateOperation(
       customer.id,
 
     game_account_id:
-      gameAccount.id,
+      gameAccount?.id || null,
 
     game:
-      gameAccount.game,
+      targetGame,
 
     type:
       operationType,
@@ -73,7 +78,9 @@ export function generateOperation(
       Number(customer.balance),
 
     game_balance_at_request:
-      Number(gameAccount.balance),
+      gameAccount
+        ? Number(gameAccount.balance)
+        : null,
 
     status:
       'PENDING',

@@ -32,7 +32,8 @@ const operationTypes = [
   'WITHDRAW CREDITS'
 ];
 
-export const SEEDED_CUSTOMER_COUNT = 26;
+export const SEEDED_CUSTOMER_COUNT = 40;
+export const SEEDED_GAME_ACCOUNT_CUSTOMER_COUNT = 26;
 
 function createOperationCode(index) {
   return `SBOX${String(index + 1)
@@ -357,6 +358,118 @@ export async function createSandboxSession(traineeName) {
       last_name: 'Ng',
       email: 'taylor.ng@example.test',
       balance: 705.5
+    },
+    {
+      session_id: session.id,
+      username: 'averymoss',
+      first_name: 'Avery',
+      last_name: 'Moss',
+      email: 'avery.moss@example.test',
+      balance: 640
+    },
+    {
+      session_id: session.id,
+      username: 'benitavoss',
+      first_name: 'Benita',
+      last_name: 'Voss',
+      email: 'benita.voss@example.test',
+      balance: 925
+    },
+    {
+      session_id: session.id,
+      username: 'cameronvale',
+      first_name: 'Cameron',
+      last_name: 'Vale',
+      email: 'cameron.vale@example.test',
+      balance: 510
+    },
+    {
+      session_id: session.id,
+      username: 'delaneyfox',
+      first_name: 'Delaney',
+      last_name: 'Fox',
+      email: 'delaney.fox@example.test',
+      balance: 1180
+    },
+    {
+      session_id: session.id,
+      username: 'emeryblake',
+      first_name: 'Emery',
+      last_name: 'Blake',
+      email: 'emery.blake@example.test',
+      balance: 380
+    },
+    {
+      session_id: session.id,
+      username: 'francorowe',
+      first_name: 'Franco',
+      last_name: 'Rowe',
+      email: 'franco.rowe@example.test',
+      balance: 1370
+    },
+    {
+      session_id: session.id,
+      username: 'greerlynn',
+      first_name: 'Greer',
+      last_name: 'Lynn',
+      email: 'greer.lynn@example.test',
+      balance: 715
+    },
+    {
+      session_id: session.id,
+      username: 'harleypace',
+      first_name: 'Harley',
+      last_name: 'Pace',
+      email: 'harley.pace@example.test',
+      balance: 860
+    },
+    {
+      session_id: session.id,
+      username: 'indigocross',
+      first_name: 'Indigo',
+      last_name: 'Cross',
+      email: 'indigo.cross@example.test',
+      balance: 470
+    },
+    {
+      session_id: session.id,
+      username: 'jordansage',
+      first_name: 'Jordan',
+      last_name: 'Sage',
+      email: 'jordan.sage@example.test',
+      balance: 1035
+    },
+    {
+      session_id: session.id,
+      username: 'kendallwinter',
+      first_name: 'Kendall',
+      last_name: 'Winter',
+      email: 'kendall.winter@example.test',
+      balance: 590
+    },
+    {
+      session_id: session.id,
+      username: 'lennonclark',
+      first_name: 'Lennon',
+      last_name: 'Clark',
+      email: 'lennon.clark@example.test',
+      balance: 1290
+    },
+    {
+      session_id: session.id,
+      username: 'marleyfinch',
+      first_name: 'Marley',
+      last_name: 'Finch',
+      email: 'marley.finch@example.test',
+      balance: 435
+    },
+    {
+      session_id: session.id,
+      username: 'navinreese',
+      first_name: 'Navin',
+      last_name: 'Reese',
+      email: 'navin.reese@example.test',
+      balance: 1510
     }
   ];
 
@@ -393,7 +506,10 @@ export async function createSandboxSession(traineeName) {
   const gameAccounts = [];
   const customerGameUsernames = {};
 
-  for (const customer of customers) {
+  for (const customer of customers.slice(
+    0,
+    SEEDED_GAME_ACCOUNT_CUSTOMER_COUNT
+  )) {
     const gdUsername = createMobileId();
     customerGameUsernames[customer.id] = {
       'Orion Stars': `${customer.username}_os`,
@@ -441,7 +557,9 @@ export async function createSandboxSession(traineeName) {
   const history = [];
 
   for (const [customerIndex, customer]
-    of customers.entries()) {
+    of customers
+      .slice(0, SEEDED_GAME_ACCOUNT_CUSTOMER_COUNT)
+      .entries()) {
     for (let index = 0; index < 16; index++) {
       history.push(
         createMovementHistory({

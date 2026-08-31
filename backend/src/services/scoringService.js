@@ -120,7 +120,8 @@ export function getExpectedRequestContext(
     ),
     kiosk:
       GAME_KIOSKS[
-        operation.game_account?.game
+        operation.game_account?.game ||
+        operation.game
       ] || '',
     currentBalance: Number(
       operation.game_account?.balance

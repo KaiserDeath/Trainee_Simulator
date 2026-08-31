@@ -15,6 +15,12 @@ import {
   shouldDisableRandomOperationGeneration
 } from '../config/localE2EGuard.js';
 
+const SUPPORTED_GAMES = [
+  'Orion Stars',
+  'Vblink',
+  'Golden Dragon'
+];
+
 class GameMaster {
 
   constructor() {
@@ -368,6 +374,37 @@ class GameMaster {
                 customer.id
             );
 
+          if (operationType === 'CREATE ACCOUNT') {
+            for (const game of SUPPORTED_GAMES) {
+              if (customerGames.some(
+                account => account.game === game
+              )) {
+                continue;
+              }
+
+              const candidate = {
+                customer_id: customer.id,
+                game_account_id: null,
+                game,
+                type: operationType,
+                status: 'PENDING'
+              };
+
+              if (!canQueueOperation(occupancy, candidate)) {
+                continue;
+              }
+
+              candidates.push({
+                customer,
+                gameAccount: null,
+                targetGame: game,
+                candidate
+              });
+            }
+
+            continue;
+          }
+
           for (const gameAccount of customerGames) {
             const candidate = {
               customer_id: customer.id,
@@ -426,7 +463,8 @@ class GameMaster {
             selected.customer,
             selected.gameAccount,
             sessionId,
-            operationType
+            operationType,
+            selected.targetGame
           );
 
         if (generated) {

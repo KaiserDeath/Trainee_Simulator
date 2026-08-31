@@ -52,7 +52,9 @@ const cardTheme = (type) => {
 
 function getInitialRequestForm(operation) {
   const gameId = operation?.game_account?.game_username || '';
-  const kiosk = kioskByGame[operation?.game_account?.game] || '';
+  const kiosk = kioskByGame[
+    operation?.game_account?.game || operation?.game
+  ] || '';
 
   if (operation?.type === 'CREATE ACCOUNT') {
     return {
@@ -397,7 +399,8 @@ export default function OperationsQueue({
   const getKiosk = op => op.game_account?.kiosk || '—';
   const getUsername = op => op.customer?.username || '—';
   const getEmail = op => op.customer?.email || '—';
-  const getGame = op => op.game_account?.game || '—';
+  const getGame = op =>
+    op.game_account?.game || op.game || '—';
 
   if (loading) {
     return <p>Loading operations...</p>;

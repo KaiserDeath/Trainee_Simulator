@@ -541,6 +541,27 @@ export async function createGameAccount({
       });
   }
 
+  const { data: existingAccount, error: existingAccountError } =
+    await supabase
+      .from('sandbox_game_accounts')
+      .select('id')
+      .eq('session_id', sessionId)
+      .eq('customer_id', resolvedCustomerId)
+      .eq('game', game)
+      .maybeSingle();
+
+  if (existingAccountError) {
+    throw existingAccountError;
+  }
+
+  if (existingAccount) {
+    const error = new Error(
+      'This customer already has an account for this game.'
+    );
+    error.statusCode = 409;
+    throw error;
+  }
+
   const { data, error } = await supabase
     .from('sandbox_game_accounts')
     .insert({
@@ -790,7 +811,8 @@ export async function hasCreatedAccount({
       'session_id',
       operation.session_id
     )
-    .eq('game', operation.game_account?.game || '')
+    .eq('customer_id', operation.customer_id)
+    .eq('game', operation.game_account?.game || operation.game || '')
     .eq('game_username', gameUsername)
     .limit(1);
 
@@ -811,7 +833,7 @@ export async function getConfirmedCreatedAccountEvidence({
 
   if (
     operation.type !== 'CREATE ACCOUNT' ||
-    operation.game_account?.game !== ORION_STARS_GAME ||
+    (operation.game_account?.game || operation.game) !== ORION_STARS_GAME ||
     !gameUsername
   ) {
     return null;
