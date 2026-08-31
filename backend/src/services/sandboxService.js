@@ -32,6 +32,8 @@ const operationTypes = [
   'WITHDRAW CREDITS'
 ];
 
+export const SEEDED_CUSTOMER_COUNT = 26;
+
 function createOperationCode(index) {
   return `SBOX${String(index + 1)
     .padStart(5, '0')}`;
@@ -203,8 +205,164 @@ export async function createSandboxSession(traineeName) {
       last_name: 'Rivera',
       email: 'carlos.rivera@example.test',
       balance: 1580
+    },
+    {
+      session_id: session.id,
+      username: 'alexcrowe',
+      first_name: 'Alex',
+      last_name: 'Crowe',
+      email: 'alex.crowe@example.test',
+      balance: 745
+    },
+    {
+      session_id: session.id,
+      username: 'biancareed',
+      first_name: 'Bianca',
+      last_name: 'Reed',
+      email: 'bianca.reed@example.test',
+      balance: 980.25
+    },
+    {
+      session_id: session.id,
+      username: 'diegofrost',
+      first_name: 'Diego',
+      last_name: 'Frost',
+      email: 'diego.frost@example.test',
+      balance: 610
+    },
+    {
+      session_id: session.id,
+      username: 'elenapark',
+      first_name: 'Elena',
+      last_name: 'Park',
+      email: 'elena.park@example.test',
+      balance: 1325
+    },
+    {
+      session_id: session.id,
+      username: 'felixhart',
+      first_name: 'Felix',
+      last_name: 'Hart',
+      email: 'felix.hart@example.test',
+      balance: 425.5
+    },
+    {
+      session_id: session.id,
+      username: 'gabriellaray',
+      first_name: 'Gabriella',
+      last_name: 'Ray',
+      email: 'gabriella.ray@example.test',
+      balance: 1120
+    },
+    {
+      session_id: session.id,
+      username: 'hugoellis',
+      first_name: 'Hugo',
+      last_name: 'Ellis',
+      email: 'hugo.ellis@example.test',
+      balance: 290
+    },
+    {
+      session_id: session.id,
+      username: 'isabelnorth',
+      first_name: 'Isabel',
+      last_name: 'North',
+      email: 'isabel.north@example.test',
+      balance: 1760
+    },
+    {
+      session_id: session.id,
+      username: 'jasperking',
+      first_name: 'Jasper',
+      last_name: 'King',
+      email: 'jasper.king@example.test',
+      balance: 535.75
+    },
+    {
+      session_id: session.id,
+      username: 'kiarawells',
+      first_name: 'Kiara',
+      last_name: 'Wells',
+      email: 'kiara.wells@example.test',
+      balance: 890
+    },
+    {
+      session_id: session.id,
+      username: 'leoramos',
+      first_name: 'Leo',
+      last_name: 'Ramos',
+      email: 'leo.ramos@example.test',
+      balance: 1495
+    },
+    {
+      session_id: session.id,
+      username: 'miabrooks',
+      first_name: 'Mia',
+      last_name: 'Brooks',
+      email: 'mia.brooks@example.test',
+      balance: 365.25
+    },
+    {
+      session_id: session.id,
+      username: 'noahprice',
+      first_name: 'Noah',
+      last_name: 'Price',
+      email: 'noah.price@example.test',
+      balance: 1080
+    },
+    {
+      session_id: session.id,
+      username: 'oliviabanks',
+      first_name: 'Olivia',
+      last_name: 'Banks',
+      email: 'olivia.banks@example.test',
+      balance: 675
+    },
+    {
+      session_id: session.id,
+      username: 'pablomiles',
+      first_name: 'Pablo',
+      last_name: 'Miles',
+      email: 'pablo.miles@example.test',
+      balance: 1540.5
+    },
+    {
+      session_id: session.id,
+      username: 'quinnharper',
+      first_name: 'Quinn',
+      last_name: 'Harper',
+      email: 'quinn.harper@example.test',
+      balance: 815
+    },
+    {
+      session_id: session.id,
+      username: 'rosasutton',
+      first_name: 'Rosa',
+      last_name: 'Sutton',
+      email: 'rosa.sutton@example.test',
+      balance: 455
+    },
+    {
+      session_id: session.id,
+      username: 'samircole',
+      first_name: 'Samir',
+      last_name: 'Cole',
+      email: 'samir.cole@example.test',
+      balance: 1260
+    },
+    {
+      session_id: session.id,
+      username: 'taylorng',
+      first_name: 'Taylor',
+      last_name: 'Ng',
+      email: 'taylor.ng@example.test',
+      balance: 705.5
     }
   ];
+
+  if (customersSeed.length !== SEEDED_CUSTOMER_COUNT) {
+    throw new Error('Seeded customer profile count is out of sync.');
+  }
 
   const { data: customers, error: customerError } = await supabase
     .from('sandbox_customers')
