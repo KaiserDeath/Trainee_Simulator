@@ -1,6 +1,22 @@
 # Trainer Audit and Evaluation Verification
 
-Status date: 2026-08-21.
+Status: historical hosted-schema snapshot (2026-08-21), with current local
+implementation notes added on 2026-09-01.
+
+## Current local status
+
+The simulator and Training Hub have since been consolidated on local `main`.
+The isolated local Supabase migration chain includes separate game and Backend
+histories, game loading wallets, queue protections, atomic Backend movement
+settlement, and persisted cancellation reasons. Fresh sessions seed 40
+customers: 26 with accounts in all three games and 14 without accounts for
+Create Account practice. Run `npm run local:reset` followed by
+`npm run verify:local:data` for the current local data gate.
+
+Backend Add Credits and Withdraw Credits now require confirmation. Cancellation
+requires a non-empty reason that is stored as operational evidence but is not
+scored. The hosted project has not been migrated or mutated; the dated numbers
+below are retained only as the read-only historical audit of that hosted schema.
 
 ## Verified behavior
 

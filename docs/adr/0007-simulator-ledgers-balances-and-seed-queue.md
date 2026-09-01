@@ -27,7 +27,7 @@ movement is created. Approval commits that reservation without another debit.
 Cancellation releases it exactly once. Creation and settlement use database
 functions so the balance and operation status change atomically.
 
-Protect the limited seed pool with database-backed pending-slot uniqueness:
+Protect customer workflow realism with database-backed pending-slot uniqueness:
 
 - one movement per session and customer;
 - one request per session, customer, and game;
@@ -42,3 +42,16 @@ Protect the limited seed pool with database-backed pending-slot uniqueness:
   applying the migration to any shared environment.
 - No authentication, password, escalation, or real Trez financial policy is
   introduced by this decision.
+
+## Implementation update (2026-09-01)
+
+The current local seed has 40 customers: 26 have accounts in all three games
+and 14 have no game account. The pending-slot rules remain unchanged. Generated
+Create Account operations use an eligible empty customer/game pair and the
+customer's Backend username; this operation-model rule does not constrain free
+simulator account creation.
+
+The local implementation also requires confirmation for Backend Add Credits and
+Withdraw Credits. A cancellation reason is persisted as operational evidence and
+is not currently included in scoring. These changes are local implementation
+status, not authorization to alter the un-migrated hosted environment.

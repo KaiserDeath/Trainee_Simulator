@@ -53,7 +53,7 @@ The first run downloads the local Supabase Docker images. The command applies
 the prototype baseline, copies and applies the canonical Milestone 0 migration,
 applies the Hub foundation and authentication/governance migrations, applies
 service-role-only database grants, seeds adjustable prototype runtime settings
-and provisional Module 1–4 content, and writes ignored `backend/.env.local` and
+and provisional Hub course content through Module 11, and writes ignored `backend/.env.local` and
 `frontend/.env.local` files. Modules 3–4 remain blocked at their unapproved
 policy and server-artifact boundaries. The generated Express configuration binds the API
 to `127.0.0.1`, enables the Hub flag, and uses only credentials reported by the
@@ -78,7 +78,8 @@ npm run dev:backend
 ```
 
 ```powershell
-npm run dev:frontend
+$env:VITE_TREZ_HUB_ENABLED = 'true'
+npm --prefix frontend run dev -- --host localhost --port 5173
 ```
 
 The frontend defaults to Vite's local URL. The backend health endpoint is `GET /health` on the configured API port.
@@ -109,6 +110,19 @@ directly against the running local stack:
 ```powershell
 npm run verify:local:data
 ```
+
+The checked local seed has 40 customers per fresh session: 26 have one account
+in each game and 14 intentionally have no game accounts. Generated Create
+Account operations select a customer/game pair without an account and use the
+customer's Backend username. This is an operation-model rule, not a global
+database uniqueness rule: free simulator screens may still create valid accounts
+with their own entered values.
+
+For Add Credits and Withdraw Credits, Backend confirmation is required before
+settlement. A cancellation requires a reason, stored as `cancellation_reason`;
+the current scoring implementation does not evaluate that reason. The verifier
+also checks that Backend settlement writes only customer movement history and
+does not duplicate the game-side transaction.
 
 Verify the additive Hub schema and API against the same real local stack:
 
@@ -400,12 +414,14 @@ A test-database setting may isolate integration tests, but it must not be treate
 
 The implemented runner uses only `TREZ_DISPOSABLE_DATABASE_URL`, accompanied by an exact host/port/database-bound `TREZ_DISPOSABLE_DATABASE_CONFIRMATION`. It rejects shared PostgreSQL database names and any target matching protected application or migration URLs. Credentials are passed to the `psql` child process without being printed or placed in its command arguments.
 
-Migration `0001_separate_histories_wallets_and_reservations.sql` is a local,
-data-moving draft for the confirmed simulator invariants. It refuses to run if
+Migration `0001_separate_histories_wallets_and_reservations.sql` is part of the
+canonical local migration chain for the confirmed simulator invariants. It refuses to run if
 an active session has pending operations, while preserving pending evidence in
 completed or submitted legacy sessions as policy version 0. PostgreSQL 18 fixture rehearsal is covered by the
 integration gate. Do not apply it manually to Supabase or another shared
-database; the actual target schema must still be inventoried before deployment.
+database; the actual target schema must still be inventoried and an explicit
+deployment decision made before applying any equivalent change to a shared or
+hosted environment.
 
 ## Browser smoke boundary
 
@@ -419,7 +435,7 @@ To inspect the Hub shell locally, opt in explicitly:
 
 ```powershell
 $env:VITE_TREZ_HUB_ENABLED = 'true'
-npm run dev:frontend
+npm --prefix frontend run dev -- --host localhost --port 5173
 ```
 
 After `local:start`, the generated ignored environment files configure local

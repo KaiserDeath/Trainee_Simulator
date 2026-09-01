@@ -90,10 +90,40 @@ which grants a new set of three attempts and is visible only to TRAINER and RRHH
 The default score composition is 20% theory and 80% practical, adjustable by
 TRAINER only through versioned Advanced Settings.
 
+## Current local implementation status
+
+The simulator and Training Hub are consolidated on local `main`. The local
+Supabase migration chain is the source of truth for the implemented sandbox;
+the configured hosted Supabase project has not been migrated or changed.
+
+Each new simulator session currently seeds 40 customers:
+
+- 26 customers receive one account in each of Orion Stars, Vblink, and Golden
+  Dragon.
+- 14 customers intentionally begin with no game accounts. They provide valid
+  Create Account practice targets.
+
+The generated **Create Account** operation model selects a customer/game pair
+that has no existing account and uses that customer's Backend username as the
+request identity. This restriction applies to account-creation operation models
+only. Free simulator game screens remain permissive: they may create an account
+with any valid values required by that simulator.
+
+For **Add Credits** and **Withdraw Credits**, the Backend requires a confirmation
+before settlement. Cancelling requires a non-empty reason; it is persisted with
+the Backend movement, is visible as operational evidence, and is not part of
+the score calculation yet. A game-side action remains in game history while the
+Backend decision remains in Backend customer-movement history; approving a
+movement never creates a second game transaction.
+
+Use `npm run verify:local:data` after `npm run local:reset` to check the seed,
+queue, reservation, history, cancellation-reason, and account-creation
+invariants against the isolated local stack.
+
 ## Milestone 2 guarded scaffold
 
-The local Hub now seeds draft, provisional, non-scored Modules 3 through 5 after the
-completed Module 1/2 foundation. Module 3 includes a native Account ID Lab shell
+The local Hub seeds the current provisional course content, including Modules
+1–11. Module 3 includes a native Account ID Lab shell
 that consumes only a server-assigned versioned policy. Module 4 includes an
 application-controlled exact-player search that observes `Ctrl+F`, a real paste,
 the exact query/match, and positive confirmation.
