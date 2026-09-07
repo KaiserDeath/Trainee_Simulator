@@ -58,7 +58,7 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
     return route.fulfill({ status: 404, body: '{}' });
   });
 
-  await page.goto('/trainer');
+  await page.goto('/sim/trainer');
   await expect(
     page.getByRole('heading', { name: 'Trainer Command' })
   ).toBeVisible();
