@@ -30,7 +30,10 @@
     "verify:foundation": "npm run verify:baseline && npm run test:shared && npm run test:database:safety && npm run test:browser",
     "verify:milestone0": "npm run verify:foundation && npm run test:database:integration",
     "provision:hub:admin": "node backend/scripts/provision-hub-admin.mjs",
-    "clone:hosted:local": "bash scripts/clone-hosted-supabase-to-local.sh"
+    "clone:hosted:local": "bash scripts/clone-hosted-supabase-to-local.sh",
+    "setup:local:db": "bash scripts/setup-local-database.sh",
+    "setup:local:api": "node scripts/setup-local-api.mjs",
+    "local:gateway": "node scripts/local-api-gateway.mjs"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
