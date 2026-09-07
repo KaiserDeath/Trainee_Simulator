@@ -14,6 +14,7 @@ import {
   createUnconfiguredHubIdentityVerifier
 } from './identity/unconfiguredHubIdentityVerifier.js';
 import { createSupabaseHubIdentityVerifier } from './identity/supabaseHubIdentityVerifier.js';
+import { createLocalHubAuth, withLocalHubAuth } from './auth/localHubAuth.js';
 import {
   createSupabaseHubRepository
 } from './hub/supabaseHubRepository.js';
@@ -93,21 +94,44 @@ function createDefaultHubDependencies() {
     };
   }
 
-  const authClientFactory = () => createSupabaseAuthClient({
-    url: authConfig.supabaseUrl,
-    anonKey: authConfig.anonKey,
-  });
+  // A machine without the Supabase Auth service can sign sessions locally.
+  // The provider is stateless, so it cannot revoke an issued token: it is a
+  // development facility and is refused in production.
+  const localAuthMode =
+    String(process.env.HUB_AUTH_MODE || '').trim().toLowerCase() === 'local';
+
+  if (localAuthMode && process.env.NODE_ENV === 'production') {
+    throw new Error('HUB_AUTH_MODE=local must never be used in production.');
+  }
+
+  let authClientFactory;
+  let hubServiceClient = supabase;
+
+  if (localAuthMode) {
+    const localAuth = createLocalHubAuth({
+      serviceClient: supabase,
+      secret: process.env.HUB_LOCAL_AUTH_SECRET,
+    });
+    hubServiceClient = withLocalHubAuth(supabase, localAuth);
+    authClientFactory = () => ({ auth: localAuth });
+  } else {
+    authClientFactory = () => createSupabaseAuthClient({
+      url: authConfig.supabaseUrl,
+      anonKey: authConfig.anonKey,
+    });
+  }
+
   return {
     authConfig,
     csrfProtection,
     identityVerifier: createSupabaseHubIdentityVerifier({
       authClientFactory,
-      serviceClient: supabase,
+      serviceClient: hubServiceClient,
       config: authConfig,
     }),
     accountService: createHubAccountService({
       authClientFactory,
-      serviceClient: supabase,
+      serviceClient: hubServiceClient,
       authConfig,
       csrfProtection,
     }),
