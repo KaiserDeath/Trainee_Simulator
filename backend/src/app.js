@@ -30,6 +30,11 @@ import { createSupabaseAuthClient, supabase } from './config/supabase.js';
 import { HubError } from './hub/HubError.js';
 import { buildSessionReport } from './engine/SessionEngine.js';
 import { getSessionActionLog } from './engine/AuditLogger.js';
+import {
+  createCorsOptions,
+  sendApiError,
+  setApiSecurityHeaders,
+} from './security/httpSecurity.js';
 
 function unavailableAccountService() {
   const unavailable = async () => {
@@ -126,17 +131,9 @@ export function createApp(options = {}) {
   const hubAssessmentService = options.hubAssessmentService || defaults.assessmentService;
   const app = express();
 
-  app.use(
-    cors({
-      origin: [
-        'http://localhost:5173',
-        process.env.CLIENT_URL
-      ],
-      credentials: true,
-    })
-  );
-
-  app.use(express.json());
+  app.use(cors(createCorsOptions(process.env)));
+  app.use(setApiSecurityHeaders);
+  app.use(express.json({ limit: '64kb' }));
 
   app.get('/health', (req, res) => {
     res.json({
@@ -178,6 +175,8 @@ export function createApp(options = {}) {
       assessmentService: hubAssessmentService,
     })
   );
+
+  app.use(sendApiError);
 
   return app;
 }
