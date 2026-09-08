@@ -193,9 +193,13 @@ CREATE TABLE IF NOT EXISTS auth.users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE,
   encrypted_password TEXT,
+  raw_user_meta_data JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Added after the table shipped, so existing local databases pick it up too.
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS raw_user_meta_data JSONB;
 
 GRANT USAGE ON SCHEMA auth TO service_role;
 GRANT ALL ON ALL TABLES IN SCHEMA auth TO service_role;
