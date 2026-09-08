@@ -7,6 +7,7 @@ import app from './app.js';
 import {
   assertLocalE2EBackendEnvironment
 } from './config/localE2EGuard.js';
+import { createCorsOptions } from './security/httpSecurity.js';
 
 if (
   process.env.TREZ_LOCAL_E2E !==
@@ -32,13 +33,7 @@ const server = http.createServer(app);
   Initialize Socket.IO
 */
 export const io = new Server(server, {
-  cors: {
-    origin: [
-      'http://localhost:5173',
-      process.env.CLIENT_URL,
-    ],
-    credentials: true,
-  },
+  cors: createCorsOptions(process.env),
 });
 
 /*

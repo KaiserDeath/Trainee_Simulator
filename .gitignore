@@ -37,3 +37,12 @@ coverage/
 # Cache directories
 .cache/
 .parcel-cache/
+
+# Local audit and QA artifacts. # Generated PostgREST config holds the jwt-secret and database password.
+local/
+
+.audit/ holds database clones and screenshots
+# captured from the hosted project; this repository is public, so it must
+# never be committed.
+.audit/
+design-qa-assets/
