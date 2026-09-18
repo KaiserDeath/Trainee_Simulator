@@ -379,6 +379,39 @@
   td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
   td.k { font-family: var(--mono); letter-spacing: 0.02em; }
 
+  .target {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    padding: 6px 11px;
+  }
+
+  .reglist { max-height: 216px; overflow-y: auto; }
+
+  .answer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding: 9px 13px;
+    border-radius: 5px;
+    font-size: 13px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+  }
+  .answer b { font-family: var(--mono); font-size: 14px; letter-spacing: 0.03em; }
+  .answer.empty {
+    background: transparent;
+    border: 1px dashed var(--line-strong);
+    color: var(--ink-faint);
+  }
+
   tr.pick td { cursor: pointer; }
   tr.pick:hover td { background: var(--accent-soft); }
   tr.flagged td { background: var(--warn-soft); }
@@ -789,8 +822,7 @@
     sectionEnter: null,
     sectionTime: {},
     changes: 0,
-    activeLookup: "L0",
-    regFilter: "",
+    regFilter: {},
     lookup: {},
     funds: {},
     recon: { flags: {} },
@@ -931,105 +963,106 @@
   /* ======================= section 1 — lookup ======================= */
 
   function renderLookup(root) {
-    const filter = el("input", {
-      type: "text", id: "regFilter", placeholder: "Filter the registry…",
-      "aria-label": "Filter the registry", value: state.regFilter
-    });
-    const tbody = el("tbody");
-    const activeLabel = el("p", { class: "hint", style: "margin:0 0 12px" });
-
-    function paintRows() {
-      const active = state.activeLookup;
-      const which = LOOKUPS[Number(active.slice(1))];
-      activeLabel.textContent = "Searching for request " + (Number(active.slice(1)) + 1) + " · " + which.target;
-      clear(tbody);
-      const q = filter.value.trim().toUpperCase();
-      REGISTRY.forEach(function (id, i) {
-        if (q && id.toUpperCase().indexOf(q) === -1) return;
-        const chosen = state.lookup[active] === id;
-        const tr = el("tr", { class: "pick" + (chosen ? " chosen" : "") }, [
-          el("td", { class: "n", text: String(i + 1) }),
-          el("td", { class: "k", text: id })
-        ]);
-        tr.addEventListener("click", function () {
-          record("lookup", state.activeLookup, id);
-          renderSection();
-        });
-        tbody.appendChild(tr);
-      });
-      if (!tbody.firstChild) {
-        tbody.appendChild(el("tr", null, [el("td", { colspan: "2", class: "hint", text: "No registry entry contains that text." })]));
-      }
-    }
-
-    root.appendChild(el("p", { class: "doc", text: "For each request, select the registry row that matches the account exactly, character by character. If no entry matches exactly, mark it as no exact match. Several entries are near-identical on purpose." }));
+    root.appendChild(el("p", { class: "doc", text: "Each request names one account. Find it in the registry underneath that request and click the row that matches it exactly, character by character. If nothing matches exactly, say so. Several registry entries are near-identical on purpose." }));
 
     LOOKUPS.forEach(function (item, i) {
       const key = "L" + i;
-      const answered = state.lookup[key];
-      const none = answered === "__none__";
+      const given = state.lookup[key];
+      const none = given === "__none__";
 
-      const block = el("div", { class: "item" }, [
-        el("div", { class: "item-head" }, [
-          el("span", { class: "item-n", text: String(i + 1) }),
-          el("div", null, [
-            el("div", { class: "doc" }, [
-              "Customer ", el("span", { class: "id", text: item.customer }),
-              " requests an operation on account ", el("span", { class: "id", text: item.target }), "."
-            ])
-          ])
+      const block = el("div", { class: "item" });
+
+      block.appendChild(el("div", { class: "item-head" }, [
+        el("span", { class: "item-n", text: String(i + 1) }),
+        el("div", { class: "doc" }, [
+          "Customer ", el("span", { class: "id", text: item.customer }),
+          " requests an operation on this account:"
         ])
-      ]);
+      ]));
 
-      const status = el("p", {
-        class: "hint",
-        text: answered ? (none ? "Marked: no exact match." : "Selected: " + answered) : "Nothing selected yet."
+      block.appendChild(el("p", { style: "margin:0 0 14px" }, [
+        el("span", { class: "target", text: item.target })
+      ]));
+
+      const filter = el("input", {
+        type: "text", placeholder: "Filter the registry…", style: "width:210px",
+        value: state.regFilter[key] || "",
+        "aria-label": "Filter the registry for request " + (i + 1)
       });
+      const tbody = el("tbody");
+
+      function paint() {
+        clear(tbody);
+        const q = (state.regFilter[key] || "").trim().toUpperCase();
+        let shown = 0;
+        REGISTRY.forEach(function (id, r) {
+          if (q && id.toUpperCase().indexOf(q) === -1) return;
+          shown += 1;
+          const chosen = given === id;
+          const tr = el("tr", { class: "pick" + (chosen ? " chosen" : "") }, [
+            el("td", { class: "n", text: String(r + 1) }),
+            el("td", { class: "k", text: id })
+          ]);
+          tr.addEventListener("click", function () {
+            record("lookup", key, id);
+            renderSection();
+          });
+          tbody.appendChild(tr);
+        });
+        if (!shown) {
+          tbody.appendChild(el("tr", null, [
+            el("td", { colspan: "2", class: "hint", text: "No registry entry contains that text." })
+          ]));
+        }
+      }
+
+      filter.addEventListener("input", function () {
+        state.regFilter[key] = filter.value;
+        paint();
+      });
+      paint();
+
+      block.appendChild(el("div", { class: "row", style: "margin-bottom:10px" }, [filter]));
+      block.appendChild(el("div", { class: "scroller reglist" }, [
+        el("table", null, [
+          el("thead", null, [el("tr", null, [el("th", { text: "Row" }), el("th", { text: "Account" })])]),
+          tbody
+        ])
+      ]));
 
       const noneBtn = el("button", {
-        class: "choice", type: "button", "aria-pressed": none ? "true" : "false",
+        class: "choice", type: "button",
+        "aria-pressed": none ? "true" : "false",
         text: "No exact match in the registry"
       });
       noneBtn.addEventListener("click", function () {
         record("lookup", key, "__none__");
         renderSection();
       });
+      block.appendChild(el("div", { class: "choices", style: "margin-top:12px" }, [noneBtn]));
 
-      const openBtn = el("button", {
-        class: "btn-quiet", type: "button",
-        text: state.activeLookup === key ? "Searching this one" : "Search the registry"
-      });
-      openBtn.addEventListener("click", function () {
-        state.activeLookup = key;
-        paintRows();
-        document.getElementById("registryPanel").scrollIntoView({ behavior: "smooth", block: "center" });
-        filter.focus();
-      });
+      if (!given) {
+        block.appendChild(el("div", {
+          class: "answer empty",
+          text: "No answer yet. Click the matching row, or say there is no exact match."
+        }));
+      } else {
+        const clearBtn = el("button", { class: "btn-quiet", type: "button", text: "Change" });
+        clearBtn.addEventListener("click", function () {
+          delete state.lookup[key];
+          renderSection();
+        });
+        block.appendChild(el("div", { class: "answer" }, [
+          el("span", { text: "Your answer:" }),
+          el("b", { text: none ? "No exact match" : given }),
+          clearBtn
+        ]));
+      }
 
-      block.appendChild(status);
-      block.appendChild(el("div", { class: "choices" }, [openBtn, noneBtn]));
       root.appendChild(block);
     });
-
-    const panel = el("div", { class: "card", id: "registryPanel" }, [
-      el("h3", { text: "Account registry" }),
-      activeLabel,
-      el("div", { class: "row", style: "margin-bottom:12px" }, [filter]),
-      el("div", { class: "scroller" }, [
-        el("table", null, [
-          el("thead", null, [el("tr", null, [el("th", { text: "Row" }), el("th", { text: "Account" })])]),
-          tbody
-        ])
-      ]),
-      el("p", { class: "hint", text: "Clicking a row answers the request named above. Use “Search the registry” on another request to switch." })
-    ]);
-    root.appendChild(panel);
-    filter.addEventListener("input", function () {
-      state.regFilter = filter.value;
-      paintRows();
-    });
-    paintRows();
   }
+
 
   function heldAfter(upto) {
     let held = 0;
