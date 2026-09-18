@@ -1,0 +1,1688 @@
+<title>Trez Operator Screening</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root {
+    --paper: #F4F5F7;
+    --surface: #FFFFFF;
+    --surface-2: #EDF0F4;
+    --ink: #16202E;
+    --ink-soft: #55616F;
+    --ink-faint: #8B95A3;
+    --line: #DCE0E6;
+    --line-strong: #C3CAD4;
+    --accent: #1F4B7A;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #E6EEF6;
+    --ok: #1F6B4A;
+    --ok-soft: #E3F1EA;
+    --bad: #9B2F2B;
+    --bad-soft: #F7E7E6;
+    --warn: #8A5A12;
+    --warn-soft: #F8EEDB;
+    --focus: #2F7DD1;
+
+    --ui: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --doc: "Source Serif 4", Georgia, serif;
+    --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #12171E;
+      --surface: #19202A;
+      --surface-2: #101720;
+      --ink: #E6EAF0;
+      --ink-soft: #97A3B3;
+      --ink-faint: #6C7887;
+      --line: #2A3340;
+      --line-strong: #3A4553;
+      --accent: #7FB1E0;
+      --accent-ink: #0E1620;
+      --accent-soft: #1B2A3A;
+      --ok: #62C296;
+      --ok-soft: #14291F;
+      --bad: #E3807A;
+      --bad-soft: #2D1918;
+      --warn: #DCA847;
+      --warn-soft: #2A2113;
+      --focus: #7FB1E0;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #12171E;
+    --surface: #19202A;
+    --surface-2: #101720;
+    --ink: #E6EAF0;
+    --ink-soft: #97A3B3;
+    --ink-faint: #6C7887;
+    --line: #2A3340;
+    --line-strong: #3A4553;
+    --accent: #7FB1E0;
+    --accent-ink: #0E1620;
+    --accent-soft: #1B2A3A;
+    --ok: #62C296;
+    --ok-soft: #14291F;
+    --bad: #E3807A;
+    --bad-soft: #2D1918;
+    --warn: #DCA847;
+    --warn-soft: #2A2113;
+    --focus: #7FB1E0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--ui);
+    font-size: 15px;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  /* ---------- header ---------- */
+
+  .topbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .topbar-inner {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .mark {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .steps {
+    display: flex;
+    gap: 5px;
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .step {
+    height: 4px;
+    flex: 1;
+    background: var(--line);
+    border-radius: 2px;
+  }
+  .step.done { background: var(--accent); }
+  .step.now { background: var(--accent); opacity: 0.45; }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  /* ---------- shell ---------- */
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding-block: 28px 64px;
+    padding-inline: 16px;
+  }
+
+  h1 {
+    font-size: clamp(26px, 5vw, 36px);
+    line-height: 1.12;
+    margin: 0 0 12px;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  h2 {
+    font-size: 20px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+    font-weight: 600;
+  }
+
+  p { margin: 0 0 12px; max-width: 66ch; }
+
+  .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+
+  .lede { color: var(--ink-soft); max-width: 62ch; }
+
+  code, .id {
+    font-family: var(--mono);
+    font-size: 0.92em;
+  }
+
+  .id {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1px 5px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- blocks ---------- */
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+
+  .item-head {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+
+  .item-n {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 3px;
+    padding: 2px 7px;
+    flex: none;
+  }
+
+  .doc {
+    font-family: var(--doc);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .rule-list { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 10px; }
+  .rule-list li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
+  .rule-list b {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 3px;
+    padding: 2px 0;
+    text-align: center;
+  }
+  .rule-list span { font-size: 14px; color: var(--ink-soft); }
+
+  /* ---------- controls ---------- */
+
+  button {
+    font-family: var(--ui);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: 1px solid var(--accent);
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-weight: 600;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn[disabled] { opacity: 0.4; cursor: not-allowed; filter: none; }
+
+  .btn-quiet {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    padding: 7px 13px;
+    font-size: 13px;
+  }
+  .btn-quiet:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .choice {
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    padding: 8px 14px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .choice:hover { border-color: var(--ink-faint); }
+  .choice[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .choice.pick-ok[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .choice.pick-bad[aria-pressed="true"] { background: var(--bad); border-color: var(--bad); color: #fff; }
+  .choice.pick-warn[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: #fff; }
+
+  input[type="text"], input[type="number"], select {
+    font-family: var(--mono);
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    padding: 8px 10px;
+    max-width: 100%;
+  }
+  select { font-family: var(--ui); }
+
+  label.field {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+
+  .hint { font-size: 13px; color: var(--ink-faint); margin: 0; }
+
+  /* ---------- tables ---------- */
+
+  .scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+  td.k { font-family: var(--mono); letter-spacing: 0.02em; }
+
+  tr.pick td { cursor: pointer; }
+  tr.pick:hover td { background: var(--accent-soft); }
+  tr.flagged td { background: var(--warn-soft); }
+  tr.chosen td { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+
+  /* ---------- ledger ---------- */
+
+  .ledger {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .ledger div { background: var(--surface); padding: 12px 14px; }
+  .ledger dt {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-soft);
+    margin: 0 0 3px;
+    font-weight: 600;
+  }
+  .ledger dd {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 19px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .ledger .held dd { color: var(--warn); }
+  .ledger .avail dd { color: var(--accent); }
+
+  /* ---------- evidence ---------- */
+
+  details.evidence {
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    margin: 12px 0;
+    background: var(--surface-2);
+  }
+  details.evidence summary {
+    cursor: pointer;
+    padding: 9px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent);
+  }
+  details.evidence .body { padding: 0 14px 12px; }
+  .evline {
+    display: grid;
+    grid-template-columns: minmax(120px, auto) 1fr;
+    gap: 4px 14px;
+    font-size: 13px;
+    padding: 5px 0;
+    border-top: 1px dashed var(--line);
+  }
+  .evline b { color: var(--ink-soft); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ---------- results ---------- */
+
+  .score-hero {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 26px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .score-hero .big {
+    font-family: var(--mono);
+    font-size: 46px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .verdict {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 5px 11px;
+    border-radius: 4px;
+  }
+  .v-ok { background: var(--ok-soft); color: var(--ok); }
+  .v-mid { background: var(--warn-soft); color: var(--warn); }
+  .v-bad { background: var(--bad-soft); color: var(--bad); }
+
+  .alarm {
+    border: 1px solid var(--bad);
+    background: var(--bad-soft);
+    color: var(--bad);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+  }
+  .alarm b { display: block; font-size: 14px; margin-bottom: 3px; }
+  .alarm span { color: var(--ink); font-size: 13px; }
+
+  .bar {
+    height: 7px;
+    background: var(--surface-2);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 70px;
+  }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+
+  .mark-ok { color: var(--ok); font-weight: 600; }
+  .mark-bad { color: var(--bad); font-weight: 600; }
+
+  .notes { display: grid; gap: 8px; }
+  .note {
+    display: grid;
+    grid-template-columns: 8px 1fr;
+    gap: 10px;
+    font-size: 13px;
+    align-items: start;
+    color: var(--ink-soft);
+  }
+  .note i { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; background: var(--ink-faint); }
+  .note.flag i { background: var(--warn); }
+  .note.good i { background: var(--ok); }
+
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    max-width: 640px;
+    width: calc(100% - 32px);
+    padding: 22px;
+  }
+  dialog::backdrop { background: rgba(10, 16, 24, 0.55); }
+</style>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <span class="mark">Trez · Operator Screening</span>
+    <div class="steps" id="steps" aria-hidden="true"></div>
+    <span class="clock" id="clock">--:--</span>
+    <button class="btn-quiet" id="rulesBtn" type="button">Rules</button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<dialog id="rulesDlg">
+  <h2>Operating rules</h2>
+  <p class="lede">These are the only rules in force. Nothing else is assumed.</p>
+  <ul class="rule-list" id="rulesList"></ul>
+  <div class="foot">
+    <p class="hint">Open this at any time while you work.</p>
+    <button class="btn" type="button" id="rulesClose">Close</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ======================= content ======================= */
+
+  const RULES = [
+    ["R1", "Act on a request only when the customer and the account both match the records exactly. One different character is a different account."],
+    ["R2", "The game platform and the Backend keep separate records. One game action must produce exactly one Backend decision."],
+    ["R3", "Committing funds places a hold. Available = Balance − Held. Only Available may be committed."],
+    ["R4", "A withdrawal may proceed only if the game account balance covers the whole amount."],
+    ["R5", "Every rejection needs a reason code. A decision without a reason is not valid."],
+    ["R6", "If evidence is missing, unreadable or contradictory, stop and escalate. Never act on what you cannot verify."]
+  ];
+
+  const REGISTRY = [
+    "ACC-4F8K-2093", "ACC-9C1T-3O47", "ACC-2H6R-8821", "ACC-6Z0N-5S83",
+    "ACC-5S3D-4460", "ACC-1L9Q-6304", "ACC-8G4W-7712", "ACC-4F8K-2O93",
+    "ACC-9C1T-3047", "ACC-2H6R-8812", "ACC-6Z0N-5583", "ACC-5S3D-4462",
+    "ACC-1I9Q-6304", "ACC-8G4W-7T12"
+  ];
+
+  const LOOKUPS = [
+    { customer: "C-3118", target: "ACC-9C1T-3047" },
+    { customer: "C-4702", target: "ACC-2H6R-8812" },
+    { customer: "C-5263", target: "ACC-5S3D-4461" },
+    { customer: "C-6890", target: "ACC-6Z0N-5S83" },
+    { customer: "C-8014", target: "ACC-1L9O-6304" }
+  ];
+
+  const LEDGER_START = 1000;
+  const FUND_REQUESTS = [
+    { ref: "RQ-01", amount: 300, note: "Load request, proof attached." },
+    { ref: "RQ-02", amount: 500, note: "Load request, proof attached." },
+    { ref: "RQ-03", amount: 250, note: "Load request, proof attached." },
+    { ref: "RQ-04", amount: 200, note: "Load request, proof attached." },
+    { ref: "RQ-05", amount: 50, note: "Load request, proof attached." }
+  ];
+
+  const GAME_LOG = [
+    { ref: "OP-4015", account: "ACC-4F8K-2093", action: "CREDIT", amount: 120 },
+    { ref: "OP-4029", account: "ACC-7B2M-1150", action: "CREDIT", amount: 250 },
+    { ref: "OP-4036", account: "ACC-9C1T-3047", action: "DEBIT", amount: 75 },
+    { ref: "OP-4042", account: "ACC-2H6R-8821", action: "CREDIT", amount: 300 },
+    { ref: "OP-4050", account: "ACC-5S3D-4460", action: "DEBIT", amount: 60 },
+    { ref: "OP-4063", account: "ACC-8G4W-7712", action: "CREDIT", amount: 200 },
+    { ref: "OP-4071", account: "ACC-1L9Q-6304", action: "DEBIT", amount: 45 },
+    { ref: "OP-4084", account: "ACC-6Z0N-5583", action: "CREDIT", amount: 140 },
+    { ref: "OP-4090", account: "ACC-3K7V-2298", action: "DEBIT", amount: 95 }
+  ];
+
+  const BACKEND_LOG = [
+    { ref: "OP-4015", customer: "C-2041", decision: "APPROVED", amount: 120 },
+    { ref: "OP-4029", customer: "C-3118", decision: "APPROVED", amount: 520 },
+    { ref: "OP-4036", customer: "C-4702", decision: "APPROVED", amount: 75 },
+    { ref: "OP-4050", customer: "C-5263", decision: "APPROVED", amount: 60 },
+    { ref: "OP-4057", customer: "C-6890", decision: "APPROVED", amount: 180 },
+    { ref: "OP-4063", customer: "C-7355", decision: "APPROVED", amount: 200 },
+    { ref: "OP-4063", customer: "C-7355", decision: "APPROVED", amount: 200 },
+    { ref: "OP-4071", customer: "C-8014", decision: "APPROVED", amount: 45 },
+    { ref: "OP-4084", customer: "C-9127", decision: "APPROVED", amount: 145 },
+    { ref: "OP-4090", customer: "C-2041", decision: "APPROVED", amount: 95 }
+  ];
+
+  const RECON_CATEGORIES = [
+    ["none-backend", "No Backend decision"],
+    ["none-game", "No game action"],
+    ["twice", "Settled twice"],
+    ["amount", "Amounts disagree"]
+  ];
+
+  const RECON_KEY = {
+    "OP-4042": "none-backend",
+    "OP-4057": "none-game",
+    "OP-4063": "twice",
+    "OP-4029": "amount",
+    "OP-4084": "amount"
+  };
+
+  const INFERENCE = [
+    {
+      situation: "You credit the game account. The platform screen does not refresh and shows no new entry for the operation.",
+      claim: "The credit did not go through.",
+      answer: "undetermined",
+      why: "A screen that did not refresh tells you nothing about what the platform recorded. Absence on the display is not absence of the event — this is exactly the reasoning error that produces double credits."
+    },
+    {
+      situation: "The Backend shows an APPROVED decision for OP-4042. The game history has no action for OP-4042.",
+      claim: "The customer received their credits.",
+      answer: "undetermined",
+      why: "Either the game action happened and was not recorded, or it never happened. Both fit the evidence, so neither can be asserted."
+    },
+    {
+      situation: "The request names customer C-3118. The record for C-3118 lists account ACC-4F8K-2093. A platform search for ACC-4F8K-2093 returns exactly one account.",
+      claim: "The account found on the platform belongs to C-3118.",
+      answer: "supported",
+      why: "The chain holds end to end and the search returned a unique result, so the identity follows."
+    },
+    {
+      situation: "The written request asks for 200. The attached proof of payment shows 2000.",
+      claim: "At least one of the two documents is wrong.",
+      answer: "supported",
+      why: "They cannot both be right. You can conclude an error exists even though you cannot yet say which document carries it."
+    },
+    {
+      situation: "Rule R2 requires one game action to produce exactly one Backend decision. OP-4063 has one game action and two APPROVED decisions.",
+      claim: "OP-4063 complies with R2.",
+      answer: "contradicted",
+      why: "Two decisions against one action is a direct breach of the stated rule."
+    },
+    {
+      situation: "A request arrives with no proof of payment attached, and the Backend shows no record of funds received.",
+      claim: "The customer did not pay.",
+      answer: "undetermined",
+      why: "A missing document is a missing document. It is evidence about the paperwork, not about the customer."
+    }
+  ];
+
+  const INFERENCE_CHOICES = [
+    ["supported", "Supported"],
+    ["contradicted", "Contradicted"],
+    ["undetermined", "Cannot determine"]
+  ];
+
+  const ACTIONS = [
+    ["approve", "Approve", "pick-ok"],
+    ["reject", "Reject", "pick-bad"],
+    ["escalate", "Stop and escalate", "pick-warn"]
+  ];
+
+  const REASONS = [
+    ["M1", "Customer or account does not match"],
+    ["M2", "Already processed (duplicate)"],
+    ["M3", "Insufficient funds"],
+    ["M4", "Evidence missing or unreadable"],
+    ["M5", "Information contradicts itself"],
+    ["M6", "Everything matches"]
+  ];
+
+  const QUEUE = [
+    {
+      ref: "RQ-11",
+      summary: "Customer C-3118 asks to load 150 credits to ACC-4F8K-2093.",
+      evidence: {
+        "Platform lookup": "ACC-4F8K-2093 — one exact match, active.",
+        "Customer record": "C-3118 owns ACC-4F8K-2093.",
+        "Proof of payment": "Legible. Amount reads 150.",
+        "Available funds": "400 available (Balance 400, Held 0).",
+        "Today's history": "No earlier movement for this reference."
+      },
+      action: "approve", reason: "M6", critical: false
+    },
+    {
+      ref: "RQ-12",
+      summary: "Customer C-6890 asks to load 200 credits to ACC-4F8K-2093.",
+      evidence: {
+        "Platform lookup": "Search returns ACC-4F8K-2O93 only. No other match.",
+        "Customer record": "C-6890 owns ACC-4F8K-2093.",
+        "Proof of payment": "Legible. Amount reads 200.",
+        "Available funds": "900 available.",
+        "Today's history": "No earlier movement for this reference."
+      },
+      action: "escalate", reason: "M1", critical: true
+    },
+    {
+      ref: "RQ-13",
+      summary: "Customer C-2041 asks to load 120 credits to ACC-7B2M-1150.",
+      evidence: {
+        "Platform lookup": "ACC-7B2M-1150 — one exact match, active.",
+        "Customer record": "C-2041 owns ACC-7B2M-1150.",
+        "Proof of payment": "Legible. Amount reads 120.",
+        "Available funds": "760 available.",
+        "Today's history": "Backend already shows APPROVED 120 on this reference, four minutes ago. Game history shows the matching credit."
+      },
+      action: "reject", reason: "M2", critical: false
+    },
+    {
+      ref: "RQ-14",
+      summary: "Customer C-4702 asks to withdraw 500 credits from ACC-9C1T-3047.",
+      evidence: {
+        "Platform lookup": "ACC-9C1T-3047 — one exact match, active.",
+        "Customer record": "C-4702 owns ACC-9C1T-3047.",
+        "Proof of payment": "Not applicable to a withdrawal.",
+        "Game account balance": "320 credits.",
+        "Today's history": "No earlier movement for this reference."
+      },
+      action: "reject", reason: "M3", critical: false
+    },
+    {
+      ref: "RQ-15",
+      summary: "Customer C-7355 asks to load credits to ACC-5S3D-4460.",
+      evidence: {
+        "Platform lookup": "ACC-5S3D-4460 — one exact match, active.",
+        "Customer record": "C-7355 owns ACC-5S3D-4460.",
+        "Proof of payment": "Image is cut off. The customer name is visible; the amount cannot be read.",
+        "Available funds": "1200 available.",
+        "Today's history": "No earlier movement for this reference."
+      },
+      action: "escalate", reason: "M4", critical: true
+    },
+    {
+      ref: "RQ-16",
+      summary: "Customer C-8014 asks to withdraw 45 credits from ACC-1L9Q-6304.",
+      evidence: {
+        "Platform lookup": "ACC-1L9Q-6304 — one exact match, active.",
+        "Customer record": "C-8014 owns ACC-1L9Q-6304.",
+        "Proof of payment": "Not applicable to a withdrawal.",
+        "Game account balance": "610 credits.",
+        "Today's history": "No earlier movement for this reference."
+      },
+      action: "approve", reason: "M6", critical: false
+    }
+  ];
+
+  const SECTIONS = [
+    { id: "lookup", n: 1, title: "Identity match", blurb: "A name is not an identity. Only the exact account is.", max: 10 },
+    { id: "funds", n: 2, title: "Running funds", blurb: "Each approval changes what is left for the next request.", max: 10 },
+    { id: "recon", n: 3, title: "Record reconciliation", blurb: "Two records of the same shift that should line up one to one.", max: 10 },
+    { id: "infer", n: 4, title: "What follows", blurb: "Some things the evidence proves. Some it only suggests.", max: 12 },
+    { id: "queue", n: 5, title: "Working the queue", blurb: "Six requests. Decide, and say why.", max: 18 }
+  ];
+
+  const MAX_TOTAL = SECTIONS.reduce((s, x) => s + x.max, 0);
+
+  const PROFILES = [
+    { id: "lookup", label: "Exact identity matching", predicts: "Finding and pasting the right player; not confusing near-identical accounts." },
+    { id: "funds", label: "State tracking", predicts: "Respecting held funds across a shift instead of reading one number." },
+    { id: "recon", label: "Record reconciliation", predicts: "Game history against Backend history; duplicates and unsettled actions." },
+    { id: "infer", label: "Inference discipline", predicts: "Knowing when evidence supports a conclusion and when it does not." },
+    { id: "queue", label: "Operational judgment", predicts: "Approve, reject with a reason, or refuse to act on bad evidence." }
+  ];
+
+  /* ======================= state ======================= */
+
+  const state = {
+    candidate: "",
+    startedAt: null,
+    finishedAt: null,
+    stage: "intro",
+    index: 0,
+    sectionEnter: null,
+    sectionTime: {},
+    changes: 0,
+    activeLookup: "L0",
+    regFilter: "",
+    lookup: {},
+    funds: {},
+    recon: { flags: {} },
+    infer: {},
+    queue: {},
+    evidenceOpened: {}
+  };
+
+  let downloadsPromise = null;
+  if (window.claude && typeof window.claude.use === "function") {
+    try {
+      downloadsPromise = window.claude.use("downloads").catch(function () { return null; });
+    } catch (e) {
+      downloadsPromise = null;
+    }
+  }
+
+  /* ======================= helpers ======================= */
+
+  const app = document.getElementById("app");
+  const stepsEl = document.getElementById("steps");
+  const clockEl = document.getElementById("clock");
+
+  function el(tag, attrs, kids) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        const v = attrs[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === "class") node.className = v;
+        else if (k === "text") node.textContent = v;
+        else if (k === "html") node.innerHTML = v;
+        else if (k.slice(0, 2) === "on") node.addEventListener(k.slice(2), v);
+        else node.setAttribute(k, v === true ? "" : v);
+      });
+    }
+    (kids || []).forEach(function (kid) {
+      if (kid === null || kid === undefined) return;
+      node.appendChild(typeof kid === "string" ? document.createTextNode(kid) : kid);
+    });
+    return node;
+  }
+
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+  function money(n) { return new Intl.NumberFormat("en-US").format(n); }
+
+  function mmss(ms) {
+    const total = Math.max(0, Math.round(ms / 1000));
+    return String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function record(bucket, key, value) {
+    const store = state[bucket];
+    if (store[key] !== undefined && store[key] !== value) state.changes += 1;
+    store[key] = value;
+  }
+
+  /* ======================= chrome ======================= */
+
+  function paintSteps() {
+    clear(stepsEl);
+    SECTIONS.forEach(function (s, i) {
+      const cls = state.stage === "done" || i < state.index ? "step done"
+        : (state.stage === "section" && i === state.index ? "step now" : "step");
+      stepsEl.appendChild(el("span", { class: cls }));
+    });
+  }
+
+  function tick() {
+    if (!state.startedAt) { clockEl.textContent = "--:--"; return; }
+    const end = state.finishedAt || Date.now();
+    clockEl.textContent = mmss(end - state.startedAt);
+  }
+  setInterval(tick, 1000);
+
+  const dlg = document.getElementById("rulesDlg");
+  const rulesList = document.getElementById("rulesList");
+  RULES.forEach(function (r) {
+    rulesList.appendChild(el("li", null, [el("b", { text: r[0] }), el("span", { text: r[1] })]));
+  });
+  document.getElementById("rulesBtn").addEventListener("click", function () { dlg.showModal(); });
+  document.getElementById("rulesClose").addEventListener("click", function () { dlg.close(); });
+
+  /* ======================= intro ======================= */
+
+  function renderIntro() {
+    clear(app);
+    const name = el("input", { type: "text", id: "candidateName", placeholder: "Full name", autocomplete: "name" });
+    const begin = el("button", { class: "btn", type: "button", disabled: true, text: "Begin" });
+
+    name.addEventListener("input", function () { begin.disabled = name.value.trim().length < 2; });
+    begin.addEventListener("click", function () {
+      state.candidate = name.value.trim();
+      state.startedAt = Date.now();
+      state.stage = "section";
+      state.index = 0;
+      state.sectionEnter = Date.now();
+      renderSection();
+    });
+
+    app.appendChild(el("p", { class: "eyebrow", text: "Pre-training screening" }));
+    app.appendChild(el("h1", { text: "Operator screening" }));
+    app.appendChild(el("p", { class: "lede doc", text: "Five exercises drawn from the work an operator actually does: identifying an account, tracking funds that move as you commit them, reconciling two records of the same shift, judging what the evidence does and does not prove, and deciding what to do with a queue of requests." }));
+    app.appendChild(el("p", { class: "lede doc", text: "Nothing here assumes you have seen a game platform or learned a company procedure. Every rule you need is on this page, and you can reopen it at any time from Rules in the header." }));
+
+    app.appendChild(el("div", { class: "card" }, [
+      el("h3", { text: "Operating rules" }),
+      (function () {
+        const ul = el("ul", { class: "rule-list" });
+        RULES.forEach(function (r) {
+          ul.appendChild(el("li", null, [el("b", { text: r[0] }), el("span", { text: r[1] })]));
+        });
+        return ul;
+      })()
+    ]));
+
+    app.appendChild(el("div", { class: "card" }, [
+      el("h3", { text: "How it is scored" }),
+      el("p", { text: "Sixty points across the five exercises, reported as five separate scores rather than one number. Flagging something that is actually correct costs points, so answer from what you verified, not from suspicion." }),
+      el("p", { class: "hint", text: "There is no time limit. Your elapsed time is recorded and shown in the header." })
+    ]));
+
+    app.appendChild(el("div", { class: "foot" }, [
+      el("label", { class: "field" }, ["Candidate", name]),
+      begin
+    ]));
+
+    paintSteps();
+  }
+
+  /* ======================= section 1 — lookup ======================= */
+
+  function renderLookup(root) {
+    const filter = el("input", {
+      type: "text", id: "regFilter", placeholder: "Filter the registry…",
+      "aria-label": "Filter the registry", value: state.regFilter
+    });
+    const tbody = el("tbody");
+    const activeLabel = el("p", { class: "hint", style: "margin:0 0 12px" });
+
+    function paintRows() {
+      const active = state.activeLookup;
+      const which = LOOKUPS[Number(active.slice(1))];
+      activeLabel.textContent = "Searching for request " + (Number(active.slice(1)) + 1) + " · " + which.target;
+      clear(tbody);
+      const q = filter.value.trim().toUpperCase();
+      REGISTRY.forEach(function (id, i) {
+        if (q && id.toUpperCase().indexOf(q) === -1) return;
+        const chosen = state.lookup[active] === id;
+        const tr = el("tr", { class: "pick" + (chosen ? " chosen" : "") }, [
+          el("td", { class: "n", text: String(i + 1) }),
+          el("td", { class: "k", text: id })
+        ]);
+        tr.addEventListener("click", function () {
+          record("lookup", state.activeLookup, id);
+          renderSection();
+        });
+        tbody.appendChild(tr);
+      });
+      if (!tbody.firstChild) {
+        tbody.appendChild(el("tr", null, [el("td", { colspan: "2", class: "hint", text: "No registry entry contains that text." })]));
+      }
+    }
+
+    root.appendChild(el("p", { class: "doc", text: "For each request, select the registry row that matches the account exactly, character by character. If no entry matches exactly, mark it as no exact match. Several entries are near-identical on purpose." }));
+
+    LOOKUPS.forEach(function (item, i) {
+      const key = "L" + i;
+      const answered = state.lookup[key];
+      const none = answered === "__none__";
+
+      const block = el("div", { class: "item" }, [
+        el("div", { class: "item-head" }, [
+          el("span", { class: "item-n", text: String(i + 1) }),
+          el("div", null, [
+            el("div", { class: "doc" }, [
+              "Customer ", el("span", { class: "id", text: item.customer }),
+              " requests an operation on account ", el("span", { class: "id", text: item.target }), "."
+            ])
+          ])
+        ])
+      ]);
+
+      const status = el("p", {
+        class: "hint",
+        text: answered ? (none ? "Marked: no exact match." : "Selected: " + answered) : "Nothing selected yet."
+      });
+
+      const noneBtn = el("button", {
+        class: "choice", type: "button", "aria-pressed": none ? "true" : "false",
+        text: "No exact match in the registry"
+      });
+      noneBtn.addEventListener("click", function () {
+        record("lookup", key, "__none__");
+        renderSection();
+      });
+
+      const openBtn = el("button", {
+        class: "btn-quiet", type: "button",
+        text: state.activeLookup === key ? "Searching this one" : "Search the registry"
+      });
+      openBtn.addEventListener("click", function () {
+        state.activeLookup = key;
+        paintRows();
+        document.getElementById("registryPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+        filter.focus();
+      });
+
+      block.appendChild(status);
+      block.appendChild(el("div", { class: "choices" }, [openBtn, noneBtn]));
+      root.appendChild(block);
+    });
+
+    const panel = el("div", { class: "card", id: "registryPanel" }, [
+      el("h3", { text: "Account registry" }),
+      activeLabel,
+      el("div", { class: "row", style: "margin-bottom:12px" }, [filter]),
+      el("div", { class: "scroller" }, [
+        el("table", null, [
+          el("thead", null, [el("tr", null, [el("th", { text: "Row" }), el("th", { text: "Account" })])]),
+          tbody
+        ])
+      ]),
+      el("p", { class: "hint", text: "Clicking a row answers the request named above. Use “Search the registry” on another request to switch." })
+    ]);
+    root.appendChild(panel);
+    filter.addEventListener("input", function () {
+      state.regFilter = filter.value;
+      paintRows();
+    });
+    paintRows();
+  }
+
+  function heldAfter(upto) {
+    let held = 0;
+    for (let i = 0; i < upto; i++) {
+      if (state.funds["D" + i] === "proceed") held += FUND_REQUESTS[i].amount;
+    }
+    return held;
+  }
+
+  /* ======================= section 2 — funds ======================= */
+
+  function renderFunds(root) {
+    root.appendChild(el("p", { class: "doc", text: "One customer, five load requests, handled in order. Approving a request places a hold for that amount, so it is no longer available for the requests that follow. For each one, work out what is Available, then decide." }));
+
+    FUND_REQUESTS.forEach(function (req, i) {
+      const key = "D" + i;
+      const aKey = "A" + i;
+      const prior = i === 0 || state.funds["D" + (i - 1)] !== undefined;
+      const held = heldAfter(i);
+      const available = LEDGER_START - held;
+      const decided = state.funds[key];
+
+      const block = el("div", { class: "item" });
+      block.appendChild(el("div", { class: "item-head" }, [
+        el("span", { class: "item-n", text: req.ref }),
+        el("div", { class: "doc" }, ["Requests ", el("b", { class: "num", text: money(req.amount) }), " credits. ", req.note])
+      ]));
+
+      if (!prior) {
+        block.appendChild(el("p", { class: "hint", text: "Handle the previous request first." }));
+        root.appendChild(block);
+        return;
+      }
+
+      const dl = el("dl", { class: "ledger" }, [
+        el("div", null, [el("dt", { text: "Balance" }), el("dd", { class: "num", text: money(LEDGER_START) })]),
+        el("div", { class: "held" }, [el("dt", { text: "Held" }), el("dd", { class: "num", text: money(held) })]),
+        el("div", null, [el("dt", { text: "Requested" }), el("dd", { class: "num", text: money(req.amount) })])
+      ]);
+      block.appendChild(dl);
+
+      const avail = el("input", {
+        type: "number", inputmode: "numeric", id: "avail" + i,
+        placeholder: "0", value: state.funds[aKey] !== undefined ? state.funds[aKey] : "",
+        style: "width:130px"
+      });
+      // Typing is not an answer revision — only a changed decision counts.
+      avail.addEventListener("input", function () {
+        state.funds[aKey] = avail.value === "" ? undefined : Number(avail.value);
+      });
+
+      const choices = el("div", { class: "choices" });
+      [["proceed", "Proceed", "pick-ok"], ["reject", "Reject", "pick-bad"]].forEach(function (opt) {
+        const b = el("button", {
+          class: "choice " + opt[2], type: "button",
+          "aria-pressed": decided === opt[0] ? "true" : "false", text: opt[1]
+        });
+        b.addEventListener("click", function () {
+          record("funds", key, opt[0]);
+          renderSection();
+        });
+        choices.appendChild(b);
+      });
+
+      block.appendChild(el("div", { class: "row" }, [
+        el("label", { class: "field" }, ["Available", avail]),
+        choices
+      ]));
+
+      if (decided) {
+        block.appendChild(el("p", {
+          class: "hint",
+          text: decided === "proceed"
+            ? "Held rises to " + money(held + req.amount) + " for the next request."
+            : "Nothing held. " + money(available) + " still available."
+        }));
+      }
+
+      root.appendChild(block);
+    });
+  }
+
+  /* ======================= section 3 — reconciliation ======================= */
+
+  function renderRecon(root) {
+    root.appendChild(el("p", { class: "doc", text: "Both records cover the same shift. Under R2 they should agree one to one. Click any row you believe is involved in a discrepancy, then say what kind it is. Flagging a reference that is actually fine costs points." }));
+
+    function logTable(rows, cols, keyName) {
+      const tbody = el("tbody");
+      rows.forEach(function (row) {
+        const flagged = state.recon.flags[row.ref] !== undefined;
+        const tr = el("tr", { class: "pick" + (flagged ? " flagged" : "") });
+        cols.forEach(function (c) {
+          tr.appendChild(el("td", { class: c.cls || "", text: String(row[c.key]) }));
+        });
+        tr.addEventListener("click", function () {
+          if (state.recon.flags[row.ref] !== undefined) delete state.recon.flags[row.ref];
+          else state.recon.flags[row.ref] = "";
+          renderSection();
+        });
+        tbody.appendChild(tr);
+      });
+      return el("div", { class: "scroller" }, [
+        el("table", null, [
+          el("thead", null, [el("tr", null, cols.map(function (c) { return el("th", { text: c.label }); }))]),
+          tbody
+        ])
+      ]);
+    }
+
+    root.appendChild(el("div", { class: "card" }, [
+      el("h3", { text: "Game platform record" }),
+      logTable(GAME_LOG, [
+        { key: "ref", label: "Reference", cls: "k" },
+        { key: "account", label: "Account", cls: "k" },
+        { key: "action", label: "Action" },
+        { key: "amount", label: "Amount", cls: "n" }
+      ])
+    ]));
+
+    root.appendChild(el("div", { class: "card" }, [
+      el("h3", { text: "Backend record" }),
+      logTable(BACKEND_LOG, [
+        { key: "ref", label: "Reference", cls: "k" },
+        { key: "customer", label: "Customer", cls: "k" },
+        { key: "decision", label: "Decision" },
+        { key: "amount", label: "Amount", cls: "n" }
+      ])
+    ]));
+
+    const flagged = Object.keys(state.recon.flags);
+    const panel = el("div", { class: "card" }, [el("h3", { text: "Flagged references" })]);
+
+    if (!flagged.length) {
+      panel.appendChild(el("p", { class: "hint", text: "Nothing flagged yet. Click a row in either record above." }));
+    } else {
+      flagged.sort().forEach(function (ref) {
+        const sel = el("select", { "aria-label": "Category for " + ref });
+        sel.appendChild(el("option", { value: "", text: "Choose the discrepancy…" }));
+        RECON_CATEGORIES.forEach(function (c) {
+          const o = el("option", { value: c[0], text: c[1] });
+          if (state.recon.flags[ref] === c[0]) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.addEventListener("change", function () {
+          if (state.recon.flags[ref] !== sel.value) state.changes += 1;
+          state.recon.flags[ref] = sel.value;
+        });
+        const drop = el("button", { class: "btn-quiet", type: "button", text: "Remove" });
+        drop.addEventListener("click", function () {
+          delete state.recon.flags[ref];
+          renderSection();
+        });
+        panel.appendChild(el("div", { class: "row", style: "margin-bottom:10px" }, [
+          el("span", { class: "id", text: ref }), sel, drop
+        ]));
+      });
+    }
+    root.appendChild(panel);
+  }
+
+  /* ======================= section 4 — inference ======================= */
+
+  function renderInfer(root) {
+    root.appendChild(el("p", { class: "doc", text: "Each case gives you what you know and one claim. Decide whether the evidence supports the claim, contradicts it, or leaves it undetermined. “Cannot determine” is a real answer, not a way out." }));
+
+    INFERENCE.forEach(function (item, i) {
+      const key = "I" + i;
+      const block = el("div", { class: "item" }, [
+        el("div", { class: "item-head" }, [
+          el("span", { class: "item-n", text: String(i + 1) }),
+          el("p", { class: "doc", text: item.situation, style: "margin:0" })
+        ]),
+        el("p", { class: "doc", style: "margin:0 0 12px; padding-left:14px; border-left:3px solid var(--line-strong)" }, [
+          el("b", { text: "Claim: " }), item.claim
+        ])
+      ]);
+
+      const choices = el("div", { class: "choices" });
+      INFERENCE_CHOICES.forEach(function (c) {
+        const b = el("button", {
+          class: "choice", type: "button",
+          "aria-pressed": state.infer[key] === c[0] ? "true" : "false", text: c[1]
+        });
+        b.addEventListener("click", function () {
+          record("infer", key, c[0]);
+          renderSection();
+        });
+        choices.appendChild(b);
+      });
+      block.appendChild(choices);
+      root.appendChild(block);
+    });
+  }
+
+  /* ======================= section 5 — queue ======================= */
+
+  function renderQueue(root) {
+    root.appendChild(el("p", { class: "doc", text: "Six requests. For each one choose an action and the reason behind it. The evidence panel holds what you would see on screen — open it before you decide." }));
+
+    QUEUE.forEach(function (item, i) {
+      const aKey = "Q" + i;
+      const rKey = "R" + i;
+
+      const evBody = el("div", { class: "body" });
+      Object.keys(item.evidence).forEach(function (label) {
+        evBody.appendChild(el("div", { class: "evline" }, [
+          el("b", { text: label }),
+          el("span", { text: item.evidence[label] })
+        ]));
+      });
+      const ev = el("details", { class: "evidence" }, [
+        el("summary", { text: "Evidence on screen" }), evBody
+      ]);
+      ev.addEventListener("toggle", function () {
+        if (ev.open && !state.evidenceOpened[aKey]) {
+          state.evidenceOpened[aKey] = state.queue[aKey] ? "after" : "before";
+        }
+      });
+
+      const block = el("div", { class: "item" }, [
+        el("div", { class: "item-head" }, [
+          el("span", { class: "item-n", text: item.ref }),
+          el("p", { class: "doc", text: item.summary, style: "margin:0" })
+        ]),
+        ev
+      ]);
+
+      const choices = el("div", { class: "choices" });
+      ACTIONS.forEach(function (a) {
+        const b = el("button", {
+          class: "choice " + a[2], type: "button",
+          "aria-pressed": state.queue[aKey] === a[0] ? "true" : "false", text: a[1]
+        });
+        b.addEventListener("click", function () {
+          if (!state.evidenceOpened[aKey]) state.evidenceOpened[aKey] = "never";
+          record("queue", aKey, a[0]);
+          renderSection();
+        });
+        choices.appendChild(b);
+      });
+
+      const sel = el("select", { "aria-label": "Reason for " + item.ref });
+      sel.appendChild(el("option", { value: "", text: "Reason…" }));
+      REASONS.forEach(function (r) {
+        const o = el("option", { value: r[0], text: r[0] + " — " + r[1] });
+        if (state.queue[rKey] === r[0]) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener("change", function () { record("queue", rKey, sel.value); });
+
+      block.appendChild(el("div", { class: "row" }, [choices, sel]));
+      root.appendChild(block);
+    });
+  }
+
+  /* ======================= section shell ======================= */
+
+  const RENDERERS = { lookup: renderLookup, funds: renderFunds, recon: renderRecon, infer: renderInfer, queue: renderQueue };
+
+  function unanswered() {
+    const s = SECTIONS[state.index];
+    if (s.id === "lookup") return LOOKUPS.filter(function (_, i) { return !state.lookup["L" + i]; }).length;
+    if (s.id === "funds") return FUND_REQUESTS.filter(function (_, i) {
+      return !state.funds["D" + i] || state.funds["A" + i] === undefined;
+    }).length;
+    if (s.id === "recon") return Object.keys(state.recon.flags).filter(function (r) { return !state.recon.flags[r]; }).length;
+    if (s.id === "infer") return INFERENCE.filter(function (_, i) { return !state.infer["I" + i]; }).length;
+    if (s.id === "queue") return QUEUE.filter(function (_, i) { return !state.queue["Q" + i] || !state.queue["R" + i]; }).length;
+    return 0;
+  }
+
+  function renderSection() {
+    const s = SECTIONS[state.index];
+    clear(app);
+    paintSteps();
+
+    app.appendChild(el("p", { class: "eyebrow", text: "Exercise " + s.n + " of " + SECTIONS.length }));
+    app.appendChild(el("h2", { text: s.title }));
+    app.appendChild(el("p", { class: "lede", text: s.blurb }));
+
+    const body = el("div");
+    app.appendChild(body);
+    RENDERERS[s.id](body);
+
+    const left = unanswered();
+    const next = el("button", {
+      class: "btn", type: "button",
+      text: state.index === SECTIONS.length - 1 ? "Finish and score" : "Next exercise",
+      disabled: left > 0
+    });
+    next.addEventListener("click", function () {
+      state.sectionTime[s.id] = (state.sectionTime[s.id] || 0) + (Date.now() - state.sectionEnter);
+      if (state.index === SECTIONS.length - 1) {
+        state.finishedAt = Date.now();
+        state.stage = "done";
+        renderResults();
+      } else {
+        state.index += 1;
+        state.sectionEnter = Date.now();
+        renderSection();
+        window.scrollTo(0, 0);
+      }
+    });
+
+    app.appendChild(el("div", { class: "foot" }, [
+      el("p", {
+        class: "hint",
+        text: left > 0
+          ? left + (s.id === "recon" ? " flagged reference(s) still need a category." : " item(s) still need an answer.")
+          : "All answered."
+      }),
+      next
+    ]));
+  }
+
+  /* ======================= scoring ======================= */
+
+  function scoreAll() {
+    const detail = { lookup: [], funds: [], recon: [], infer: [], queue: [] };
+    const score = { lookup: 0, funds: 0, recon: 0, infer: 0, queue: 0 };
+
+    LOOKUPS.forEach(function (item, i) {
+      const given = state.lookup["L" + i];
+      const exists = REGISTRY.indexOf(item.target) !== -1;
+      const correct = exists ? item.target : "__none__";
+      const ok = given === correct;
+      if (ok) score.lookup += 2;
+      detail.lookup.push({
+        label: item.customer + " → " + item.target,
+        given: given === "__none__" ? "No exact match" : given,
+        correct: correct === "__none__" ? "No exact match" : correct,
+        ok: ok, points: ok ? 2 : 0
+      });
+    });
+
+    let ignoredHeld = 0;
+    FUND_REQUESTS.forEach(function (req, i) {
+      const held = heldAfter(i);
+      const available = LEDGER_START - held;
+      const givenA = state.funds["A" + i];
+      const givenD = state.funds["D" + i];
+      const okA = givenA === available;
+      const okD = givenD === (req.amount <= available ? "proceed" : "reject");
+      if (okA) score.funds += 1;
+      if (okD) score.funds += 1;
+      if (held > 0 && givenA === LEDGER_START) ignoredHeld += 1;
+      detail.funds.push({
+        label: req.ref + " · requests " + money(req.amount) + " with " + money(held) + " held",
+        given: (givenA === undefined ? "—" : money(givenA)) + " available, " + (givenD === "proceed" ? "Proceed" : "Reject"),
+        correct: money(available) + " available, " + (req.amount <= available ? "Proceed" : "Reject"),
+        ok: okA && okD, points: (okA ? 1 : 0) + (okD ? 1 : 0)
+      });
+    });
+
+    let falseFlags = 0;
+    Object.keys(RECON_KEY).forEach(function (ref) {
+      const given = state.recon.flags[ref];
+      const ok = given === RECON_KEY[ref];
+      if (ok) score.recon += 2;
+      detail.recon.push({
+        label: ref,
+        given: given ? labelFor(given) : "Not flagged",
+        correct: labelFor(RECON_KEY[ref]),
+        ok: ok, points: ok ? 2 : 0
+      });
+    });
+    Object.keys(state.recon.flags).forEach(function (ref) {
+      if (RECON_KEY[ref]) return;
+      falseFlags += 1;
+      score.recon -= 2;
+      detail.recon.push({
+        label: ref,
+        given: labelFor(state.recon.flags[ref]) || "Flagged",
+        correct: "Nothing wrong with this reference",
+        ok: false, points: -2
+      });
+    });
+    if (score.recon < 0) score.recon = 0;
+
+    INFERENCE.forEach(function (item, i) {
+      const given = state.infer["I" + i];
+      const ok = given === item.answer;
+      if (ok) score.infer += 2;
+      detail.infer.push({
+        label: item.claim,
+        given: nameFor(INFERENCE_CHOICES, given),
+        correct: nameFor(INFERENCE_CHOICES, item.answer),
+        ok: ok, points: ok ? 2 : 0, why: item.why
+      });
+    });
+
+    let criticalFailures = [];
+    let blindDecisions = 0;
+    QUEUE.forEach(function (item, i) {
+      const ga = state.queue["Q" + i];
+      const gr = state.queue["R" + i];
+      const okA = ga === item.action;
+      const okR = gr === item.reason;
+      if (okA) score.queue += 2;
+      if (okR) score.queue += 1;
+      if (item.critical && ga === "approve") criticalFailures.push(item.ref);
+      if (state.evidenceOpened["Q" + i] !== "before") blindDecisions += 1;
+      detail.queue.push({
+        label: item.ref + " · " + item.summary,
+        given: nameFor(ACTIONS, ga) + (gr ? " / " + gr : " / no reason"),
+        correct: nameFor(ACTIONS, item.action) + " / " + item.reason,
+        ok: okA && okR, points: (okA ? 2 : 0) + (okR ? 1 : 0),
+        critical: item.critical
+      });
+    });
+
+    const total = SECTIONS.reduce(function (sum, s) { return sum + score[s.id]; }, 0);
+    return {
+      score: score, detail: detail, total: total,
+      pct: Math.round((total / MAX_TOTAL) * 100),
+      criticalFailures: criticalFailures,
+      ignoredHeld: ignoredHeld,
+      blindDecisions: blindDecisions,
+      falseFlags: falseFlags
+    };
+  }
+
+  function labelFor(id) {
+    const hit = RECON_CATEGORIES.filter(function (c) { return c[0] === id; })[0];
+    return hit ? hit[1] : "";
+  }
+  function nameFor(list, id) {
+    const hit = list.filter(function (c) { return c[0] === id; })[0];
+    return hit ? hit[1] : "No answer";
+  }
+
+  /* ======================= results ======================= */
+
+  function verdict(r) {
+    if (r.criticalFailures.length) return ["v-bad", "Not suitable — critical failure"];
+    const everyProfile = SECTIONS.every(function (s) { return r.score[s.id] / s.max >= 0.7; });
+    if (r.pct >= 80 && everyProfile) return ["v-ok", "Suitable"];
+    if (r.pct >= 65) return ["v-mid", "Suitable with reservations"];
+    return ["v-bad", "Not suitable"];
+  }
+
+  function observations(r) {
+    const out = [];
+    if (r.criticalFailures.length) {
+      out.push(["flag", "Approved " + r.criticalFailures.join(", ") + " — a request whose evidence did not permit any action. This invalidates the result on its own."]);
+    }
+    if (r.ignoredHeld >= 2) {
+      out.push(["flag", "Read Balance as Available on " + r.ignoredHeld + " requests where funds were already held. This is the habit that overcommits customer money."]);
+    }
+    if (r.blindDecisions >= 3) {
+      out.push(["flag", "Decided " + r.blindDecisions + " of " + QUEUE.length + " requests without opening the evidence first."]);
+    } else if (r.blindDecisions === 0) {
+      out.push(["good", "Opened the evidence before every decision."]);
+    }
+    if (r.falseFlags) {
+      out.push(["flag", "Flagged " + r.falseFlags + " reference(s) that were not discrepancies."]);
+    }
+    if (r.score.infer === SECTIONS[3].max) {
+      out.push(["good", "Every inference judged correctly, including the cases where the evidence settles nothing."]);
+    }
+    if (!out.length) out.push(["", "No behavioural flags raised."]);
+    return out;
+  }
+
+  function renderResults() {
+    const r = scoreAll();
+    const v = verdict(r);
+    clear(app);
+    paintSteps();
+
+    app.appendChild(el("p", { class: "eyebrow", text: "Result" }));
+    app.appendChild(el("h1", { text: state.candidate }));
+
+    if (r.criticalFailures.length) {
+      app.appendChild(el("div", { class: "alarm" }, [
+        el("b", { text: "Critical failure" }),
+        el("span", { text: "Approved " + r.criticalFailures.join(", ") + ", where the evidence did not permit action. A correct answer elsewhere does not offset this." })
+      ]));
+    }
+
+    app.appendChild(el("div", { class: "score-hero" }, [
+      el("div", null, [
+        el("div", { class: "big num", text: r.total + "/" + MAX_TOTAL }),
+        el("p", { class: "hint", style: "margin:6px 0 0", text: r.pct + "% · " + mmss((state.finishedAt || Date.now()) - state.startedAt) + " elapsed" })
+      ]),
+      el("div", null, [
+        el("span", { class: "verdict " + v[0], text: v[1] }),
+        el("p", { class: "hint", style: "margin:8px 0 0; max-width:34ch", text: "Thresholds are provisional and pending calibration against real cohort results." })
+      ])
+    ]));
+
+    const rows = el("tbody");
+    PROFILES.forEach(function (p) {
+      const s = SECTIONS.filter(function (x) { return x.id === p.id; })[0];
+      const got = r.score[p.id];
+      const pct = Math.round((got / s.max) * 100);
+      rows.appendChild(el("tr", null, [
+        el("td", null, [el("b", { text: p.label }), el("div", { class: "hint", style: "white-space:normal", text: p.predicts })]),
+        el("td", { class: "n", text: got + "/" + s.max }),
+        el("td", { style: "width:130px" }, [el("div", { class: "bar" }, [el("i", { style: "width:" + Math.max(pct, 2) + "%" })])])
+      ]));
+    });
+    app.appendChild(el("div", { class: "card" }, [
+      el("h3", { text: "Ability profile" }),
+      el("div", { class: "scroller" }, [el("table", null, [rows])])
+    ]));
+
+    const notes = el("div", { class: "notes" });
+    observations(r).forEach(function (o) {
+      notes.appendChild(el("div", { class: "note " + o[0] }, [el("i"), el("span", { text: o[1] })]));
+    });
+    app.appendChild(el("div", { class: "card" }, [el("h3", { text: "Observations" }), notes]));
+
+    SECTIONS.forEach(function (s) {
+      const tb = el("tbody");
+      r.detail[s.id].forEach(function (d) {
+        tb.appendChild(el("tr", null, [
+          el("td", { style: "white-space:normal; max-width:320px", text: d.label }),
+          el("td", { style: "white-space:normal", text: d.given }),
+          el("td", { style: "white-space:normal", text: d.correct }),
+          el("td", { class: "n " + (d.ok ? "mark-ok" : "mark-bad"), text: (d.points > 0 ? "+" : "") + d.points })
+        ]));
+      });
+      app.appendChild(el("div", { class: "card" }, [
+        el("h3", { text: s.n + ". " + s.title + " — " + r.score[s.id] + "/" + s.max }),
+        el("div", { class: "scroller" }, [
+          el("table", null, [
+            el("thead", null, [el("tr", null, [
+              el("th", { text: "Item" }), el("th", { text: "Answered" }), el("th", { text: "Correct" }), el("th", { text: "Pts" })
+            ])]),
+            tb
+          ])
+        ])
+      ]));
+    });
+
+    const status = el("p", { class: "hint", text: "" });
+    const dlBtn = el("button", { class: "btn", type: "button", text: "Download result" });
+    dlBtn.addEventListener("click", function () { saveResult(r, status, dlBtn); });
+
+    app.appendChild(el("div", { class: "foot" }, [status, dlBtn]));
+  }
+
+  /* ======================= result file ======================= */
+
+  function resultDocument(r) {
+    const when = new Date(state.finishedAt || Date.now());
+    const v = verdict(r);
+    const sectionBlocks = SECTIONS.map(function (s) {
+      const body = r.detail[s.id].map(function (d) {
+        return "<tr><td>" + esc(d.label) + "</td><td>" + esc(d.given) + "</td><td>" + esc(d.correct) +
+          "</td><td class=\"n\">" + (d.points > 0 ? "+" : "") + d.points + "</td></tr>";
+      }).join("");
+      return "<h3>" + s.n + ". " + esc(s.title) + " — " + r.score[s.id] + "/" + s.max + "</h3>" +
+        "<table><thead><tr><th>Item</th><th>Answered</th><th>Correct</th><th>Pts</th></tr></thead><tbody>" +
+        body + "</tbody></table>";
+    }).join("");
+
+    const profileRows = PROFILES.map(function (p) {
+      const s = SECTIONS.filter(function (x) { return x.id === p.id; })[0];
+      return "<tr><td>" + esc(p.label) + "</td><td class=\"n\">" + r.score[p.id] + "/" + s.max + "</td><td>" + esc(p.predicts) + "</td></tr>";
+    }).join("");
+
+    const obs = observations(r).map(function (o) { return "<li>" + esc(o[1]) + "</li>"; }).join("");
+
+    const times = SECTIONS.map(function (s) {
+      return "<tr><td>" + esc(s.title) + "</td><td class=\"n\">" + mmss(state.sectionTime[s.id] || 0) + "</td></tr>";
+    }).join("");
+
+    return "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
+      "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" +
+      "<title>Operator screening — " + esc(state.candidate) + "</title><style>" +
+      "body{font:14px/1.55 -apple-system,Segoe UI,system-ui,sans-serif;color:#16202E;background:#fff;max-width:860px;margin:0 auto;padding:32px 20px}" +
+      "h1{font-size:26px;margin:0 0 4px}h2{font-size:17px;margin:32px 0 8px;border-bottom:1px solid #DCE0E6;padding-bottom:6px}" +
+      "h3{font-size:14px;margin:22px 0 6px}table{border-collapse:collapse;width:100%;font-size:13px;margin-bottom:10px}" +
+      "th{text-align:left;background:#EDF0F4;padding:6px 9px;border:1px solid #DCE0E6;font-size:11px;text-transform:uppercase;letter-spacing:.06em}" +
+      "td{padding:6px 9px;border:1px solid #DCE0E6;vertical-align:top}td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}" +
+      ".hdr{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}" +
+      ".v{display:inline-block;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;background:#EDF0F4}" +
+      ".crit{border:1px solid #9B2F2B;background:#F7E7E6;color:#9B2F2B;padding:12px 14px;border-radius:5px;margin:14px 0;font-weight:600}" +
+      ".meta{color:#55616F;font-size:13px}ul{padding-left:18px}" +
+      "@media print{body{padding:0}h2{break-after:avoid}table{break-inside:avoid}}" +
+      "</style></head><body>" +
+      "<h1>Operator screening result</h1>" +
+      "<p class=\"meta\"><b>" + esc(state.candidate) + "</b><br>" + esc(when.toISOString().slice(0, 10)) +
+      " · " + esc(when.toTimeString().slice(0, 5)) + " · " + mmss((state.finishedAt || Date.now()) - state.startedAt) + " elapsed</p>" +
+      (r.criticalFailures.length
+        ? "<div class=\"crit\">Critical failure — approved " + esc(r.criticalFailures.join(", ")) +
+          ", where the evidence did not permit action. This invalidates the result regardless of score.</div>"
+        : "") +
+      "<p><span class=\"hdr\">" + r.total + "/" + MAX_TOTAL + "</span> &nbsp; <span class=\"v\">" + esc(v[1]) + "</span><br>" +
+      "<span class=\"meta\">" + r.pct + "% · thresholds provisional, pending calibration.</span></p>" +
+      "<h2>Ability profile</h2><table><thead><tr><th>Profile</th><th>Score</th><th>What it predicts</th></tr></thead><tbody>" +
+      profileRows + "</tbody></table>" +
+      "<h2>Observations</h2><ul>" + obs + "</ul>" +
+      "<h2>Time per exercise</h2><table><thead><tr><th>Exercise</th><th>Time</th></tr></thead><tbody>" + times +
+      "<tr><td><b>Answer revisions</b></td><td class=\"n\">" + state.changes + "</td></tr></tbody></table>" +
+      "<h2>Item detail</h2>" + sectionBlocks +
+      "</body></html>";
+  }
+
+  function slug(s) {
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "candidate";
+  }
+
+  function saveResult(r, status, btn) {
+    const filename = "operator-screening-" + slug(state.candidate) + "-" +
+      new Date(state.finishedAt || Date.now()).toISOString().slice(0, 10) + ".html";
+    const data = resultDocument(r);
+
+    status.textContent = "Preparing the file…";
+    btn.disabled = true;
+
+    Promise.resolve(downloadsPromise).then(function (downloads) {
+      if (downloads && typeof downloads.save === "function") {
+        return downloads.save({ filename: filename, data: data }).then(function () {
+          status.textContent = "Saved as " + filename;
+        }, function (err) {
+          const code = err && err.code;
+          if (code === "declined") status.textContent = "Save cancelled. The button is still here when you want it.";
+          else if (code === "rate_limited") status.textContent = "A save prompt is already open. Try again in a moment.";
+          else status.textContent = "Could not save the file here (" + (code || "unknown") + "). Open this page from a file or a server to download it.";
+        });
+      }
+      return localSave(filename, data, status);
+    }).catch(function () {
+      return localSave(filename, data, status);
+    }).then(function () {
+      btn.disabled = false;
+    });
+  }
+
+  function localSave(filename, data, status) {
+    try {
+      const blob = new Blob([data], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      status.textContent = "Downloaded " + filename;
+    } catch (e) {
+      status.textContent = "Downloads are blocked in this view. Open the page from a file or a server to save the result.";
+    }
+  }
+
+  /* ======================= go ======================= */
+
+  renderIntro();
+  tick();
+})();
+</script>
