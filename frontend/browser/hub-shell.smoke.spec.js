@@ -534,6 +534,10 @@ test('Module 6 reserves Add Credits, performs one game action, and approves the 
   await page.getByRole('button', { name: 'Add 25 credits in Orion Stars' }).click();
   await expect(page.getByRole('button', { name: 'Game credit recorded' })).toBeVisible();
   await page.getByRole('button', { name: 'Approve movement' }).click();
+  const confirmation = page.getByRole('dialog');
+  await expect(confirmation.getByRole('heading', { name: 'Accept Transaction' })).toBeVisible();
+  await expect(confirmation.getByText('Are you sure about carrying out this transaction?')).toBeVisible();
+  await confirmation.getByRole('button', { name: 'Accept' }).click();
   await expect(page.getByText('Perform the Orion Stars Add Credits movement progress was saved.')).toBeVisible();
   expect(approvalRequest).toMatchObject({ action: 'APPROVED', accountId: 'orion-account-add', amount: 25, gameActionExecuted: true });
   expect(approvalRequest.idempotencyKey).toEqual(expect.any(String));
@@ -558,6 +562,10 @@ test('Module 7 performs one Orion Stars withdrawal and approves the existing Bac
   await page.getByRole('button', { name: 'Withdraw 25 credits in Orion Stars' }).click();
   await expect(page.getByRole('button', { name: 'Game withdrawal recorded' })).toBeVisible();
   await page.getByRole('button', { name: 'Approve movement' }).click();
+  const confirmation = page.getByRole('dialog');
+  await expect(confirmation.getByRole('heading', { name: 'Accept Transaction' })).toBeVisible();
+  await expect(confirmation.getByText('Are you sure about carrying out this transaction?')).toBeVisible();
+  await confirmation.getByRole('button', { name: 'Accept' }).click();
   await expect(page.getByText('Perform the Orion Stars Withdraw Credits movement progress was saved.')).toBeVisible();
   expect(approvalRequest).toMatchObject({ action: 'APPROVED', accountId: 'orion-account-withdraw', amount: 25, gameActionExecuted: true });
 });
