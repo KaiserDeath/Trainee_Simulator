@@ -828,6 +828,7 @@
     recon: { flags: {} },
     infer: {},
     queue: {},
+    evidenceOpen: {},
     evidenceOpened: {}
   };
 
@@ -1210,6 +1211,7 @@
         sel.addEventListener("change", function () {
           if (state.recon.flags[ref] !== sel.value) state.changes += 1;
           state.recon.flags[ref] = sel.value;
+          renderSection();
         });
         const drop = el("button", { class: "btn-quiet", type: "button", text: "Remove" });
         drop.addEventListener("click", function () {
@@ -1274,10 +1276,14 @@
           el("span", { text: item.evidence[label] })
         ]));
       });
-      const ev = el("details", { class: "evidence" }, [
+      const ev = el("details", {
+        class: "evidence",
+        open: state.evidenceOpen[aKey] ? true : null
+      }, [
         el("summary", { text: "Evidence on screen" }), evBody
       ]);
       ev.addEventListener("toggle", function () {
+        state.evidenceOpen[aKey] = ev.open;
         if (ev.open && !state.evidenceOpened[aKey]) {
           state.evidenceOpened[aKey] = state.queue[aKey] ? "after" : "before";
         }
@@ -1312,7 +1318,10 @@
         if (state.queue[rKey] === r[0]) o.selected = true;
         sel.appendChild(o);
       });
-      sel.addEventListener("change", function () { record("queue", rKey, sel.value); });
+      sel.addEventListener("change", function () {
+        record("queue", rKey, sel.value);
+        renderSection();
+      });
 
       block.appendChild(el("div", { class: "row" }, [choices, sel]));
       root.appendChild(block);
