@@ -60,6 +60,19 @@ result says *what* to reinforce in the first modules.
   that produces double credits. One asks the candidate to see that two
   contradictory documents prove *an error exists* without proving which
   document is wrong.
+- **Exercise 5 turns on what counts as work already done.** Two requests in the
+  queue look similar and are opposites. In one, an identical ADD CREDITS for the
+  same customer and amount was completed four minutes ago under its own
+  request — that is finished business, the new request is ordinary new work, and
+  treating it as a duplicate would refuse a legitimate customer. In the other,
+  the game record shows a credit for *this* request, recorded after it arrived,
+  and the Backend movement is still pending — so the game side must not be done
+  again, only settled. The settlement RPC draws the same line with
+  `history.created_at >= v_operation.created_at`: game evidence counts only when
+  it postdates the request it is being matched to. The reason codes separate
+  "the game side is already done" from the two insufficient-funds cases, which
+  are themselves split between the customer balance and the game account so the
+  two figures cannot be conflated.
 - **False positives cost points.** Flagging a clean reference in exercise 3
   costs 2. Without that, answering "wrong" to everything scores well and the
   instrument cannot separate a careful reader from a pessimist.

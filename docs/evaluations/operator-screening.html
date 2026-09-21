@@ -718,13 +718,13 @@
 
   const REASONS = [
     ["M1", "Customer or account does not match"],
-    ["M2", "Already processed (duplicate)"],
-    ["M3", "Insufficient funds"],
-    ["M4", "Evidence missing or unreadable"],
-    ["M5", "Information contradicts itself"],
-    ["M6", "Everything matches"]
+    ["M2", "The game side is already done; settle it without repeating"],
+    ["M3", "Customer balance does not cover it"],
+    ["M4", "Game account does not cover it"],
+    ["M5", "Evidence missing or unreadable"],
+    ["M6", "Information contradicts itself"],
+    ["M7", "Everything matches, nothing outstanding"]
   ];
-
   const QUEUE = [
     {
       ref: "RQ-11",
@@ -734,9 +734,10 @@
         "Customer record": "C-3118 owns ACC-4F8K-2093.",
         "Proof of payment": "Legible. Amount reads 150.",
         "Customer balance": "400 credits.",
-        "Today's history": "No earlier movement for this reference."
+        "Earlier today": "A separate ADD CREDITS of 150 on this account was completed four minutes ago, with its own proof. That request is closed.",
+        "Game record since this request arrived": "Nothing recorded yet."
       },
-      action: "approve", reason: "M6", critical: false
+      action: "approve", reason: "M7", critical: false
     },
     {
       ref: "RQ-12",
@@ -746,7 +747,7 @@
         "Customer record": "C-6890 owns ACC-4F8K-2093.",
         "Proof of payment": "Legible. Amount reads 200.",
         "Customer balance": "900 credits.",
-        "Today's history": "No earlier movement for this reference."
+        "Game record since this request arrived": "Nothing recorded yet."
       },
       action: "escalate", reason: "M1", critical: true
     },
@@ -758,9 +759,10 @@
         "Customer record": "C-2041 owns ACC-7B2M-1150.",
         "Proof of payment": "Legible. Amount reads 120.",
         "Customer balance": "760 credits.",
-        "Today's history": "Backend already shows APPROVED 120 on this reference, four minutes ago. Game history shows the matching credit."
+        "Game record since this request arrived": "A credit of 120 on this account, recorded after this request came in.",
+        "Backend status": "Still pending. No decision entered yet."
       },
-      action: "reject", reason: "M2", critical: false
+      action: "approve", reason: "M2", critical: false
     },
     {
       ref: "RQ-14",
@@ -768,11 +770,11 @@
       evidence: {
         "Platform lookup": "ACC-9C1T-3047 — one exact match, active.",
         "Customer record": "C-4702 owns ACC-9C1T-3047.",
-        "Proof of payment": "Not applicable to a withdrawal.",
+        "Customer balance": "1,050 credits.",
         "Game account balance": "320 credits.",
-        "Today's history": "No earlier movement for this reference."
+        "Game record since this request arrived": "Nothing recorded yet."
       },
-      action: "reject", reason: "M3", critical: false
+      action: "reject", reason: "M4", critical: false
     },
     {
       ref: "RQ-15",
@@ -782,21 +784,21 @@
         "Customer record": "C-7355 owns ACC-5S3D-4460.",
         "Proof of payment": "Image is cut off. The customer name is visible; the amount cannot be read.",
         "Customer balance": "1,200 credits.",
-        "Today's history": "No earlier movement for this reference."
+        "Game record since this request arrived": "Nothing recorded yet."
       },
-      action: "escalate", reason: "M4", critical: true
+      action: "escalate", reason: "M5", critical: true
     },
     {
       ref: "RQ-16",
-      summary: "WITHDRAW CREDITS for customer C-8014: 45 credits from ACC-1L9Q-6304.",
+      summary: "ADD CREDITS for customer C-8014: 900 credits to ACC-1L9Q-6304.",
       evidence: {
         "Platform lookup": "ACC-1L9Q-6304 — one exact match, active.",
         "Customer record": "C-8014 owns ACC-1L9Q-6304.",
-        "Proof of payment": "Not applicable to a withdrawal.",
-        "Game account balance": "610 credits.",
-        "Today's history": "No earlier movement for this reference."
+        "Proof of payment": "Legible. Amount reads 900.",
+        "Customer balance": "400 credits.",
+        "Game record since this request arrived": "Nothing recorded yet."
       },
-      action: "approve", reason: "M6", critical: false
+      action: "reject", reason: "M3", critical: false
     }
   ];
 
@@ -1286,7 +1288,7 @@
   /* ======================= section 5 — queue ======================= */
 
   function renderQueue(root) {
-    root.appendChild(el("p", { class: "doc", text: "Six requests. For each one choose an action and the reason behind it. The evidence panel holds what you would see on screen — open it before you decide." }));
+    root.appendChild(el("p", { class: "doc", text: "Six requests. Open the evidence, then choose what to do and why. Approve means the request is good and should go through — if the game side has not been done yet, doing it is part of approving. Reject means it must not go through. Stop and escalate means the evidence does not let you decide at all. Read the game record carefully: work already done for this request must not be done twice, and work done for some earlier request is not this request." }));
 
     QUEUE.forEach(function (item, i) {
       const aKey = "Q" + i;
