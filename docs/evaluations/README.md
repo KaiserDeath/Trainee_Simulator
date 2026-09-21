@@ -9,6 +9,31 @@ Published at <https://claude.ai/artifact/JmBQrbBkDLLmDjHRqyensq> (private —
 share it from the page's Share menu before sending it to a candidate). The file
 in this folder is the source of truth; republish from it after any edit.
 
+## Language
+
+The page ships in **Spanish and English in one file**, with a switch in the
+header. Spanish is the default; the choice is remembered per browser and can be
+changed at any point, including on the results screen, and the downloaded result
+sheet follows whichever language is active.
+
+A second translated file was deliberately avoided: two copies of an assessment
+drift, which is the same reason the printed forms were retired. Whole strings
+are translated at a single choke point inside `el()`, and anything assembled
+from parts goes through `m()`, so a missing translation falls back to English
+visibly rather than breaking the page. `scripts/` has no generator for this —
+the dictionary lives in the page itself, and a completeness check is described
+below.
+
+**Operation names are never translated.** `ADD CREDITS` and `WITHDRAW CREDITS`
+are operation types in the system, not concepts, so they stay literal in both
+languages — the Spanish R3 reads "Un ADD CREDITS ingresa créditos a la cuenta
+de juego del jugador". Only the prose around them changes.
+
+To check the dictionary is complete, extract every data string (rules, reason
+codes, exercise items, evidence lines, profile labels) and assert each one is a
+key in `ES`; the last audit reported 184 keys covering 106 data strings with
+none missing.
+
 ## What it is for
 
 It must predict whether a candidate can perform the operator workflow after

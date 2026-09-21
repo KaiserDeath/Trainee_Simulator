@@ -562,6 +562,7 @@
     <span class="mark">Trez · Operator Screening</span>
     <div class="steps" id="steps" aria-hidden="true"></div>
     <span class="clock" id="clock">--:--</span>
+    <button class="btn-quiet" id="langBtn" type="button">EN</button>
     <button class="btn-quiet" id="rulesBtn" type="button">Rules</button>
   </div>
 </header>
@@ -569,11 +570,11 @@
 <main id="app"></main>
 
 <dialog id="rulesDlg">
-  <h2>Operating rules</h2>
-  <p class="lede">These are the only rules in force. Nothing else is assumed.</p>
+  <h2 id="rulesTitle">Operating rules</h2>
+  <p class="lede" id="rulesLede">These are the only rules in force. Nothing else is assumed.</p>
   <ul class="rule-list" id="rulesList"></ul>
   <div class="foot">
-    <p class="hint">Open this at any time while you work.</p>
+    <p class="hint" id="rulesFoot">Open this at any time while you work.</p>
     <button class="btn" type="button" id="rulesClose">Close</button>
   </div>
 </dialog>
@@ -823,6 +824,7 @@
   /* ======================= state ======================= */
 
   const state = {
+    lang: "es",
     candidate: "",
     startedAt: null,
     finishedAt: null,
@@ -840,6 +842,323 @@
     evidenceOpen: {},
     evidenceOpened: {}
   };
+
+  /* ======================= language ======================= */
+
+  // One page, two languages. Whole strings are translated at the single choke
+  // point inside el(); anything assembled from parts goes through m().
+  const ES = {
+    // — chrome —
+    "Rules": "Reglas",
+    "Close": "Cerrar",
+    "Operating rules": "Reglas de operación",
+    "These are the only rules in force. Nothing else is assumed.": "Estas son las únicas reglas vigentes. No se asume nada más.",
+    "Open this at any time while you work.": "Puedes abrirlas en cualquier momento mientras trabajas.",
+    "Pre-training screening": "Evaluación previa a la capacitación",
+    "Operator screening": "Evaluación de operadores",
+    "Candidate": "Candidato",
+    "Full name": "Nombre completo",
+    "Begin": "Comenzar",
+    "How it is scored": "Cómo se califica",
+    "Result": "Resultado",
+    "Next exercise": "Siguiente ejercicio",
+    "Finish and score": "Terminar y calificar",
+    "All answered.": "Todo respondido.",
+    "Download result": "Descargar resultado",
+    "Change": "Cambiar",
+    "Remove": "Quitar",
+
+    // — intro —
+    "Five exercises drawn from the work an operator actually does: identifying an account, tracking funds that move as you commit them, reconciling two records of the same shift, judging what the evidence does and does not prove, and deciding what to do with a queue of requests.":
+      "Cinco ejercicios tomados del trabajo real de un operador: identificar una cuenta, seguir fondos que se mueven mientras los comprometes, conciliar dos registros del mismo turno, juzgar qué prueba y qué no prueba la evidencia, y decidir qué hacer con una cola de solicitudes.",
+    "Nothing here assumes you have seen a game platform or learned a company procedure. Every rule you need is on this page, and you can reopen it at any time from Rules in the header.":
+      "Nada de esto supone que hayas visto una plataforma de juego ni aprendido un procedimiento de la empresa. Todas las reglas que necesitas están en esta página y puedes volver a abrirlas en cualquier momento desde Reglas, arriba.",
+    "Sixty points across the five exercises, reported as five separate scores rather than one number. Flagging something that is actually correct costs points, so answer from what you verified, not from suspicion.":
+      "Sesenta y dos puntos repartidos en los cinco ejercicios, reportados como cinco puntajes separados en vez de un solo número. Marcar como error algo que está correcto resta puntos: responde por lo que verificaste, no por sospecha.",
+    "There is no time limit. Your elapsed time is recorded and shown in the header.":
+      "No hay límite de tiempo. Tu tiempo transcurrido se registra y se muestra arriba.",
+
+    // — exercise titles and blurbs —
+    "Identity match": "Coincidencia de identidad",
+    "A name is not an identity. Only the exact account is.": "Un nombre no es una identidad. Solo lo es la cuenta exacta.",
+    "The customer balance": "El saldo del cliente",
+    "ADD CREDITS takes money out of it, WITHDRAW CREDITS puts money in. The figure moves as you work.":
+      "ADD CREDITS le quita dinero, WITHDRAW CREDITS le agrega. La cifra se mueve mientras trabajas.",
+    "Record reconciliation": "Conciliación de registros",
+    "Two records of the same shift that should line up one to one.": "Dos registros del mismo turno que deberían calzar uno a uno.",
+    "What the evidence shows": "Qué muestra la evidencia",
+    "Some claims the evidence settles. Some it does not, and saying so is the right call.":
+      "Algunas afirmaciones las resuelve la evidencia. Otras no, y decirlo es la respuesta correcta.",
+    "Working the queue": "Atendiendo la cola",
+    "Six requests. Decide, and say why.": "Seis solicitudes. Decide y di por qué.",
+
+    // — exercise 1 —
+    "Each request names one account. Find it in the registry underneath that request and click the row that matches it exactly, character by character. If nothing matches exactly, say so. Several registry entries are near-identical on purpose.":
+      "Cada solicitud nombra una cuenta. Búscala en el registro que está debajo de esa solicitud y haz clic en la fila que coincida exactamente, carácter por carácter. Si ninguna coincide de forma exacta, indícalo. Varias entradas del registro son casi idénticas a propósito.",
+    "Filter the registry…": "Filtrar el registro…",
+    "No registry entry contains that text.": "Ninguna entrada del registro contiene ese texto.",
+    "No exact match in the registry": "No hay coincidencia exacta en el registro",
+    "No exact match": "Sin coincidencia exacta",
+    "No answer yet. Click the matching row, or say there is no exact match.":
+      "Aún sin respuesta. Haz clic en la fila que coincide, o indica que no hay coincidencia exacta.",
+    "Your answer:": "Tu respuesta:",
+    "Row": "Fila",
+    "Account": "Cuenta",
+
+    // — exercise 2 —
+    "One customer, six requests, handled in the order they arrive. An ADD CREDITS takes its amount out of the customer balance; a WITHDRAW CREDITS puts its amount in. The record shows one balance and it is always what the customer has left, so an ADD CREDITS cannot be approved for more than it. Identity and game-side checks have already passed on all six — the balance is the only question. Decide each one, and write the balance the record will show afterwards.":
+      "Un cliente, seis solicitudes, atendidas en el orden en que llegan. Un ADD CREDITS descuenta su monto del saldo del cliente; un WITHDRAW CREDITS se lo agrega. El registro muestra un solo saldo y siempre es lo que le queda al cliente, así que un ADD CREDITS no puede aprobarse por más de ese monto. La identidad y las verificaciones del lado del juego ya pasaron en las seis: el saldo es la única pregunta. Decide cada una y escribe el saldo que mostrará el registro después.",
+    "Settle the previous event first.": "Resuelve primero la solicitud anterior.",
+    "Customer": "Cliente",
+    "Balance on record": "Saldo en el registro",
+    "Amount": "Monto",
+    "Balance afterwards": "Saldo después",
+    "Approve": "Aprobar",
+    "Reject": "Rechazar",
+    "ADD CREDITS — 400 credits into the player's game account.": "ADD CREDITS — 400 créditos a la cuenta de juego del jugador.",
+    "WITHDRAW CREDITS — 150 credits out of the player's game account.": "WITHDRAW CREDITS — 150 créditos desde la cuenta de juego del jugador.",
+    "ADD CREDITS — 800 credits into the player's game account.": "ADD CREDITS — 800 créditos a la cuenta de juego del jugador.",
+    "WITHDRAW CREDITS — 250 credits out of the player's game account.": "WITHDRAW CREDITS — 250 créditos desde la cuenta de juego del jugador.",
+    "ADD CREDITS — 1000 credits into the player's game account.": "ADD CREDITS — 1000 créditos a la cuenta de juego del jugador.",
+    "ADD CREDITS — 50 credits into the player's game account.": "ADD CREDITS — 50 créditos a la cuenta de juego del jugador.",
+
+    // — exercise 3 —
+    "Both records cover the same shift. Under R2 they should agree one to one. Click any row you believe is involved in a discrepancy, then say what kind it is. Flagging a reference that is actually fine costs points.":
+      "Ambos registros cubren el mismo turno. Según R2 deberían calzar uno a uno. Haz clic en cualquier fila que creas involucrada en una discrepancia y luego indica de qué tipo es. Marcar una referencia que en realidad está bien resta puntos.",
+    "Game platform record": "Registro de la plataforma de juego",
+    "Backend record": "Registro del Backend",
+    "Flagged references": "Referencias marcadas",
+    "Nothing flagged yet. Click a row in either record above.": "Aún no has marcado nada. Haz clic en una fila de cualquiera de los registros de arriba.",
+    "Choose the discrepancy…": "Elige la discrepancia…",
+    "Reference": "Referencia",
+    "Action": "Acción",
+    "Decision": "Decisión",
+    "No Backend decision": "Sin decisión en el Backend",
+    "No game action": "Sin acción en el juego",
+    "Settled twice": "Liquidada dos veces",
+    "Amounts disagree": "Los montos no coinciden",
+
+    // — exercise 4 —
+    "Each case gives you what you know, then one claim about it. Say whether the evidence confirms the claim, rules it out, or does not go far enough either way. “Not enough info” is a real answer here, not a way of dodging the question — on the job it is the answer that stops you acting on a guess.":
+      "Cada caso te da lo que sabes y luego una afirmación sobre eso. Indica si la evidencia la confirma, la descarta, o no alcanza para ninguna de las dos. «Falta información» es una respuesta real aquí, no una forma de esquivar la pregunta: en el trabajo es la respuesta que te impide actuar por suposición.",
+    "Claim: ": "Afirmación: ",
+    "Confirmed": "Confirmado",
+    "Ruled out": "Descartado",
+    "Not enough info": "Falta información",
+    "You credit the game account. The platform screen does not refresh and shows no new entry for the operation.":
+      "Acreditas la cuenta de juego. La pantalla de la plataforma no se actualiza y no muestra ningún registro nuevo de la operación.",
+    "The credit did not go through.": "La acreditación no se realizó.",
+    "The Backend shows an APPROVED decision for OP-4042. The game history has no action for OP-4042.":
+      "El Backend muestra una decisión APPROVED para OP-4042. El historial del juego no tiene ninguna acción para OP-4042.",
+    "The customer received their credits.": "El cliente recibió sus créditos.",
+    "The request names customer C-3118. The record for C-3118 lists account ACC-4F8K-2093. A platform search for ACC-4F8K-2093 returns exactly one account.":
+      "La solicitud nombra al cliente C-3118. El registro de C-3118 lista la cuenta ACC-4F8K-2093. Una búsqueda de ACC-4F8K-2093 en la plataforma devuelve exactamente una cuenta.",
+    "The account found on the platform belongs to C-3118.": "La cuenta encontrada en la plataforma pertenece a C-3118.",
+    "The written request asks for 200. The attached proof of payment shows 2000.":
+      "La solicitud escrita pide 200. El comprobante de pago adjunto muestra 2000.",
+    "At least one of the two documents is wrong.": "Al menos uno de los dos documentos está equivocado.",
+    "Rule R2 requires one game action to produce exactly one Backend decision. OP-4063 has one game action and two APPROVED decisions.":
+      "La regla R2 exige que una acción en el juego produzca exactamente una decisión en el Backend. OP-4063 tiene una acción en el juego y dos decisiones APPROVED.",
+    "OP-4063 complies with R2.": "OP-4063 cumple con R2.",
+    "A request arrives with no proof of payment attached, and the Backend shows no record of funds received.":
+      "Llega una solicitud sin comprobante de pago adjunto, y el Backend no muestra ningún registro de fondos recibidos.",
+    "The customer did not pay.": "El cliente no pagó.",
+
+    // — exercise 5 —
+    "Six requests. Open the evidence, then choose what to do and why. Approve means the request is good and should go through — if the game side has not been done yet, doing it is part of approving. Reject means it must not go through. Stop and escalate means the evidence does not let you decide at all. Read the game record carefully: work already done for this request must not be done twice, and work done for some earlier request is not this request.":
+      "Seis solicitudes. Abre la evidencia y luego elige qué hacer y por qué. Aprobar significa que la solicitud está bien y debe proceder: si el lado del juego aún no se hizo, hacerlo es parte de aprobar. Rechazar significa que no debe proceder. Detener y escalar significa que la evidencia no te permite decidir. Lee con cuidado el registro del juego: el trabajo ya hecho para esta solicitud no debe hacerse dos veces, y el trabajo hecho para una solicitud anterior no es esta solicitud.",
+    "Evidence on screen": "Evidencia en pantalla",
+    "Stop and escalate": "Detener y escalar",
+    "Reason…": "Motivo…",
+    "Platform lookup": "Búsqueda en la plataforma",
+    "Customer record": "Registro del cliente",
+    "Proof of payment": "Comprobante de pago",
+    "Customer balance": "Saldo del cliente",
+    "Game account balance": "Saldo de la cuenta de juego",
+    "Earlier today": "Antes, hoy mismo",
+    "Game record since this request arrived": "Registro del juego desde que llegó esta solicitud",
+    "Backend status": "Estado en el Backend",
+    "Nothing recorded yet.": "Aún no hay nada registrado.",
+    "Still pending. No decision entered yet.": "Sigue pendiente. Aún no se ingresa ninguna decisión.",
+    "ADD CREDITS for customer C-3118: 150 credits to ACC-4F8K-2093.": "ADD CREDITS para el cliente C-3118: 150 créditos a ACC-4F8K-2093.",
+    "ADD CREDITS for customer C-6890: 200 credits to ACC-4F8K-2093.": "ADD CREDITS para el cliente C-6890: 200 créditos a ACC-4F8K-2093.",
+    "ADD CREDITS for customer C-2041: 120 credits to ACC-7B2M-1150.": "ADD CREDITS para el cliente C-2041: 120 créditos a ACC-7B2M-1150.",
+    "WITHDRAW CREDITS for customer C-4702: 500 credits from ACC-9C1T-3047.": "WITHDRAW CREDITS para el cliente C-4702: 500 créditos desde ACC-9C1T-3047.",
+    "ADD CREDITS for customer C-7355, to ACC-5S3D-4460. The amount is on the attached proof.":
+      "ADD CREDITS para el cliente C-7355, a ACC-5S3D-4460. El monto está en el comprobante adjunto.",
+    "ADD CREDITS for customer C-8014: 900 credits to ACC-1L9Q-6304.": "ADD CREDITS para el cliente C-8014: 900 créditos a ACC-1L9Q-6304.",
+    "ACC-4F8K-2093 — one exact match, active.": "ACC-4F8K-2093 — una coincidencia exacta, activa.",
+    "ACC-7B2M-1150 — one exact match, active.": "ACC-7B2M-1150 — una coincidencia exacta, activa.",
+    "ACC-9C1T-3047 — one exact match, active.": "ACC-9C1T-3047 — una coincidencia exacta, activa.",
+    "ACC-5S3D-4460 — one exact match, active.": "ACC-5S3D-4460 — una coincidencia exacta, activa.",
+    "ACC-1L9Q-6304 — one exact match, active.": "ACC-1L9Q-6304 — una coincidencia exacta, activa.",
+    "Search returns ACC-4F8K-2O93 only. No other match.": "La búsqueda devuelve solo ACC-4F8K-2O93. Ninguna otra coincidencia.",
+    "C-3118 owns ACC-4F8K-2093.": "C-3118 es titular de ACC-4F8K-2093.",
+    "C-6890 owns ACC-4F8K-2093.": "C-6890 es titular de ACC-4F8K-2093.",
+    "C-2041 owns ACC-7B2M-1150.": "C-2041 es titular de ACC-7B2M-1150.",
+    "C-4702 owns ACC-9C1T-3047.": "C-4702 es titular de ACC-9C1T-3047.",
+    "C-7355 owns ACC-5S3D-4460.": "C-7355 es titular de ACC-5S3D-4460.",
+    "C-8014 owns ACC-1L9Q-6304.": "C-8014 es titular de ACC-1L9Q-6304.",
+    "Legible. Amount reads 150.": "Legible. El monto dice 150.",
+    "Legible. Amount reads 200.": "Legible. El monto dice 200.",
+    "Legible. Amount reads 120.": "Legible. El monto dice 120.",
+    "Legible. Amount reads 900.": "Legible. El monto dice 900.",
+    "Image is cut off. The customer name is visible; the amount cannot be read.":
+      "La imagen está cortada. Se ve el nombre del cliente; el monto no se puede leer.",
+    "A separate ADD CREDITS of 150 on this account was completed four minutes ago, with its own proof. That request is closed.":
+      "Otro ADD CREDITS de 150 en esta cuenta se completó hace cuatro minutos, con su propio comprobante. Esa solicitud está cerrada.",
+    "A credit of 120 on this account, recorded after this request came in.":
+      "Una acreditación de 120 en esta cuenta, registrada después de que llegó esta solicitud.",
+    "400 credits.": "400 créditos.",
+    "760 credits.": "760 créditos.",
+    "900 credits.": "900 créditos.",
+    "1,050 credits.": "1,050 créditos.",
+    "1,200 credits.": "1,200 créditos.",
+    "320 credits.": "320 créditos.",
+
+    // — results —
+    "Ability profile": "Perfil de habilidades",
+    "Observations": "Observaciones",
+    "Critical failure": "Falla crítica",
+    "Suitable": "Apto",
+    "Suitable with reservations": "Apto con observaciones",
+    "Not suitable": "No apto",
+    "Not suitable — critical failure": "No apto — falla crítica",
+    "Thresholds are provisional and pending calibration against real cohort results.":
+      "Los umbrales son provisionales y están pendientes de calibración contra resultados reales de cohortes.",
+    "No behavioural flags raised.": "No se levantó ninguna observación de conducta.",
+    "Opened the evidence before every decision.": "Abrió la evidencia antes de cada decisión.",
+    "Judged every claim correctly, including the ones the evidence does not settle.":
+      "Juzgó correctamente todas las afirmaciones, incluidas las que la evidencia no resuelve.",
+    "Item": "Ítem",
+    "Answered": "Respondió",
+    "Correct": "Correcto",
+    "Pts": "Pts",
+    "Exact identity matching": "Coincidencia exacta de identidad",
+    "Finding and pasting the right player; not confusing near-identical accounts.":
+      "Encontrar y pegar al jugador correcto; no confundir cuentas casi idénticas.",
+    "State tracking": "Seguimiento del estado",
+    "Reading the balance as it stands now, not as it stood at the start of the shift.":
+      "Leer el saldo tal como está ahora, no como estaba al inicio del turno.",
+    "Game history against Backend history; duplicates and unsettled actions.":
+      "Historial del juego contra historial del Backend; duplicados y acciones sin liquidar.",
+    "Inference discipline": "Disciplina de inferencia",
+    "Knowing when evidence supports a conclusion and when it does not.":
+      "Saber cuándo la evidencia sostiene una conclusión y cuándo no.",
+    "Operational judgment": "Criterio operativo",
+    "Approve, cancel with a reason, or refuse to act on bad evidence.":
+      "Aprobar, rechazar con un motivo, o negarse a actuar con evidencia deficiente.",
+    "Downloads are blocked in this view. Open the page from a file or a server to save the result.":
+      "Las descargas están bloqueadas en esta vista. Abre la página desde un archivo o un servidor para guardar el resultado.",
+    "A save prompt is already open. Try again in a moment.": "Ya hay un aviso de guardado abierto. Inténtalo de nuevo en un momento.",
+    "Save cancelled. The button is still here when you want it.": "Guardado cancelado. El botón sigue aquí cuando lo necesites.",
+    "Preparing the file…": "Preparando el archivo…",
+    "End of test. Check that you have left no row blank.": "Fin de la evaluación. Revisa que no hayas dejado ninguna fila en blanco.",
+    "No answer": "Sin respuesta",
+    "Not flagged": "No marcada",
+    "Flagged": "Marcada",
+    "Nothing wrong with this reference": "Esta referencia no tiene ningún problema",
+    "Act on a request only when the customer and the account both match the records exactly. One different character is a different account.": "Actúa sobre una solicitud solo cuando el cliente y la cuenta coincidan exactamente con los registros. Un solo carácter distinto es otra cuenta.",
+    "The game platform and the Backend keep separate records. One game action must produce exactly one Backend decision.": "La plataforma de juego y el Backend llevan registros separados. Una acción en el juego debe producir exactamente una decisión en el Backend.",
+    "Two operations move the customer balance. An ADD CREDITS puts credits into the player's game account and takes that amount out of the customer balance. A WITHDRAW CREDITS takes credits out of the game account and puts that amount back into the customer balance.": "Dos operaciones mueven el saldo del cliente. Un ADD CREDITS ingresa créditos a la cuenta de juego del jugador y descuenta ese monto del saldo del cliente. Un WITHDRAW CREDITS retira créditos de la cuenta de juego y devuelve ese monto al saldo del cliente.",
+    "The balance on screen is what the customer has left. An ADD CREDITS cannot be approved for more than it. A WITHDRAW CREDITS is never limited by it, because it adds to the balance.": "El saldo en pantalla es lo que le queda al cliente. Un ADD CREDITS no puede aprobarse por más de ese monto. Un WITHDRAW CREDITS nunca está limitado por él, porque lo aumenta.",
+    "A WITHDRAW CREDITS also needs the player's game account to cover the whole amount. That is a separate figure from the customer balance.": "Un WITHDRAW CREDITS además requiere que la cuenta de juego del jugador cubra el monto completo. Esa es una cifra distinta del saldo del cliente.",
+    "Every rejection needs a reason code. A decision without a reason is not valid.": "Todo rechazo requiere un código de motivo. Una decisión sin motivo no es válida.",
+    "If evidence is missing, unreadable or contradictory, stop and escalate. Never act on what you cannot verify.": "Si la evidencia falta, es ilegible o se contradice, detente y escala. Nunca actúes sobre lo que no puedes verificar.",
+    "Customer or account does not match": "El cliente o la cuenta no coincide",
+    "The game side is already done; settle it without repeating": "El lado del juego ya está hecho; liquídalo sin repetirlo",
+    "Customer balance does not cover it": "El saldo del cliente no lo cubre",
+    "Game account does not cover it": "La cuenta de juego no lo cubre",
+    "Evidence missing or unreadable": "Evidencia faltante o ilegible",
+    "Information contradicts itself": "La información se contradice",
+    "Everything matches, nothing outstanding": "Todo coincide, nada pendiente",
+    "A screen that did not refresh tells you nothing about what the platform recorded. Absence on the display is not absence of the event — this is exactly the reasoning error that produces double credits.": "Una pantalla que no se actualizó no te dice nada sobre lo que la plataforma registró. La ausencia en pantalla no es la ausencia del hecho: este es exactamente el error de razonamiento que produce acreditaciones dobles.",
+    "Either the game action happened and was not recorded, or it never happened. Both fit the evidence, so neither can be asserted.": "O la acción en el juego ocurrió y no quedó registrada, o nunca ocurrió. Ambas encajan con la evidencia, así que ninguna puede afirmarse.",
+    "The chain holds end to end and the search returned a unique result, so the identity follows.": "La cadena se sostiene de principio a fin y la búsqueda devolvió un único resultado, así que la identidad se deduce.",
+    "They cannot both be right. You can conclude an error exists even though you cannot yet say which document carries it.": "No pueden estar correctos los dos. Puedes concluir que existe un error aunque todavía no puedas decir cuál documento lo tiene.",
+    "Two decisions against one action is a direct breach of the stated rule.": "Dos decisiones contra una sola acción es una infracción directa de la regla establecida.",
+    "A missing document is a missing document. It is evidence about the paperwork, not about the customer.": "Un documento faltante es un documento faltante. Es evidencia sobre el papeleo, no sobre el cliente.",
+    "Approve, reject with a reason, or refuse to act on bad evidence.": "Aprobar, rechazar con un motivo, o negarse a actuar con evidencia deficiente."
+  };
+
+  const MSG = {
+    en: {
+      exerciseOf: (n, total) => "Exercise " + n + " of " + total,
+      needAnswers: (n) => n + (n === 1 ? " item still needs an answer." : " items still need an answer."),
+      needCategory: (n) => n + (n === 1 ? " flagged reference still needs a category." : " flagged references still need a category."),
+      nextShows: (v) => "The record will show " + v + " at the next event.",
+      filterFor: (n) => "Filter the registry for request " + n,
+      categoryFor: (ref) => "Category for " + ref,
+      reasonFor: (ref) => "Reason for " + ref,
+      pctElapsed: (pct, time) => pct + "% · " + time + " elapsed",
+      sectionScore: (n, title, got, max) => n + ". " + title + " — " + got + "/" + max,
+      leaving: (choice, v) => choice + ", leaving " + v,
+      againstBalance: (ref, kind, amt, bal) => ref + " · " + kind + " " + amt + " against a balance of " + bal,
+      addKind: "ADD CREDITS", withdrawKind: "WITHDRAW CREDITS",
+      lookupLabel: (cust, target) => cust + " → " + target,
+      critApproved: (refs, many) => "Approved " + refs + (many ? " — requests whose evidence did not permit any action." : " — a request whose evidence did not permit any action.") + " This invalidates the result on its own.",
+      overCommitted: (n) => "Approved " + n + (n === 1 ? " ADD CREDITS request" : " ADD CREDITS requests") + " for more than the balance on screen. This is the habit that overcommits customer money.",
+      blind: (n, total) => "Decided " + n + " of " + total + " requests without opening the evidence first.",
+      falseFlags: (n) => "Flagged " + n + (n === 1 ? " reference" : " references") + " that were not discrepancies.",
+      alarm: (refs) => "Approved " + refs + ", where the evidence did not permit action. A correct answer elsewhere does not offset this.",
+      saved: (f) => "Saved as " + f,
+      downloaded: (f) => "Downloaded " + f,
+      saveFailed: (code) => "Could not save the file here (" + code + "). Open this page from a file or a server to download it.",
+      docTitle: (who) => "Operator screening — " + who,
+      docH1: "Operator screening result",
+      docProfile: "Ability profile", docObs: "Observations", docTime: "Time per exercise", docDetail: "Item detail",
+      docProfileCol: "Profile", docScoreCol: "Score", docPredictsCol: "What it predicts",
+      docExerciseCol: "Exercise", docTimeCol: "Time", docRevisions: "Answer revisions",
+      docItem: "Item", docAnswered: "Answered", docCorrect: "Correct", docPts: "Pts",
+      docCrit: (refs) => "Critical failure — approved " + refs + ", where the evidence did not permit action. This invalidates the result regardless of score.",
+      docNote: (pct) => pct + "% · thresholds provisional, pending calibration.",
+      elapsed: "elapsed"
+    },
+    es: {
+      exerciseOf: (n, total) => "Ejercicio " + n + " de " + total,
+      needAnswers: (n) => n + (n === 1 ? " ítem sigue sin respuesta." : " ítems siguen sin respuesta."),
+      needCategory: (n) => n + (n === 1 ? " referencia marcada necesita una categoría." : " referencias marcadas necesitan una categoría."),
+      nextShows: (v) => "El registro mostrará " + v + " en la siguiente solicitud.",
+      filterFor: (n) => "Filtrar el registro para la solicitud " + n,
+      categoryFor: (ref) => "Categoría para " + ref,
+      reasonFor: (ref) => "Motivo para " + ref,
+      pctElapsed: (pct, time) => pct + "% · " + time + " transcurrido",
+      sectionScore: (n, title, got, max) => n + ". " + title + " — " + got + "/" + max,
+      leaving: (choice, v) => choice + ", quedando " + v,
+      againstBalance: (ref, kind, amt, bal) => ref + " · " + kind + " " + amt + " contra un saldo de " + bal,
+      addKind: "ADD CREDITS", withdrawKind: "WITHDRAW CREDITS",
+      lookupLabel: (cust, target) => cust + " → " + target,
+      critApproved: (refs, many) => "Aprobó " + refs + (many ? " — solicitudes cuya evidencia no permitía actuar." : " — una solicitud cuya evidencia no permitía actuar.") + " Esto invalida el resultado por sí solo.",
+      overCommitted: (n) => "Aprobó " + n + (n === 1 ? " solicitud ADD CREDITS" : " solicitudes ADD CREDITS") + " por más del saldo en pantalla. Ese es el hábito que compromete de más el dinero del cliente.",
+      blind: (n, total) => "Decidió " + n + " de " + total + " solicitudes sin abrir antes la evidencia.",
+      falseFlags: (n) => "Marcó " + n + (n === 1 ? " referencia" : " referencias") + " que no eran discrepancias.",
+      alarm: (refs) => "Aprobó " + refs + ", donde la evidencia no permitía actuar. Un acierto en otra parte no compensa esto.",
+      saved: (f) => "Guardado como " + f,
+      downloaded: (f) => "Descargado " + f,
+      saveFailed: (code) => "No se pudo guardar el archivo aquí (" + code + "). Abre esta página desde un archivo o un servidor para descargarlo.",
+      docTitle: (who) => "Evaluación de operadores — " + who,
+      docH1: "Resultado de la evaluación de operadores",
+      docProfile: "Perfil de habilidades", docObs: "Observaciones", docTime: "Tiempo por ejercicio", docDetail: "Detalle por ítem",
+      docProfileCol: "Perfil", docScoreCol: "Puntaje", docPredictsCol: "Qué anticipa",
+      docExerciseCol: "Ejercicio", docTimeCol: "Tiempo", docRevisions: "Cambios de respuesta",
+      docItem: "Ítem", docAnswered: "Respondió", docCorrect: "Correcto", docPts: "Pts",
+      docCrit: (refs) => "Falla crítica — aprobó " + refs + ", donde la evidencia no permitía actuar. Esto invalida el resultado sin importar el puntaje.",
+      docNote: (pct) => pct + "% · umbrales provisionales, pendientes de calibración.",
+      elapsed: "transcurrido"
+    }
+  };
+
+  function t(s) {
+    if (state.lang !== "es") return s;
+    return Object.prototype.hasOwnProperty.call(ES, s) ? ES[s] : s;
+  }
+
+  function m(key) {
+    const args = Array.prototype.slice.call(arguments, 1);
+    const table = MSG[state.lang] || MSG.en;
+    const entry = table[key] !== undefined ? table[key] : MSG.en[key];
+    return typeof entry === "function" ? entry.apply(null, args) : entry;
+  }
 
   let downloadsPromise = null;
   if (window.claude && typeof window.claude.use === "function") {
@@ -863,7 +1182,7 @@
         const v = attrs[k];
         if (v === null || v === undefined || v === false) return;
         if (k === "class") node.className = v;
-        else if (k === "text") node.textContent = v;
+        else if (k === "text") node.textContent = t(v);
         else if (k === "html") node.innerHTML = v;
         else if (k.slice(0, 2) === "on") node.addEventListener(k.slice(2), v);
         else node.setAttribute(k, v === true ? "" : v);
@@ -871,7 +1190,7 @@
     }
     (kids || []).forEach(function (kid) {
       if (kid === null || kid === undefined) return;
-      node.appendChild(typeof kid === "string" ? document.createTextNode(kid) : kid);
+      node.appendChild(typeof kid === "string" ? document.createTextNode(t(kid)) : kid);
     });
     return node;
   }
@@ -917,19 +1236,60 @@
 
   const dlg = document.getElementById("rulesDlg");
   const rulesList = document.getElementById("rulesList");
-  RULES.forEach(function (r) {
-    rulesList.appendChild(el("li", null, [el("b", { text: r[0] }), el("span", { text: r[1] })]));
-  });
+
+  function paintRules() {
+    clear(rulesList);
+    RULES.forEach(function (r) {
+      rulesList.appendChild(el("li", null, [el("b", { text: r[0] }), el("span", { text: r[1] })]));
+    });
+    document.getElementById("rulesTitle").textContent = t("Operating rules");
+    document.getElementById("rulesLede").textContent = t("These are the only rules in force. Nothing else is assumed.");
+    document.getElementById("rulesFoot").textContent = t("Open this at any time while you work.");
+    document.getElementById("rulesClose").textContent = t("Close");
+    document.getElementById("rulesBtn").textContent = t("Rules");
+    document.getElementById("langBtn").textContent = state.lang === "es" ? "EN" : "ES";
+  }
+
   document.getElementById("rulesBtn").addEventListener("click", function () { dlg.showModal(); });
   document.getElementById("rulesClose").addEventListener("click", function () { dlg.close(); });
+
+  function rerender() {
+    if (state.stage === "intro") {
+      const field = document.getElementById("candidateName");
+      if (field) state.candidate = field.value;
+      renderIntro();
+    } else if (state.stage === "done") {
+      renderResults();
+    } else {
+      renderSection();
+    }
+    paintRules();
+  }
+
+  document.getElementById("langBtn").addEventListener("click", function () {
+    state.lang = state.lang === "es" ? "en" : "es";
+    try { localStorage.setItem("trez-screening-lang", state.lang); } catch (e) { /* private window */ }
+    document.documentElement.lang = state.lang;
+    rerender();
+  });
+
+  try {
+    const saved = localStorage.getItem("trez-screening-lang");
+    if (saved === "en" || saved === "es") state.lang = saved;
+  } catch (e) { /* storage unavailable — keep the default */ }
+  document.documentElement.lang = state.lang;
 
   /* ======================= intro ======================= */
 
   function renderIntro() {
     clear(app);
-    const name = el("input", { type: "text", id: "candidateName", placeholder: "Full name", autocomplete: "name" });
+    const name = el("input", {
+      type: "text", id: "candidateName", placeholder: t("Full name"),
+      autocomplete: "name", value: state.candidate || ""
+    });
     const begin = el("button", { class: "btn", type: "button", disabled: true, text: "Begin" });
 
+    begin.disabled = (state.candidate || "").trim().length < 2;
     name.addEventListener("input", function () { begin.disabled = name.value.trim().length < 2; });
     begin.addEventListener("click", function () {
       state.candidate = name.value.trim();
@@ -997,7 +1357,7 @@
       const filter = el("input", {
         type: "text", placeholder: "Filter the registry…", style: "width:210px",
         value: state.regFilter[key] || "",
-        "aria-label": "Filter the registry for request " + (i + 1)
+        "aria-label": m("filterFor", i + 1)
       });
       const tbody = el("tbody");
 
@@ -1163,7 +1523,7 @@
       if (decided) {
         block.appendChild(el("p", {
           class: "hint",
-          text: "The record will show " + money(balanceAfter(ev, balance, decided)) + " at the next event."
+          text: m("nextShows", money(balanceAfter(ev, balance, decided)))
         }));
       }
 
@@ -1226,7 +1586,7 @@
       panel.appendChild(el("p", { class: "hint", text: "Nothing flagged yet. Click a row in either record above." }));
     } else {
       flagged.sort().forEach(function (ref) {
-        const sel = el("select", { "aria-label": "Category for " + ref });
+        const sel = el("select", { "aria-label": m("categoryFor", ref) });
         sel.appendChild(el("option", { value: "", text: "Choose the discrepancy…" }));
         RECON_CATEGORIES.forEach(function (c) {
           const o = el("option", { value: c[0], text: c[1] });
@@ -1336,10 +1696,10 @@
         choices.appendChild(b);
       });
 
-      const sel = el("select", { "aria-label": "Reason for " + item.ref });
+      const sel = el("select", { "aria-label": m("reasonFor", item.ref) });
       sel.appendChild(el("option", { value: "", text: "Reason…" }));
       REASONS.forEach(function (r) {
-        const o = el("option", { value: r[0], text: r[0] + " — " + r[1] });
+        const o = el("option", { value: r[0], text: r[0] + " — " + t(r[1]) });
         if (state.queue[rKey] === r[0]) o.selected = true;
         sel.appendChild(o);
       });
@@ -1374,7 +1734,7 @@
     clear(app);
     paintSteps();
 
-    app.appendChild(el("p", { class: "eyebrow", text: "Exercise " + s.n + " of " + SECTIONS.length }));
+    app.appendChild(el("p", { class: "eyebrow", text: m("exerciseOf", s.n, SECTIONS.length) }));
     app.appendChild(el("h2", { text: s.title }));
     app.appendChild(el("p", { class: "lede", text: s.blurb }));
 
@@ -1406,7 +1766,7 @@
       el("p", {
         class: "hint",
         text: left > 0
-          ? left + (s.id === "recon" ? " flagged reference(s) still need a category." : " item(s) still need an answer.")
+          ? (s.id === "recon" ? m("needCategory", left) : m("needAnswers", left))
           : "All answered."
       }),
       next
@@ -1426,9 +1786,9 @@
       const ok = given === correct;
       if (ok) score.lookup += 2;
       detail.lookup.push({
-        label: item.customer + " → " + item.target,
-        given: given === "__none__" ? "No exact match" : given,
-        correct: correct === "__none__" ? "No exact match" : correct,
+        label: m("lookupLabel", item.customer, item.target),
+        given: given === "__none__" ? t("No exact match") : (given || t("No answer")),
+        correct: correct === "__none__" ? t("No exact match") : correct,
         ok: ok, points: ok ? 2 : 0
       });
     });
@@ -1447,10 +1807,9 @@
       if (okA) score.funds += 1;
       if (ev.kind === "load" && givenD === "approve" && ev.amount > balance) overCommitted += 1;
       detail.funds.push({
-        label: ev.ref + " · " + (ev.kind === "load" ? "add " : "withdraw ") + money(ev.amount) +
-          " against a balance of " + money(balance),
-        given: nameFor(LEDGER_CHOICES, givenD) + ", leaving " + (givenA === undefined ? "—" : money(givenA)),
-        correct: nameFor(LEDGER_CHOICES, wantD) + ", leaving " + money(balanceAfter(ev, balance, wantD)),
+        label: m("againstBalance", ev.ref, ev.kind === "load" ? m("addKind") : m("withdrawKind"), money(ev.amount), money(balance)),
+        given: m("leaving", t(nameFor(LEDGER_CHOICES, givenD)), givenA === undefined ? "—" : money(givenA)),
+        correct: m("leaving", t(nameFor(LEDGER_CHOICES, wantD)), money(balanceAfter(ev, balance, wantD))),
         ok: okD && okA, points: (okD ? 1 : 0) + (okA ? 1 : 0)
       });
     });
@@ -1462,8 +1821,8 @@
       if (ok) score.recon += 2;
       detail.recon.push({
         label: ref,
-        given: given ? labelFor(given) : "Not flagged",
-        correct: labelFor(RECON_KEY[ref]),
+        given: given ? t(labelFor(given)) : t("Not flagged"),
+        correct: t(labelFor(RECON_KEY[ref])),
         ok: ok, points: ok ? 2 : 0
       });
     });
@@ -1473,8 +1832,8 @@
       score.recon -= 2;
       detail.recon.push({
         label: ref,
-        given: labelFor(state.recon.flags[ref]) || "Flagged",
-        correct: "Nothing wrong with this reference",
+        given: t(labelFor(state.recon.flags[ref])) || t("Flagged"),
+        correct: t("Nothing wrong with this reference"),
         ok: false, points: -2
       });
     });
@@ -1486,8 +1845,8 @@
       if (ok) score.infer += 2;
       detail.infer.push({
         label: item.claim,
-        given: nameFor(INFERENCE_CHOICES, given),
-        correct: nameFor(INFERENCE_CHOICES, item.answer),
+        given: t(nameFor(INFERENCE_CHOICES, given)),
+        correct: t(nameFor(INFERENCE_CHOICES, item.answer)),
         ok: ok, points: ok ? 2 : 0, why: item.why
       });
     });
@@ -1505,8 +1864,8 @@
       if (state.evidenceOpened["Q" + i] !== "before") blindDecisions += 1;
       detail.queue.push({
         label: item.ref + " · " + item.summary,
-        given: nameFor(ACTIONS, ga) + (gr ? " / " + gr : " / no reason"),
-        correct: nameFor(ACTIONS, item.action) + " / " + item.reason,
+        given: t(nameFor(ACTIONS, ga)) + (gr ? " / " + gr : " / —"),
+        correct: t(nameFor(ACTIONS, item.action)) + " / " + item.reason,
         ok: okA && okR, points: (okA ? 2 : 0) + (okR ? 1 : 0),
         critical: item.critical
       });
@@ -1549,23 +1908,18 @@
   function observations(r) {
     const out = [];
     if (r.criticalFailures.length) {
-      out.push(["flag", "Approved " + r.criticalFailures.join(", ") +
-        (r.criticalFailures.length > 1
-          ? " — requests whose evidence did not permit any action."
-          : " — a request whose evidence did not permit any action.") +
-        " This invalidates the result on its own."]);
+      out.push(["flag", m("critApproved", r.criticalFailures.join(", "), r.criticalFailures.length > 1)]);
     }
     if (r.overCommitted > 0) {
-      out.push(["flag", "Approved " + plural(r.overCommitted, "ADD CREDITS request", "ADD CREDITS requests") +
-        " for more than the balance on screen. This is the habit that overcommits customer money."]);
+      out.push(["flag", m("overCommitted", r.overCommitted)]);
     }
     if (r.blindDecisions >= 3) {
-      out.push(["flag", "Decided " + r.blindDecisions + " of " + QUEUE.length + " requests without opening the evidence first."]);
+      out.push(["flag", m("blind", r.blindDecisions, QUEUE.length)]);
     } else if (r.blindDecisions === 0) {
       out.push(["good", "Opened the evidence before every decision."]);
     }
     if (r.falseFlags) {
-      out.push(["flag", "Flagged " + plural(r.falseFlags, "reference", "references") + " that were not discrepancies."]);
+      out.push(["flag", m("falseFlags", r.falseFlags)]);
     }
     if (r.score.infer === SECTIONS[3].max) {
       out.push(["good", "Judged every claim correctly, including the ones the evidence does not settle."]);
@@ -1586,14 +1940,14 @@
     if (r.criticalFailures.length) {
       app.appendChild(el("div", { class: "alarm" }, [
         el("b", { text: "Critical failure" }),
-        el("span", { text: "Approved " + r.criticalFailures.join(", ") + ", where the evidence did not permit action. A correct answer elsewhere does not offset this." })
+        el("span", { text: m("alarm", r.criticalFailures.join(", ")) })
       ]));
     }
 
     app.appendChild(el("div", { class: "score-hero" }, [
       el("div", null, [
         el("div", { class: "big num", text: r.total + "/" + MAX_TOTAL }),
-        el("p", { class: "hint", style: "margin:6px 0 0", text: r.pct + "% · " + mmss((state.finishedAt || Date.now()) - state.startedAt) + " elapsed" })
+        el("p", { class: "hint", style: "margin:6px 0 0", text: m("pctElapsed", r.pct, mmss((state.finishedAt || Date.now()) - state.startedAt)) })
       ]),
       el("div", null, [
         el("span", { class: "verdict " + v[0], text: v[1] }),
@@ -1634,7 +1988,7 @@
         ]));
       });
       app.appendChild(el("div", { class: "card" }, [
-        el("h3", { text: s.n + ". " + s.title + " — " + r.score[s.id] + "/" + s.max }),
+        el("h3", { text: m("sectionScore", s.n, t(s.title), r.score[s.id], s.max) }),
         el("div", { class: "scroller" }, [
           el("table", null, [
             el("thead", null, [el("tr", null, [
@@ -1663,25 +2017,26 @@
         return "<tr><td>" + esc(d.label) + "</td><td>" + esc(d.given) + "</td><td>" + esc(d.correct) +
           "</td><td class=\"n\">" + (d.points > 0 ? "+" : "") + d.points + "</td></tr>";
       }).join("");
-      return "<h3>" + s.n + ". " + esc(s.title) + " — " + r.score[s.id] + "/" + s.max + "</h3>" +
-        "<table><thead><tr><th>Item</th><th>Answered</th><th>Correct</th><th>Pts</th></tr></thead><tbody>" +
+      return "<h3>" + esc(m("sectionScore", s.n, t(s.title), r.score[s.id], s.max)) + "</h3>" +
+        "<table><thead><tr><th>" + esc(m("docItem")) + "</th><th>" + esc(m("docAnswered")) +
+        "</th><th>" + esc(m("docCorrect")) + "</th><th>" + esc(m("docPts")) + "</th></tr></thead><tbody>" +
         body + "</tbody></table>";
     }).join("");
 
     const profileRows = PROFILES.map(function (p) {
       const s = SECTIONS.filter(function (x) { return x.id === p.id; })[0];
-      return "<tr><td>" + esc(p.label) + "</td><td class=\"n\">" + r.score[p.id] + "/" + s.max + "</td><td>" + esc(p.predicts) + "</td></tr>";
+      return "<tr><td>" + esc(t(p.label)) + "</td><td class=\"n\">" + r.score[p.id] + "/" + s.max + "</td><td>" + esc(t(p.predicts)) + "</td></tr>";
     }).join("");
 
     const obs = observations(r).map(function (o) { return "<li>" + esc(o[1]) + "</li>"; }).join("");
 
     const times = SECTIONS.map(function (s) {
-      return "<tr><td>" + esc(s.title) + "</td><td class=\"n\">" + mmss(state.sectionTime[s.id] || 0) + "</td></tr>";
+      return "<tr><td>" + esc(t(s.title)) + "</td><td class=\"n\">" + mmss(state.sectionTime[s.id] || 0) + "</td></tr>";
     }).join("");
 
     return "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
       "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" +
-      "<title>Operator screening — " + esc(state.candidate) + "</title><style>" +
+      "<title>" + esc(m("docTitle", state.candidate)) + "</title><style>" +
       "body{font:14px/1.55 -apple-system,Segoe UI,system-ui,sans-serif;color:#16202E;background:#fff;max-width:860px;margin:0 auto;padding:32px 20px}" +
       "h1{font-size:26px;margin:0 0 4px}h2{font-size:17px;margin:32px 0 8px;border-bottom:1px solid #DCE0E6;padding-bottom:6px}" +
       "h3{font-size:14px;margin:22px 0 6px}table{border-collapse:collapse;width:100%;font-size:13px;margin-bottom:10px}" +
@@ -1693,21 +2048,23 @@
       ".meta{color:#55616F;font-size:13px}ul{padding-left:18px}" +
       "@media print{body{padding:0}h2{break-after:avoid}table{break-inside:avoid}}" +
       "</style></head><body>" +
-      "<h1>Operator screening result</h1>" +
+      "<h1>" + esc(m("docH1")) + "</h1>" +
       "<p class=\"meta\"><b>" + esc(state.candidate) + "</b><br>" + esc(when.toISOString().slice(0, 10)) +
-      " · " + esc(when.toTimeString().slice(0, 5)) + " · " + mmss((state.finishedAt || Date.now()) - state.startedAt) + " elapsed</p>" +
+      " · " + esc(when.toTimeString().slice(0, 5)) + " · " + mmss((state.finishedAt || Date.now()) - state.startedAt) +
+      " " + esc(m("elapsed")) + "</p>" +
       (r.criticalFailures.length
-        ? "<div class=\"crit\">Critical failure — approved " + esc(r.criticalFailures.join(", ")) +
-          ", where the evidence did not permit action. This invalidates the result regardless of score.</div>"
+        ? "<div class=\"crit\">" + esc(m("docCrit", r.criticalFailures.join(", "))) + "</div>"
         : "") +
-      "<p><span class=\"hdr\">" + r.total + "/" + MAX_TOTAL + "</span> &nbsp; <span class=\"v\">" + esc(v[1]) + "</span><br>" +
-      "<span class=\"meta\">" + r.pct + "% · thresholds provisional, pending calibration.</span></p>" +
-      "<h2>Ability profile</h2><table><thead><tr><th>Profile</th><th>Score</th><th>What it predicts</th></tr></thead><tbody>" +
+      "<p><span class=\"hdr\">" + r.total + "/" + MAX_TOTAL + "</span> &nbsp; <span class=\"v\">" + esc(t(v[1])) + "</span><br>" +
+      "<span class=\"meta\">" + esc(m("docNote", r.pct)) + "</span></p>" +
+      "<h2>" + esc(m("docProfile")) + "</h2><table><thead><tr><th>" + esc(m("docProfileCol")) +
+      "</th><th>" + esc(m("docScoreCol")) + "</th><th>" + esc(m("docPredictsCol")) + "</th></tr></thead><tbody>" +
       profileRows + "</tbody></table>" +
-      "<h2>Observations</h2><ul>" + obs + "</ul>" +
-      "<h2>Time per exercise</h2><table><thead><tr><th>Exercise</th><th>Time</th></tr></thead><tbody>" + times +
-      "<tr><td><b>Answer revisions</b></td><td class=\"n\">" + state.changes + "</td></tr></tbody></table>" +
-      "<h2>Item detail</h2>" + sectionBlocks +
+      "<h2>" + esc(m("docObs")) + "</h2><ul>" + obs + "</ul>" +
+      "<h2>" + esc(m("docTime")) + "</h2><table><thead><tr><th>" + esc(m("docExerciseCol")) +
+      "</th><th>" + esc(m("docTimeCol")) + "</th></tr></thead><tbody>" + times +
+      "<tr><td><b>" + esc(m("docRevisions")) + "</b></td><td class=\"n\">" + state.changes + "</td></tr></tbody></table>" +
+      "<h2>" + esc(m("docDetail")) + "</h2>" + sectionBlocks +
       "</body></html>";
   }
 
@@ -1726,12 +2083,12 @@
     Promise.resolve(downloadsPromise).then(function (downloads) {
       if (downloads && typeof downloads.save === "function") {
         return downloads.save({ filename: filename, data: data }).then(function () {
-          status.textContent = "Saved as " + filename;
+          status.textContent = m("saved", filename);
         }, function (err) {
           const code = err && err.code;
           if (code === "declined") status.textContent = "Save cancelled. The button is still here when you want it.";
           else if (code === "rate_limited") status.textContent = "A save prompt is already open. Try again in a moment.";
-          else status.textContent = "Could not save the file here (" + (code || "unknown") + "). Open this page from a file or a server to download it.";
+          else status.textContent = m("saveFailed", code || "unknown");
         });
       }
       return localSave(filename, data, status);
@@ -1753,7 +2110,7 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-      status.textContent = "Downloaded " + filename;
+      status.textContent = m("downloaded", filename);
     } catch (e) {
       status.textContent = "Downloads are blocked in this view. Open the page from a file or a server to save the result.";
     }
@@ -1761,6 +2118,7 @@
 
   /* ======================= go ======================= */
 
+  paintRules();
   renderIntro();
   tick();
 })();
