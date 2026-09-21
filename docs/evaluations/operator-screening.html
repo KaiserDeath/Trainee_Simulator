@@ -445,7 +445,6 @@
     font-variant-numeric: tabular-nums;
     font-weight: 500;
   }
-  .ledger .held dd { color: var(--warn); }
   .ledger .avail dd { color: var(--accent); }
 
   /* ---------- evidence ---------- */
@@ -588,7 +587,7 @@
   const RULES = [
     ["R1", "Act on a request only when the customer and the account both match the records exactly. One different character is a different account."],
     ["R2", "The game platform and the Backend keep separate records. One game action must produce exactly one Backend decision."],
-    ["R3", "Committing funds places a hold. Available = Balance − Held. Only Available may be committed."],
+    ["R3", "Approving a load commits the customer's funds at once: the balance on screen is always what remains, and a load cannot be approved for more than it. Cancelling a movement you already approved returns those funds to the balance."],
     ["R4", "A withdrawal may proceed only if the game account balance covers the whole amount."],
     ["R5", "Every rejection needs a reason code. A decision without a reason is not valid."],
     ["R6", "If evidence is missing, unreadable or contradictory, stop and escalate. Never act on what you cannot verify."]
@@ -609,14 +608,23 @@
     { customer: "C-8014", target: "ACC-1L9O-6304" }
   ];
 
+  const LEDGER_CUSTOMER = "C-3118";
   const LEDGER_START = 1000;
-  const FUND_REQUESTS = [
-    { ref: "RQ-01", amount: 300, note: "Load request, proof attached." },
-    { ref: "RQ-02", amount: 500, note: "Load request, proof attached." },
-    { ref: "RQ-03", amount: 250, note: "Load request, proof attached." },
-    { ref: "RQ-04", amount: 200, note: "Load request, proof attached." },
-    { ref: "RQ-05", amount: 50, note: "Load request, proof attached." }
+
+  // Mirrors the simulator: approving a load debits the customer balance
+  // immediately, and cancelling an approved movement returns it.
+  const LEDGER_EVENTS = [
+    { ref: "RQ-01", kind: "load", amount: 300, text: "Load request for 300 credits. Customer and account match, proof legible." },
+    { ref: "RQ-02", kind: "load", amount: 500, text: "Load request for 500 credits. Customer and account match, proof legible." },
+    { ref: "RQ-03", kind: "load", amount: 250, text: "Load request for 250 credits. Customer and account match, proof legible." },
+    { ref: "RQ-04", kind: "load", amount: 200, text: "Load request for 200 credits. Customer and account match, proof legible." },
+    { ref: "RQ-02", kind: "cancel", amount: 500, text: "The customer cancels RQ-02, the 500-credit load you approved earlier." }
   ];
+
+  const LEDGER_CHOICES = {
+    load: [["approve", "Approve", "pick-ok"], ["reject", "Reject", "pick-bad"]],
+    cancel: [["return", "Return the funds", "pick-ok"], ["keep", "Keep them committed", "pick-bad"]]
+  };
 
   const GAME_LOG = [
     { ref: "OP-4015", account: "ACC-4F8K-2093", action: "CREDIT", amount: 120 },
@@ -726,7 +734,7 @@
         "Platform lookup": "ACC-4F8K-2093 — one exact match, active.",
         "Customer record": "C-3118 owns ACC-4F8K-2093.",
         "Proof of payment": "Legible. Amount reads 150.",
-        "Available funds": "400 available (Balance 400, Held 0).",
+        "Customer balance": "400 credits.",
         "Today's history": "No earlier movement for this reference."
       },
       action: "approve", reason: "M6", critical: false
@@ -738,7 +746,7 @@
         "Platform lookup": "Search returns ACC-4F8K-2O93 only. No other match.",
         "Customer record": "C-6890 owns ACC-4F8K-2093.",
         "Proof of payment": "Legible. Amount reads 200.",
-        "Available funds": "900 available.",
+        "Customer balance": "900 credits.",
         "Today's history": "No earlier movement for this reference."
       },
       action: "escalate", reason: "M1", critical: true
@@ -750,7 +758,7 @@
         "Platform lookup": "ACC-7B2M-1150 — one exact match, active.",
         "Customer record": "C-2041 owns ACC-7B2M-1150.",
         "Proof of payment": "Legible. Amount reads 120.",
-        "Available funds": "760 available.",
+        "Customer balance": "760 credits.",
         "Today's history": "Backend already shows APPROVED 120 on this reference, four minutes ago. Game history shows the matching credit."
       },
       action: "reject", reason: "M2", critical: false
@@ -774,7 +782,7 @@
         "Platform lookup": "ACC-5S3D-4460 — one exact match, active.",
         "Customer record": "C-7355 owns ACC-5S3D-4460.",
         "Proof of payment": "Image is cut off. The customer name is visible; the amount cannot be read.",
-        "Available funds": "1200 available.",
+        "Customer balance": "1,200 credits.",
         "Today's history": "No earlier movement for this reference."
       },
       action: "escalate", reason: "M4", critical: true
@@ -795,7 +803,7 @@
 
   const SECTIONS = [
     { id: "lookup", n: 1, title: "Identity match", blurb: "A name is not an identity. Only the exact account is.", max: 10 },
-    { id: "funds", n: 2, title: "Running funds", blurb: "Each approval changes what is left for the next request.", max: 10 },
+    { id: "funds", n: 2, title: "The customer balance", blurb: "Approving a load spends the money now. The figure on screen moves with you.", max: 10 },
     { id: "recon", n: 3, title: "Record reconciliation", blurb: "Two records of the same shift that should line up one to one.", max: 10 },
     { id: "infer", n: 4, title: "What follows", blurb: "Some things the evidence proves. Some it only suggests.", max: 12 },
     { id: "queue", n: 5, title: "Working the queue", blurb: "Six requests. Decide, and say why.", max: 18 }
@@ -805,7 +813,7 @@
 
   const PROFILES = [
     { id: "lookup", label: "Exact identity matching", predicts: "Finding and pasting the right player; not confusing near-identical accounts." },
-    { id: "funds", label: "State tracking", predicts: "Respecting held funds across a shift instead of reading one number." },
+    { id: "funds", label: "State tracking", predicts: "Reading the balance as it stands now, not as it stood at the start of the shift." },
     { id: "recon", label: "Record reconciliation", predicts: "Game history against Backend history; duplicates and unsettled actions." },
     { id: "infer", label: "Inference discipline", predicts: "Knowing when evidence supports a conclusion and when it does not." },
     { id: "queue", label: "Operational judgment", predicts: "Approve, reject with a reason, or refuse to act on bad evidence." }
@@ -1065,58 +1073,77 @@
   }
 
 
-  function heldAfter(upto) {
-    let held = 0;
+  // The balance standing in front of the candidate at event `upto`, following
+  // their own earlier decisions so one mistake does not cascade unfairly.
+  function balanceBefore(upto) {
+    let b = LEDGER_START;
     for (let i = 0; i < upto; i++) {
-      if (state.funds["D" + i] === "proceed") held += FUND_REQUESTS[i].amount;
+      const ev = LEDGER_EVENTS[i];
+      const decision = state.funds["D" + i];
+      if (ev.kind === "load" && decision === "approve") b -= ev.amount;
+      if (ev.kind === "cancel" && decision === "return") b += ev.amount;
     }
-    return held;
+    return b;
+  }
+
+  function correctDecision(ev, balance) {
+    if (ev.kind === "cancel") return "return";
+    return ev.amount <= balance ? "approve" : "reject";
+  }
+
+  function balanceAfter(ev, balance, decision) {
+    if (ev.kind === "load" && decision === "approve") return balance - ev.amount;
+    if (ev.kind === "cancel" && decision === "return") return balance + ev.amount;
+    return balance;
   }
 
   /* ======================= section 2 — funds ======================= */
 
   function renderFunds(root) {
-    root.appendChild(el("p", { class: "doc", text: "One customer, five load requests, handled in order. Approving a request places a hold for that amount, so it is no longer available for the requests that follow. For each one, work out what is Available, then decide." }));
+    root.appendChild(el("p", { class: "doc" }, [
+      "One customer, handled in order. The customer record shows a single balance, and it is always what is left to spend — approving a load takes the money out of it straight away. Work through the events in sequence. For each one, decide, and write the balance the record will show afterwards."
+    ]));
 
-    FUND_REQUESTS.forEach(function (req, i) {
+    LEDGER_EVENTS.forEach(function (ev, i) {
       const key = "D" + i;
-      const aKey = "A" + i;
-      const prior = i === 0 || state.funds["D" + (i - 1)] !== undefined;
-      const held = heldAfter(i);
-      const available = LEDGER_START - held;
+      const bKey = "A" + i;
+      const ready = i === 0 || state.funds["D" + (i - 1)] !== undefined;
+      const balance = balanceBefore(i);
       const decided = state.funds[key];
 
       const block = el("div", { class: "item" });
       block.appendChild(el("div", { class: "item-head" }, [
-        el("span", { class: "item-n", text: req.ref }),
-        el("div", { class: "doc" }, ["Requests ", el("b", { class: "num", text: money(req.amount) }), " credits. ", req.note])
+        el("span", { class: "item-n", text: ev.ref }),
+        el("p", { class: "doc", text: ev.text, style: "margin:0" })
       ]));
 
-      if (!prior) {
-        block.appendChild(el("p", { class: "hint", text: "Handle the previous request first." }));
+      if (!ready) {
+        block.appendChild(el("p", { class: "hint", text: "Settle the previous event first." }));
         root.appendChild(block);
         return;
       }
 
-      const dl = el("dl", { class: "ledger" }, [
-        el("div", null, [el("dt", { text: "Balance" }), el("dd", { class: "num", text: money(LEDGER_START) })]),
-        el("div", { class: "held" }, [el("dt", { text: "Held" }), el("dd", { class: "num", text: money(held) })]),
-        el("div", null, [el("dt", { text: "Requested" }), el("dd", { class: "num", text: money(req.amount) })])
-      ]);
-      block.appendChild(dl);
+      block.appendChild(el("dl", { class: "ledger" }, [
+        el("div", null, [el("dt", { text: "Customer" }), el("dd", { class: "num", text: LEDGER_CUSTOMER })]),
+        el("div", { class: "avail" }, [el("dt", { text: "Balance on record" }), el("dd", { class: "num", text: money(balance) })]),
+        el("div", null, [
+          el("dt", { text: ev.kind === "cancel" ? "Amount cancelled" : "Amount requested" }),
+          el("dd", { class: "num", text: money(ev.amount) })
+        ])
+      ]));
 
-      const avail = el("input", {
+      const after = el("input", {
         type: "number", inputmode: "numeric", id: "avail" + i,
-        placeholder: "0", value: state.funds[aKey] !== undefined ? state.funds[aKey] : "",
+        placeholder: "0", value: state.funds[bKey] !== undefined ? state.funds[bKey] : "",
         style: "width:130px"
       });
       // Typing is not an answer revision — only a changed decision counts.
-      avail.addEventListener("input", function () {
-        state.funds[aKey] = avail.value === "" ? undefined : Number(avail.value);
+      after.addEventListener("input", function () {
+        state.funds[bKey] = after.value === "" ? undefined : Number(after.value);
       });
 
       const choices = el("div", { class: "choices" });
-      [["proceed", "Proceed", "pick-ok"], ["reject", "Reject", "pick-bad"]].forEach(function (opt) {
+      LEDGER_CHOICES[ev.kind].forEach(function (opt) {
         const b = el("button", {
           class: "choice " + opt[2], type: "button",
           "aria-pressed": decided === opt[0] ? "true" : "false", text: opt[1]
@@ -1129,16 +1156,14 @@
       });
 
       block.appendChild(el("div", { class: "row" }, [
-        el("label", { class: "field" }, ["Available", avail]),
-        choices
+        choices,
+        el("label", { class: "field" }, ["Balance afterwards", after])
       ]));
 
       if (decided) {
         block.appendChild(el("p", {
           class: "hint",
-          text: decided === "proceed"
-            ? "Held rises to " + money(held + req.amount) + " for the next request."
-            : "Nothing held. " + money(available) + " still available."
+          text: "The record will show " + money(balanceAfter(ev, balance, decided)) + " at the next event."
         }));
       }
 
@@ -1335,7 +1360,7 @@
   function unanswered() {
     const s = SECTIONS[state.index];
     if (s.id === "lookup") return LOOKUPS.filter(function (_, i) { return !state.lookup["L" + i]; }).length;
-    if (s.id === "funds") return FUND_REQUESTS.filter(function (_, i) {
+    if (s.id === "funds") return LEDGER_EVENTS.filter(function (_, i) {
       return !state.funds["D" + i] || state.funds["A" + i] === undefined;
     }).length;
     if (s.id === "recon") return Object.keys(state.recon.flags).filter(function (r) { return !state.recon.flags[r]; }).length;
@@ -1408,22 +1433,25 @@
       });
     });
 
-    let ignoredHeld = 0;
-    FUND_REQUESTS.forEach(function (req, i) {
-      const held = heldAfter(i);
-      const available = LEDGER_START - held;
-      const givenA = state.funds["A" + i];
+    let overCommitted = 0;
+    LEDGER_EVENTS.forEach(function (ev, i) {
+      const balance = balanceBefore(i);
+      const wantD = correctDecision(ev, balance);
       const givenD = state.funds["D" + i];
-      const okA = givenA === available;
-      const okD = givenD === (req.amount <= available ? "proceed" : "reject");
-      if (okA) score.funds += 1;
+      const givenA = state.funds["A" + i];
+      const okD = givenD === wantD;
+      // The balance is marked against the candidate's own decision, so a wrong
+      // call is penalised once, not twice.
+      const okA = givenA === balanceAfter(ev, balance, givenD);
       if (okD) score.funds += 1;
-      if (held > 0 && givenA === LEDGER_START) ignoredHeld += 1;
+      if (okA) score.funds += 1;
+      if (ev.kind === "load" && givenD === "approve" && ev.amount > balance) overCommitted += 1;
       detail.funds.push({
-        label: req.ref + " · requests " + money(req.amount) + " with " + money(held) + " held",
-        given: (givenA === undefined ? "—" : money(givenA)) + " available, " + (givenD === "proceed" ? "Proceed" : "Reject"),
-        correct: money(available) + " available, " + (req.amount <= available ? "Proceed" : "Reject"),
-        ok: okA && okD, points: (okA ? 1 : 0) + (okD ? 1 : 0)
+        label: ev.ref + " · " + (ev.kind === "cancel" ? "cancels " : "asks for ") + money(ev.amount) +
+          " against a balance of " + money(balance),
+        given: nameFor(LEDGER_CHOICES[ev.kind], givenD) + ", leaving " + (givenA === undefined ? "—" : money(givenA)),
+        correct: nameFor(LEDGER_CHOICES[ev.kind], wantD) + ", leaving " + money(balanceAfter(ev, balance, wantD)),
+        ok: okD && okA, points: (okD ? 1 : 0) + (okA ? 1 : 0)
       });
     });
 
@@ -1489,7 +1517,7 @@
       score: score, detail: detail, total: total,
       pct: Math.round((total / MAX_TOTAL) * 100),
       criticalFailures: criticalFailures,
-      ignoredHeld: ignoredHeld,
+      overCommitted: overCommitted,
       blindDecisions: blindDecisions,
       falseFlags: falseFlags
     };
@@ -1514,13 +1542,22 @@
     return ["v-bad", "Not suitable"];
   }
 
+  function plural(n, one, many) {
+    return n + " " + (n === 1 ? one : many);
+  }
+
   function observations(r) {
     const out = [];
     if (r.criticalFailures.length) {
-      out.push(["flag", "Approved " + r.criticalFailures.join(", ") + " — a request whose evidence did not permit any action. This invalidates the result on its own."]);
+      out.push(["flag", "Approved " + r.criticalFailures.join(", ") +
+        (r.criticalFailures.length > 1
+          ? " — requests whose evidence did not permit any action."
+          : " — a request whose evidence did not permit any action.") +
+        " This invalidates the result on its own."]);
     }
-    if (r.ignoredHeld >= 2) {
-      out.push(["flag", "Read Balance as Available on " + r.ignoredHeld + " requests where funds were already held. This is the habit that overcommits customer money."]);
+    if (r.overCommitted > 0) {
+      out.push(["flag", "Approved " + plural(r.overCommitted, "load", "loads") +
+        " for more than the balance on screen. This is the habit that overcommits customer money."]);
     }
     if (r.blindDecisions >= 3) {
       out.push(["flag", "Decided " + r.blindDecisions + " of " + QUEUE.length + " requests without opening the evidence first."]);
@@ -1528,7 +1565,7 @@
       out.push(["good", "Opened the evidence before every decision."]);
     }
     if (r.falseFlags) {
-      out.push(["flag", "Flagged " + r.falseFlags + " reference(s) that were not discrepancies."]);
+      out.push(["flag", "Flagged " + plural(r.falseFlags, "reference", "references") + " that were not discrepancies."]);
     }
     if (r.score.infer === SECTIONS[3].max) {
       out.push(["good", "Every inference judged correctly, including the cases where the evidence settles nothing."]);
