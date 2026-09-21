@@ -15,9 +15,10 @@ It must predict whether a candidate can perform the operator workflow after
 training, without testing content that training has not yet delivered. It is
 built on the simulator's own workflow — a request queue, exact account lookup,
 a customer balance that moves as movements settle, two records that must agree
-one to one, and a decision with a reason — but the six operating rules it
-depends on are printed on the page and
-reachable at any time from the Rules button. Nothing requires prior knowledge
+one to one, and a decision with a reason — but the seven operating rules it
+depends on are printed on the page and reachable at any time from the Rules
+button, including which way an ADD CREDITS and a WITHDRAW CREDITS each move the
+balance. Nothing requires prior knowledge
 of a game platform or of company procedure, and the page contains no
 account-identifier formula, game initials or password policy, so it is safe to
 use before those are approved.
@@ -27,28 +28,33 @@ use before those are approved.
 | # | Exercise | Logical skill | What it predicts in the simulator |
 | --- | --- | --- | --- |
 | 1 | Identity match | Necessary vs sufficient conditions | Finding the exact player; not accepting a near-identical account |
-| 2 | The customer balance | Tracking state that changes as you act | Reading the balance as it stands now, not as it stood at the start of the shift |
+| 2 | The customer balance | Tracking state that moves in both directions | Reading the balance as it stands now, not as it stood at the start of the shift |
 | 3 | Record reconciliation | Set difference and a one-to-one invariant | Game history against Backend history; duplicates and unsettled actions |
 | 4 | What follows | Inference and evidence sufficiency | Knowing when evidence settles a question and when it does not |
 | 5 | Working the queue | Conjunctive rule checking, safe stop | Approve, reject with a reason, or refuse to act on bad evidence |
 
-60 points, reported as five profile sub-scores rather than one number, so the
+62 points, reported as five profile sub-scores rather than one number, so the
 result says *what* to reinforce in the first modules.
 
 ## Design decisions
 
-- **Exercise 2 only works because the page is interactive.** Five events are
-  settled in sequence against one customer record, mirroring the simulator
-  exactly: `reserveAddCredits` debits the customer balance the moment a load is
-  approved, and `settleAddCredits` returns it when an approved movement is
-  cancelled. The single figure on screen is therefore always what is left to
-  spend. There is deliberately **no held or available column, because the
-  product has none** — an earlier draft invented `Available = Balance − Held`,
-  arithmetic no operator here ever performs. The candidate decides each event
-  and writes the balance the record will show afterwards. The trap is a request
-  the opening balance would have covered but the current one will not; one event
-  is a cancellation that puts money back. Scoring follows the candidate's own
-  ledger path, so an early mistake does not cascade into unfair later failures.
+- **Exercise 2 only works because the page is interactive.** Six requests are
+  settled in sequence against one customer record whose single balance moves as
+  they go. It uses only two operations, and the page defines both, so it assumes
+  no prior idea of which way money flows: an **ADD CREDITS** puts credits into
+  the game account and takes that amount out of the customer balance, a
+  **WITHDRAW CREDITS** takes credits out and puts the amount back in. The page
+  uses those operation names throughout, rather than banking terms like debit
+  and credit that mean nothing here. That matches the simulator —
+  `ADD CREDITS` debits the balance at reservation, while the settlement RPC
+  refuses to reserve for `WITHDRAW CREDITS` and credits the balance on approval.
+  There is deliberately **no held or available column, because the product has
+  none**; an earlier draft invented `Available = Balance − Held`, arithmetic no
+  operator here performs. The candidate decides each request and writes the
+  resulting balance, which catches anyone tracking magnitude but not direction.
+  The trap is an ADD CREDITS the opening balance would have covered but the
+  current one will not. Scoring follows the candidate's own ledger path, so an early mistake
+  does not cascade into unfair later failures.
 - **Exercise 4 is the reasoning core.** Three of its six claims turn on absence
   of a record not being evidence of absence of the event — the inference error
   that produces double credits. One asks the candidate to see that two
@@ -58,9 +64,9 @@ result says *what* to reinforce in the first modules.
   costs 2. Without that, answering "wrong" to everything scores well and the
   instrument cannot separate a careful reader from a pessimist.
 - **Behaviour is recorded, not just answers.** The page notes whether the
-  evidence panel was opened before each queue decision, how many loads were
-  approved for more than the balance on screen, false flags, time per exercise,
-  and answer revisions. None of this is observable on paper.
+  evidence panel was opened before each queue decision, how many ADD CREDITS
+  were approved for more than the balance on screen, false flags, time per
+  exercise, and answer revisions. None of this is observable on paper.
 - **Critical failure.** Approving either request whose evidence does not permit
   action invalidates the result regardless of score — the same principle as the
   Hub requirement that a correct final button click cannot hide a critical

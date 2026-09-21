@@ -587,10 +587,11 @@
   const RULES = [
     ["R1", "Act on a request only when the customer and the account both match the records exactly. One different character is a different account."],
     ["R2", "The game platform and the Backend keep separate records. One game action must produce exactly one Backend decision."],
-    ["R3", "Approving a load commits the customer's funds at once: the balance on screen is always what remains, and a load cannot be approved for more than it. Cancelling a movement you already approved returns those funds to the balance."],
-    ["R4", "A withdrawal may proceed only if the game account balance covers the whole amount."],
-    ["R5", "Every rejection needs a reason code. A decision without a reason is not valid."],
-    ["R6", "If evidence is missing, unreadable or contradictory, stop and escalate. Never act on what you cannot verify."]
+    ["R3", "Two operations move the customer balance. An ADD CREDITS puts credits into the player's game account and takes that amount out of the customer balance. A WITHDRAW CREDITS takes credits out of the game account and puts that amount back into the customer balance."],
+    ["R4", "The balance on screen is what the customer has left. An ADD CREDITS cannot be approved for more than it. A WITHDRAW CREDITS is never limited by it, because it adds to the balance."],
+    ["R5", "A WITHDRAW CREDITS also needs the player's game account to cover the whole amount. That is a separate figure from the customer balance."],
+    ["R6", "Every rejection needs a reason code. A decision without a reason is not valid."],
+    ["R7", "If evidence is missing, unreadable or contradictory, stop and escalate. Never act on what you cannot verify."]
   ];
 
   const REGISTRY = [
@@ -611,31 +612,29 @@
   const LEDGER_CUSTOMER = "C-3118";
   const LEDGER_START = 1000;
 
-  // Mirrors the simulator: approving a load debits the customer balance
-  // immediately, and cancelling an approved movement returns it.
+  // Mirrors the simulator: ADD CREDITS debits the customer balance, while
+  // WITHDRAW CREDITS never reserves against it and credits it on approval.
   const LEDGER_EVENTS = [
-    { ref: "RQ-01", kind: "load", amount: 300, text: "Load request for 300 credits. Customer and account match, proof legible." },
-    { ref: "RQ-02", kind: "load", amount: 500, text: "Load request for 500 credits. Customer and account match, proof legible." },
-    { ref: "RQ-03", kind: "load", amount: 250, text: "Load request for 250 credits. Customer and account match, proof legible." },
-    { ref: "RQ-04", kind: "load", amount: 200, text: "Load request for 200 credits. Customer and account match, proof legible." },
-    { ref: "RQ-02", kind: "cancel", amount: 500, text: "The customer cancels RQ-02, the 500-credit load you approved earlier." }
+    { ref: "RQ-01", kind: "load", amount: 400, text: "ADD CREDITS — 400 credits into the player's game account." },
+    { ref: "RQ-02", kind: "withdraw", amount: 150, text: "WITHDRAW CREDITS — 150 credits out of the player's game account." },
+    { ref: "RQ-03", kind: "load", amount: 800, text: "ADD CREDITS — 800 credits into the player's game account." },
+    { ref: "RQ-04", kind: "withdraw", amount: 250, text: "WITHDRAW CREDITS — 250 credits out of the player's game account." },
+    { ref: "RQ-05", kind: "load", amount: 1000, text: "ADD CREDITS — 1000 credits into the player's game account." },
+    { ref: "RQ-06", kind: "load", amount: 50, text: "ADD CREDITS — 50 credits into the player's game account." }
   ];
 
-  const LEDGER_CHOICES = {
-    load: [["approve", "Approve", "pick-ok"], ["reject", "Reject", "pick-bad"]],
-    cancel: [["return", "Return the funds", "pick-ok"], ["keep", "Keep them committed", "pick-bad"]]
-  };
+  const LEDGER_CHOICES = [["approve", "Approve", "pick-ok"], ["reject", "Reject", "pick-bad"]];
 
   const GAME_LOG = [
-    { ref: "OP-4015", account: "ACC-4F8K-2093", action: "CREDIT", amount: 120 },
-    { ref: "OP-4029", account: "ACC-7B2M-1150", action: "CREDIT", amount: 250 },
-    { ref: "OP-4036", account: "ACC-9C1T-3047", action: "DEBIT", amount: 75 },
-    { ref: "OP-4042", account: "ACC-2H6R-8821", action: "CREDIT", amount: 300 },
-    { ref: "OP-4050", account: "ACC-5S3D-4460", action: "DEBIT", amount: 60 },
-    { ref: "OP-4063", account: "ACC-8G4W-7712", action: "CREDIT", amount: 200 },
-    { ref: "OP-4071", account: "ACC-1L9Q-6304", action: "DEBIT", amount: 45 },
-    { ref: "OP-4084", account: "ACC-6Z0N-5583", action: "CREDIT", amount: 140 },
-    { ref: "OP-4090", account: "ACC-3K7V-2298", action: "DEBIT", amount: 95 }
+    { ref: "OP-4015", account: "ACC-4F8K-2093", action: "ADD CREDITS", amount: 120 },
+    { ref: "OP-4029", account: "ACC-7B2M-1150", action: "ADD CREDITS", amount: 250 },
+    { ref: "OP-4036", account: "ACC-9C1T-3047", action: "WITHDRAW CREDITS", amount: 75 },
+    { ref: "OP-4042", account: "ACC-2H6R-8821", action: "ADD CREDITS", amount: 300 },
+    { ref: "OP-4050", account: "ACC-5S3D-4460", action: "WITHDRAW CREDITS", amount: 60 },
+    { ref: "OP-4063", account: "ACC-8G4W-7712", action: "ADD CREDITS", amount: 200 },
+    { ref: "OP-4071", account: "ACC-1L9Q-6304", action: "WITHDRAW CREDITS", amount: 45 },
+    { ref: "OP-4084", account: "ACC-6Z0N-5583", action: "ADD CREDITS", amount: 140 },
+    { ref: "OP-4090", account: "ACC-3K7V-2298", action: "WITHDRAW CREDITS", amount: 95 }
   ];
 
   const BACKEND_LOG = [
@@ -729,7 +728,7 @@
   const QUEUE = [
     {
       ref: "RQ-11",
-      summary: "Customer C-3118 asks to load 150 credits to ACC-4F8K-2093.",
+      summary: "ADD CREDITS for customer C-3118: 150 credits to ACC-4F8K-2093.",
       evidence: {
         "Platform lookup": "ACC-4F8K-2093 — one exact match, active.",
         "Customer record": "C-3118 owns ACC-4F8K-2093.",
@@ -741,7 +740,7 @@
     },
     {
       ref: "RQ-12",
-      summary: "Customer C-6890 asks to load 200 credits to ACC-4F8K-2093.",
+      summary: "ADD CREDITS for customer C-6890: 200 credits to ACC-4F8K-2093.",
       evidence: {
         "Platform lookup": "Search returns ACC-4F8K-2O93 only. No other match.",
         "Customer record": "C-6890 owns ACC-4F8K-2093.",
@@ -753,7 +752,7 @@
     },
     {
       ref: "RQ-13",
-      summary: "Customer C-2041 asks to load 120 credits to ACC-7B2M-1150.",
+      summary: "ADD CREDITS for customer C-2041: 120 credits to ACC-7B2M-1150.",
       evidence: {
         "Platform lookup": "ACC-7B2M-1150 — one exact match, active.",
         "Customer record": "C-2041 owns ACC-7B2M-1150.",
@@ -765,7 +764,7 @@
     },
     {
       ref: "RQ-14",
-      summary: "Customer C-4702 asks to withdraw 500 credits from ACC-9C1T-3047.",
+      summary: "WITHDRAW CREDITS for customer C-4702: 500 credits from ACC-9C1T-3047.",
       evidence: {
         "Platform lookup": "ACC-9C1T-3047 — one exact match, active.",
         "Customer record": "C-4702 owns ACC-9C1T-3047.",
@@ -777,7 +776,7 @@
     },
     {
       ref: "RQ-15",
-      summary: "Customer C-7355 asks to load credits to ACC-5S3D-4460.",
+      summary: "ADD CREDITS for customer C-7355, to ACC-5S3D-4460. The amount is on the attached proof.",
       evidence: {
         "Platform lookup": "ACC-5S3D-4460 — one exact match, active.",
         "Customer record": "C-7355 owns ACC-5S3D-4460.",
@@ -789,7 +788,7 @@
     },
     {
       ref: "RQ-16",
-      summary: "Customer C-8014 asks to withdraw 45 credits from ACC-1L9Q-6304.",
+      summary: "WITHDRAW CREDITS for customer C-8014: 45 credits from ACC-1L9Q-6304.",
       evidence: {
         "Platform lookup": "ACC-1L9Q-6304 — one exact match, active.",
         "Customer record": "C-8014 owns ACC-1L9Q-6304.",
@@ -803,7 +802,7 @@
 
   const SECTIONS = [
     { id: "lookup", n: 1, title: "Identity match", blurb: "A name is not an identity. Only the exact account is.", max: 10 },
-    { id: "funds", n: 2, title: "The customer balance", blurb: "Approving a load spends the money now. The figure on screen moves with you.", max: 10 },
+    { id: "funds", n: 2, title: "The customer balance", blurb: "ADD CREDITS takes money out of it, WITHDRAW CREDITS puts money in. The figure moves as you work.", max: 12 },
     { id: "recon", n: 3, title: "Record reconciliation", blurb: "Two records of the same shift that should line up one to one.", max: 10 },
     { id: "infer", n: 4, title: "What follows", blurb: "Some things the evidence proves. Some it only suggests.", max: 12 },
     { id: "queue", n: 5, title: "Working the queue", blurb: "Six requests. Decide, and say why.", max: 18 }
@@ -1080,28 +1079,27 @@
     for (let i = 0; i < upto; i++) {
       const ev = LEDGER_EVENTS[i];
       const decision = state.funds["D" + i];
-      if (ev.kind === "load" && decision === "approve") b -= ev.amount;
-      if (ev.kind === "cancel" && decision === "return") b += ev.amount;
+      if (decision !== "approve") continue;
+      b += ev.kind === "load" ? -ev.amount : ev.amount;
     }
     return b;
   }
 
   function correctDecision(ev, balance) {
-    if (ev.kind === "cancel") return "return";
-    return ev.amount <= balance ? "approve" : "reject";
+    // WITHDRAW CREDITS adds to the balance, so the balance can never block it.
+    return ev.kind === "withdraw" || ev.amount <= balance ? "approve" : "reject";
   }
 
   function balanceAfter(ev, balance, decision) {
-    if (ev.kind === "load" && decision === "approve") return balance - ev.amount;
-    if (ev.kind === "cancel" && decision === "return") return balance + ev.amount;
-    return balance;
+    if (decision !== "approve") return balance;
+    return balance + (ev.kind === "load" ? -ev.amount : ev.amount);
   }
 
   /* ======================= section 2 — funds ======================= */
 
   function renderFunds(root) {
     root.appendChild(el("p", { class: "doc" }, [
-      "One customer, handled in order. The customer record shows a single balance, and it is always what is left to spend — approving a load takes the money out of it straight away. Work through the events in sequence. For each one, decide, and write the balance the record will show afterwards."
+      "One customer, six requests, handled in the order they arrive. An ADD CREDITS takes its amount out of the customer balance; a WITHDRAW CREDITS puts its amount in. The record shows one balance and it is always what the customer has left, so an ADD CREDITS cannot be approved for more than it. Identity and game-side checks have already passed on all six — the balance is the only question. Decide each one, and write the balance the record will show afterwards."
     ]));
 
     LEDGER_EVENTS.forEach(function (ev, i) {
@@ -1127,7 +1125,7 @@
         el("div", null, [el("dt", { text: "Customer" }), el("dd", { class: "num", text: LEDGER_CUSTOMER })]),
         el("div", { class: "avail" }, [el("dt", { text: "Balance on record" }), el("dd", { class: "num", text: money(balance) })]),
         el("div", null, [
-          el("dt", { text: ev.kind === "cancel" ? "Amount cancelled" : "Amount requested" }),
+          el("dt", { text: "Amount" }),
           el("dd", { class: "num", text: money(ev.amount) })
         ])
       ]));
@@ -1143,7 +1141,7 @@
       });
 
       const choices = el("div", { class: "choices" });
-      LEDGER_CHOICES[ev.kind].forEach(function (opt) {
+      LEDGER_CHOICES.forEach(function (opt) {
         const b = el("button", {
           class: "choice " + opt[2], type: "button",
           "aria-pressed": decided === opt[0] ? "true" : "false", text: opt[1]
@@ -1447,10 +1445,10 @@
       if (okA) score.funds += 1;
       if (ev.kind === "load" && givenD === "approve" && ev.amount > balance) overCommitted += 1;
       detail.funds.push({
-        label: ev.ref + " · " + (ev.kind === "cancel" ? "cancels " : "asks for ") + money(ev.amount) +
+        label: ev.ref + " · " + (ev.kind === "load" ? "add " : "withdraw ") + money(ev.amount) +
           " against a balance of " + money(balance),
-        given: nameFor(LEDGER_CHOICES[ev.kind], givenD) + ", leaving " + (givenA === undefined ? "—" : money(givenA)),
-        correct: nameFor(LEDGER_CHOICES[ev.kind], wantD) + ", leaving " + money(balanceAfter(ev, balance, wantD)),
+        given: nameFor(LEDGER_CHOICES, givenD) + ", leaving " + (givenA === undefined ? "—" : money(givenA)),
+        correct: nameFor(LEDGER_CHOICES, wantD) + ", leaving " + money(balanceAfter(ev, balance, wantD)),
         ok: okD && okA, points: (okD ? 1 : 0) + (okA ? 1 : 0)
       });
     });
@@ -1556,7 +1554,7 @@
         " This invalidates the result on its own."]);
     }
     if (r.overCommitted > 0) {
-      out.push(["flag", "Approved " + plural(r.overCommitted, "load", "loads") +
+      out.push(["flag", "Approved " + plural(r.overCommitted, "ADD CREDITS request", "ADD CREDITS requests") +
         " for more than the balance on screen. This is the habit that overcommits customer money."]);
     }
     if (r.blindDecisions >= 3) {
