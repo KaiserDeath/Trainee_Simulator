@@ -402,10 +402,22 @@
     padding: 9px 13px;
     border-radius: 5px;
     font-size: 13px;
-    background: var(--accent-soft);
-    border: 1px solid var(--accent);
+    background: var(--ok-soft);
+    border: 1px solid var(--ok);
   }
-  .answer b { font-family: var(--mono); font-size: 14px; letter-spacing: 0.03em; }
+  .answer b { font-family: var(--mono); font-size: 14px; letter-spacing: 0.03em; color: var(--ok); }
+  .answer .tick {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--ok);
+    color: var(--surface);
+    font-size: 11px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+  }
   .answer.empty {
     background: transparent;
     border: 1px dashed var(--line-strong);
@@ -415,7 +427,11 @@
   tr.pick td { cursor: pointer; }
   tr.pick:hover td { background: var(--accent-soft); }
   tr.flagged td { background: var(--warn-soft); }
-  tr.chosen td { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+  tr.chosen td {
+    background: var(--ok-soft);
+    box-shadow: inset 4px 0 0 var(--ok);
+    font-weight: 600;
+  }
 
   /* ---------- ledger ---------- */
 
@@ -1392,6 +1408,13 @@
       });
       paint();
 
+      if (given && given !== "__none__") {
+        const marked = tbody.querySelector("tr.chosen");
+        if (marked && marked.scrollIntoView) {
+          marked.scrollIntoView({ block: "nearest" });
+        }
+      }
+
       block.appendChild(el("div", { class: "row", style: "margin-bottom:10px" }, [filter]));
       block.appendChild(el("div", { class: "scroller reglist" }, [
         el("table", null, [
@@ -1423,6 +1446,7 @@
           renderSection();
         });
         block.appendChild(el("div", { class: "answer" }, [
+          el("span", { class: "tick", text: "✓" }),
           el("span", { text: "Your answer:" }),
           el("b", { text: none ? "No exact match" : given }),
           clearBtn
@@ -1500,6 +1524,7 @@
       // Typing is not an answer revision — only a changed decision counts.
       after.addEventListener("input", function () {
         state.funds[bKey] = after.value === "" ? undefined : Number(after.value);
+        refreshFooter();
       });
 
       const choices = el("div", { class: "choices" });
@@ -1729,6 +1754,23 @@
     return 0;
   }
 
+  let footerHint = null;
+  let footerNext = null;
+
+  function footerText(s, left) {
+    if (left <= 0) return t("All answered.");
+    return s.id === "recon" ? m("needCategory", left) : m("needAnswers", left);
+  }
+
+  // Typing a figure changes whether the section is complete but must not
+  // re-render, or the field loses focus mid-keystroke. Update the gate alone.
+  function refreshFooter() {
+    if (!footerNext || state.stage !== "section") return;
+    const left = unanswered();
+    footerNext.disabled = left > 0;
+    footerHint.textContent = footerText(SECTIONS[state.index], left);
+  }
+
   function renderSection() {
     const s = SECTIONS[state.index];
     clear(app);
@@ -1762,15 +1804,11 @@
       }
     });
 
-    app.appendChild(el("div", { class: "foot" }, [
-      el("p", {
-        class: "hint",
-        text: left > 0
-          ? (s.id === "recon" ? m("needCategory", left) : m("needAnswers", left))
-          : "All answered."
-      }),
-      next
-    ]));
+    const hint = el("p", { class: "hint", text: footerText(s, left) });
+    footerHint = hint;
+    footerNext = next;
+
+    app.appendChild(el("div", { class: "foot" }, [hint, next]));
   }
 
   /* ======================= scoring ======================= */
