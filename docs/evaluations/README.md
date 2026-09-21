@@ -83,8 +83,13 @@ result says *what* to reinforce in the first modules.
 - **Exercise 4 is the reasoning core.** Three of its six claims turn on absence
   of a record not being evidence of absence of the event — the inference error
   that produces double credits. One asks the candidate to see that two
-  contradictory documents prove *an error exists* without proving which
-  document is wrong.
+  contradictory records prove *an error exists* without proving which record is
+  wrong.
+- **Only the two records count as evidence.** Exercises 4 and 5 work strictly
+  from the Backend movement and the game history, because that is what an
+  operator compares. Proof-of-payment images were removed from both: validating
+  a customer's payment document is not part of this workflow, and asking about
+  it would have tested a task the role does not perform.
 - **Exercise 5 turns on what counts as work already done.** Two requests in the
   queue look similar and are opposites. In one, an identical ADD CREDITS for the
   same customer and amount was completed four minutes ago under its own

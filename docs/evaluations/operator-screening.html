@@ -702,10 +702,10 @@
       why: "The chain holds end to end and the search returned a unique result, so the identity follows."
     },
     {
-      situation: "The written request asks for 200. The attached proof of payment shows 2000.",
-      claim: "At least one of the two documents is wrong.",
+      situation: "The Backend movement for OP-4110 records 200. The game history entry for the same reference records 2000.",
+      claim: "At least one of the two records is wrong.",
       answer: "supported",
-      why: "They cannot both be right. You can conclude an error exists even though you cannot yet say which document carries it."
+      why: "They cannot both be right. You can conclude an error exists even though you cannot yet say which record carries it."
     },
     {
       situation: "Rule R2 requires one game action to produce exactly one Backend decision. OP-4063 has one game action and two APPROVED decisions.",
@@ -714,10 +714,10 @@
       why: "Two decisions against one action is a direct breach of the stated rule."
     },
     {
-      situation: "A request arrives with no proof of payment attached, and the Backend shows no record of funds received.",
-      claim: "The customer did not pay.",
+      situation: "The game history shows a credit of 120 on this account. The entry carries no timestamp, and an identical request for the same customer and amount was settled earlier today.",
+      claim: "The credit in the game history belongs to the request in front of you.",
       answer: "undetermined",
-      why: "A missing document is a missing document. It is evidence about the paperwork, not about the customer."
+      why: "Without a time on the entry it could belong to either request. Crediting again would pay twice; settling on it might close work that was never done for this request."
     }
   ];
 
@@ -749,9 +749,8 @@
       evidence: {
         "Platform lookup": "ACC-4F8K-2093 — one exact match, active.",
         "Customer record": "C-3118 owns ACC-4F8K-2093.",
-        "Proof of payment": "Legible. Amount reads 150.",
         "Customer balance": "400 credits.",
-        "Earlier today": "A separate ADD CREDITS of 150 on this account was completed four minutes ago, with its own proof. That request is closed.",
+        "Earlier today": "A separate ADD CREDITS of 150 on this account was completed four minutes ago under its own request. That request is closed and settled on both sides.",
         "Game record since this request arrived": "Nothing recorded yet."
       },
       action: "approve", reason: "M7", critical: false
@@ -762,7 +761,6 @@
       evidence: {
         "Platform lookup": "Search returns ACC-4F8K-2O93 only. No other match.",
         "Customer record": "C-6890 owns ACC-4F8K-2093.",
-        "Proof of payment": "Legible. Amount reads 200.",
         "Customer balance": "900 credits.",
         "Game record since this request arrived": "Nothing recorded yet."
       },
@@ -774,7 +772,6 @@
       evidence: {
         "Platform lookup": "ACC-7B2M-1150 — one exact match, active.",
         "Customer record": "C-2041 owns ACC-7B2M-1150.",
-        "Proof of payment": "Legible. Amount reads 120.",
         "Customer balance": "760 credits.",
         "Game record since this request arrived": "A credit of 120 on this account, recorded after this request came in.",
         "Backend status": "Still pending. No decision entered yet."
@@ -795,13 +792,13 @@
     },
     {
       ref: "RQ-15",
-      summary: "ADD CREDITS for customer C-7355, to ACC-5S3D-4460. The amount is on the attached proof.",
+      summary: "ADD CREDITS for customer C-7355: 250 credits to ACC-5S3D-4460.",
       evidence: {
         "Platform lookup": "ACC-5S3D-4460 — one exact match, active.",
         "Customer record": "C-7355 owns ACC-5S3D-4460.",
-        "Proof of payment": "Image is cut off. The customer name is visible; the amount cannot be read.",
         "Customer balance": "1,200 credits.",
-        "Game record since this request arrived": "Nothing recorded yet."
+        "Game record since this request arrived": "The platform history will not load. It returns an error instead of a list.",
+        "Backend status": "Still pending. No decision entered yet."
       },
       action: "escalate", reason: "M5", critical: true
     },
@@ -811,7 +808,6 @@
       evidence: {
         "Platform lookup": "ACC-1L9Q-6304 — one exact match, active.",
         "Customer record": "C-8014 owns ACC-1L9Q-6304.",
-        "Proof of payment": "Legible. Amount reads 900.",
         "Customer balance": "400 credits.",
         "Game record since this request arrived": "Nothing recorded yet."
       },
@@ -970,14 +966,10 @@
     "The request names customer C-3118. The record for C-3118 lists account ACC-4F8K-2093. A platform search for ACC-4F8K-2093 returns exactly one account.":
       "La solicitud nombra al cliente C-3118. El registro de C-3118 lista la cuenta ACC-4F8K-2093. Una búsqueda de ACC-4F8K-2093 en la plataforma devuelve exactamente una cuenta.",
     "The account found on the platform belongs to C-3118.": "La cuenta encontrada en la plataforma pertenece a C-3118.",
-    "The written request asks for 200. The attached proof of payment shows 2000.":
-      "La solicitud escrita pide 200. El comprobante de pago adjunto muestra 2000.",
     "At least one of the two documents is wrong.": "Al menos uno de los dos documentos está equivocado.",
     "Rule R2 requires one game action to produce exactly one Backend decision. OP-4063 has one game action and two APPROVED decisions.":
       "La regla R2 exige que una acción en el juego produzca exactamente una decisión en el Backend. OP-4063 tiene una acción en el juego y dos decisiones APPROVED.",
     "OP-4063 complies with R2.": "OP-4063 cumple con R2.",
-    "A request arrives with no proof of payment attached, and the Backend shows no record of funds received.":
-      "Llega una solicitud sin comprobante de pago adjunto, y el Backend no muestra ningún registro de fondos recibidos.",
     "The customer did not pay.": "El cliente no pagó.",
 
     // — exercise 5 —
@@ -988,7 +980,6 @@
     "Reason…": "Motivo…",
     "Platform lookup": "Búsqueda en la plataforma",
     "Customer record": "Registro del cliente",
-    "Proof of payment": "Comprobante de pago",
     "Customer balance": "Saldo del cliente",
     "Game account balance": "Saldo de la cuenta de juego",
     "Earlier today": "Antes, hoy mismo",
@@ -1000,8 +991,6 @@
     "ADD CREDITS for customer C-6890: 200 credits to ACC-4F8K-2093.": "ADD CREDITS para el cliente C-6890: 200 créditos a ACC-4F8K-2093.",
     "ADD CREDITS for customer C-2041: 120 credits to ACC-7B2M-1150.": "ADD CREDITS para el cliente C-2041: 120 créditos a ACC-7B2M-1150.",
     "WITHDRAW CREDITS for customer C-4702: 500 credits from ACC-9C1T-3047.": "WITHDRAW CREDITS para el cliente C-4702: 500 créditos desde ACC-9C1T-3047.",
-    "ADD CREDITS for customer C-7355, to ACC-5S3D-4460. The amount is on the attached proof.":
-      "ADD CREDITS para el cliente C-7355, a ACC-5S3D-4460. El monto está en el comprobante adjunto.",
     "ADD CREDITS for customer C-8014: 900 credits to ACC-1L9Q-6304.": "ADD CREDITS para el cliente C-8014: 900 créditos a ACC-1L9Q-6304.",
     "ACC-4F8K-2093 — one exact match, active.": "ACC-4F8K-2093 — una coincidencia exacta, activa.",
     "ACC-7B2M-1150 — one exact match, active.": "ACC-7B2M-1150 — una coincidencia exacta, activa.",
@@ -1015,14 +1004,8 @@
     "C-4702 owns ACC-9C1T-3047.": "C-4702 es titular de ACC-9C1T-3047.",
     "C-7355 owns ACC-5S3D-4460.": "C-7355 es titular de ACC-5S3D-4460.",
     "C-8014 owns ACC-1L9Q-6304.": "C-8014 es titular de ACC-1L9Q-6304.",
-    "Legible. Amount reads 150.": "Legible. El monto dice 150.",
-    "Legible. Amount reads 200.": "Legible. El monto dice 200.",
-    "Legible. Amount reads 120.": "Legible. El monto dice 120.",
-    "Legible. Amount reads 900.": "Legible. El monto dice 900.",
-    "Image is cut off. The customer name is visible; the amount cannot be read.":
-      "La imagen está cortada. Se ve el nombre del cliente; el monto no se puede leer.",
-    "A separate ADD CREDITS of 150 on this account was completed four minutes ago, with its own proof. That request is closed.":
-      "Otro ADD CREDITS de 150 en esta cuenta se completó hace cuatro minutos, con su propio comprobante. Esa solicitud está cerrada.",
+    "A separate ADD CREDITS of 150 on this account was completed four minutes ago under its own request. That request is closed and settled on both sides.":
+      "Otro ADD CREDITS de 150 en esta cuenta se completó hace cuatro minutos bajo su propia solicitud. Esa solicitud está cerrada y liquidada en ambos lados.",
     "A credit of 120 on this account, recorded after this request came in.":
       "Una acreditación de 120 en esta cuenta, registrada después de que llegó esta solicitud.",
     "400 credits.": "400 créditos.",
@@ -1074,6 +1057,14 @@
     "Not flagged": "No marcada",
     "Flagged": "Marcada",
     "Nothing wrong with this reference": "Esta referencia no tiene ningún problema",
+    "The Backend movement for OP-4110 records 200. The game history entry for the same reference records 2000.": "El movimiento del Backend para OP-4110 registra 200. La entrada del historial del juego para la misma referencia registra 2000.",
+    "At least one of the two records is wrong.": "Al menos uno de los dos registros está equivocado.",
+    "They cannot both be right. You can conclude an error exists even though you cannot yet say which record carries it.": "No pueden estar correctos los dos. Puedes concluir que existe un error aunque todavía no puedas decir cuál registro lo tiene.",
+    "The game history shows a credit of 120 on this account. The entry carries no timestamp, and an identical request for the same customer and amount was settled earlier today.": "El historial del juego muestra una acreditación de 120 en esta cuenta. La entrada no tiene hora, y una solicitud idéntica del mismo cliente por el mismo monto se liquidó antes hoy.",
+    "The credit in the game history belongs to the request in front of you.": "La acreditación del historial del juego corresponde a la solicitud que tienes delante.",
+    "Without a time on the entry it could belong to either request. Crediting again would pay twice; settling on it might close work that was never done for this request.": "Sin hora en la entrada podría corresponder a cualquiera de las dos solicitudes. Acreditar de nuevo pagaría dos veces; liquidar sobre ella podría cerrar un trabajo que nunca se hizo para esta solicitud.",
+    "ADD CREDITS for customer C-7355: 250 credits to ACC-5S3D-4460.": "ADD CREDITS para el cliente C-7355: 250 créditos a ACC-5S3D-4460.",
+    "The platform history will not load. It returns an error instead of a list.": "El historial de la plataforma no carga. Devuelve un error en vez de una lista.",
     "Act on a request only when the customer and the account both match the records exactly. One different character is a different account.": "Actúa sobre una solicitud solo cuando el cliente y la cuenta coincidan exactamente con los registros. Un solo carácter distinto es otra cuenta.",
     "The game platform and the Backend keep separate records. One game action must produce exactly one Backend decision.": "La plataforma de juego y el Backend llevan registros separados. Una acción en el juego debe producir exactamente una decisión en el Backend.",
     "Two operations move the customer balance. An ADD CREDITS puts credits into the player's game account and takes that amount out of the customer balance. A WITHDRAW CREDITS takes credits out of the game account and puts that amount back into the customer balance.": "Dos operaciones mueven el saldo del cliente. Un ADD CREDITS ingresa créditos a la cuenta de juego del jugador y descuenta ese monto del saldo del cliente. Un WITHDRAW CREDITS retira créditos de la cuenta de juego y devuelve ese monto al saldo del cliente.",
@@ -1093,7 +1084,6 @@
     "The chain holds end to end and the search returned a unique result, so the identity follows.": "La cadena se sostiene de principio a fin y la búsqueda devolvió un único resultado, así que la identidad se deduce.",
     "They cannot both be right. You can conclude an error exists even though you cannot yet say which document carries it.": "No pueden estar correctos los dos. Puedes concluir que existe un error aunque todavía no puedas decir cuál documento lo tiene.",
     "Two decisions against one action is a direct breach of the stated rule.": "Dos decisiones contra una sola acción es una infracción directa de la regla establecida.",
-    "A missing document is a missing document. It is evidence about the paperwork, not about the customer.": "Un documento faltante es un documento faltante. Es evidencia sobre el papeleo, no sobre el cliente.",
     "Approve, reject with a reason, or refuse to act on bad evidence.": "Aprobar, rechazar con un motivo, o negarse a actuar con evidencia deficiente."
   };
 
