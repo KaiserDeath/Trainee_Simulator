@@ -30,7 +30,7 @@ use before those are approved.
 | 1 | Identity match | Necessary vs sufficient conditions | Finding the exact player; not accepting a near-identical account |
 | 2 | The customer balance | Tracking state that moves in both directions | Reading the balance as it stands now, not as it stood at the start of the shift |
 | 3 | Record reconciliation | Set difference and a one-to-one invariant | Game history against Backend history; duplicates and unsettled actions |
-| 4 | What follows | Inference and evidence sufficiency | Knowing when evidence settles a question and when it does not |
+| 4 | What the evidence shows | Inference and evidence sufficiency | Knowing when evidence settles a question and when it does not |
 | 5 | Working the queue | Conjunctive rule checking, safe stop | Approve, reject with a reason, or refuse to act on bad evidence |
 
 62 points, reported as five profile sub-scores rather than one number, so the

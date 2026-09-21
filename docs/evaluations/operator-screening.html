@@ -705,9 +705,9 @@
   ];
 
   const INFERENCE_CHOICES = [
-    ["supported", "Supported"],
-    ["contradicted", "Contradicted"],
-    ["undetermined", "Cannot determine"]
+    ["supported", "Confirmed"],
+    ["contradicted", "Ruled out"],
+    ["undetermined", "Not enough info"]
   ];
 
   const ACTIONS = [
@@ -804,7 +804,7 @@
     { id: "lookup", n: 1, title: "Identity match", blurb: "A name is not an identity. Only the exact account is.", max: 10 },
     { id: "funds", n: 2, title: "The customer balance", blurb: "ADD CREDITS takes money out of it, WITHDRAW CREDITS puts money in. The figure moves as you work.", max: 12 },
     { id: "recon", n: 3, title: "Record reconciliation", blurb: "Two records of the same shift that should line up one to one.", max: 10 },
-    { id: "infer", n: 4, title: "What follows", blurb: "Some things the evidence proves. Some it only suggests.", max: 12 },
+    { id: "infer", n: 4, title: "What the evidence shows", blurb: "Some claims the evidence settles. Some it does not, and saying so is the right call.", max: 12 },
     { id: "queue", n: 5, title: "Working the queue", blurb: "Six requests. Decide, and say why.", max: 18 }
   ];
 
@@ -1252,7 +1252,7 @@
   /* ======================= section 4 — inference ======================= */
 
   function renderInfer(root) {
-    root.appendChild(el("p", { class: "doc", text: "Each case gives you what you know and one claim. Decide whether the evidence supports the claim, contradicts it, or leaves it undetermined. “Cannot determine” is a real answer, not a way out." }));
+    root.appendChild(el("p", { class: "doc", text: "Each case gives you what you know, then one claim about it. Say whether the evidence confirms the claim, rules it out, or does not go far enough either way. “Not enough info” is a real answer here, not a way of dodging the question — on the job it is the answer that stops you acting on a guess." }));
 
     INFERENCE.forEach(function (item, i) {
       const key = "I" + i;
@@ -1566,7 +1566,7 @@
       out.push(["flag", "Flagged " + plural(r.falseFlags, "reference", "references") + " that were not discrepancies."]);
     }
     if (r.score.infer === SECTIONS[3].max) {
-      out.push(["good", "Every inference judged correctly, including the cases where the evidence settles nothing."]);
+      out.push(["good", "Judged every claim correctly, including the ones the evidence does not settle."]);
     }
     if (!out.length) out.push(["", "No behavioural flags raised."]);
     return out;
