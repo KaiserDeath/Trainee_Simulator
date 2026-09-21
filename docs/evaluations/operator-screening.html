@@ -1115,7 +1115,7 @@
       critApproved: (refs, many) => "Approved " + refs + (many ? " — requests whose evidence did not permit any action." : " — a request whose evidence did not permit any action.") + " This invalidates the result on its own.",
       overCommitted: (n) => "Approved " + n + (n === 1 ? " ADD CREDITS request" : " ADD CREDITS requests") + " for more than the balance on screen. This is the habit that overcommits customer money.",
       blind: (n, total) => "Decided " + n + " of " + total + " requests without opening the evidence first.",
-      falseFlags: (n) => "Flagged " + n + (n === 1 ? " reference" : " references") + " that were not discrepancies.",
+      falseFlags: (n) => n === 1 ? "Flagged 1 reference that was not a discrepancy." : "Flagged " + n + " references that were not discrepancies.",
       alarm: (refs) => "Approved " + refs + ", where the evidence did not permit action. A correct answer elsewhere does not offset this.",
       saved: (f) => "Saved as " + f,
       downloaded: (f) => "Downloaded " + f,
@@ -1147,7 +1147,7 @@
       critApproved: (refs, many) => "Aprobó " + refs + (many ? " — solicitudes cuya evidencia no permitía actuar." : " — una solicitud cuya evidencia no permitía actuar.") + " Esto invalida el resultado por sí solo.",
       overCommitted: (n) => "Aprobó " + n + (n === 1 ? " solicitud ADD CREDITS" : " solicitudes ADD CREDITS") + " por más del saldo en pantalla. Ese es el hábito que compromete de más el dinero del cliente.",
       blind: (n, total) => "Decidió " + n + " de " + total + " solicitudes sin abrir antes la evidencia.",
-      falseFlags: (n) => "Marcó " + n + (n === 1 ? " referencia" : " referencias") + " que no eran discrepancias.",
+      falseFlags: (n) => n === 1 ? "Marcó 1 referencia que no era una discrepancia." : "Marcó " + n + " referencias que no eran discrepancias.",
       alarm: (refs) => "Aprobó " + refs + ", donde la evidencia no permitía actuar. Un acierto en otra parte no compensa esto.",
       saved: (f) => "Guardado como " + f,
       downloaded: (f) => "Descargado " + f,
@@ -1901,7 +1901,7 @@
       if (item.critical && ga === "approve") criticalFailures.push(item.ref);
       if (state.evidenceOpened["Q" + i] !== "before") blindDecisions += 1;
       detail.queue.push({
-        label: item.ref + " · " + item.summary,
+        label: item.ref + " · " + t(item.summary),
         given: t(nameFor(ACTIONS, ga)) + (gr ? " / " + gr : " / —"),
         correct: t(nameFor(ACTIONS, item.action)) + " / " + item.reason,
         ok: okA && okR, points: (okA ? 2 : 0) + (okR ? 1 : 0),
@@ -2052,7 +2052,7 @@
     const v = verdict(r);
     const sectionBlocks = SECTIONS.map(function (s) {
       const body = r.detail[s.id].map(function (d) {
-        return "<tr><td>" + esc(d.label) + "</td><td>" + esc(d.given) + "</td><td>" + esc(d.correct) +
+        return "<tr><td>" + esc(t(d.label)) + "</td><td>" + esc(t(d.given)) + "</td><td>" + esc(t(d.correct)) +
           "</td><td class=\"n\">" + (d.points > 0 ? "+" : "") + d.points + "</td></tr>";
       }).join("");
       return "<h3>" + esc(m("sectionScore", s.n, t(s.title), r.score[s.id], s.max)) + "</h3>" +
@@ -2066,7 +2066,7 @@
       return "<tr><td>" + esc(t(p.label)) + "</td><td class=\"n\">" + r.score[p.id] + "/" + s.max + "</td><td>" + esc(t(p.predicts)) + "</td></tr>";
     }).join("");
 
-    const obs = observations(r).map(function (o) { return "<li>" + esc(o[1]) + "</li>"; }).join("");
+    const obs = observations(r).map(function (o) { return "<li>" + esc(t(o[1])) + "</li>"; }).join("");
 
     const times = SECTIONS.map(function (s) {
       return "<tr><td>" + esc(t(s.title)) + "</td><td class=\"n\">" + mmss(state.sectionTime[s.id] || 0) + "</td></tr>";
