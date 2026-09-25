@@ -9,15 +9,22 @@ Supabase Auth/governance gate now exist.
 
 - Node.js 20.19.x or 22.12 and newer (the range required by the current Vite dependency).
 - npm with lockfile support.
-- Docker Desktop running when using the isolated local Supabase stack.
+- Docker Desktop running when using the isolated local Supabase stack. A machine
+  without Docker can use the locally installed PostgreSQL path instead; see
+  "Running without Docker" below.
 - Backend environment values in ignored `backend/.env.local`, `backend/.env`, or
   the process environment when starting the API:
   - `SUPABASE_URL`
   - `SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY`
   - `HUB_PUBLIC_BACKEND_URL`
-  - `CLIENT_URL`
+  - `CLIENT_URL` (**required in production**: the API refuses to start without
+    it, and it is then the only browser origin CORS and the Hub CSRF check
+    accept. Development also allows `http://localhost:5173` and
+    `http://127.0.0.1:5173`.)
   - `HUB_COOKIE_SECURE` (`0` only for local HTTP; production always uses secure cookies)
+  - `HUB_AUTH_MODE` and `HUB_LOCAL_AUTH_SECRET` only on the Docker-free path
+    below; `HUB_AUTH_MODE=local` is rejected under `NODE_ENV=production`
 - Frontend environment values:
   - `VITE_API_URL`
   - `VITE_TREZ_HUB_ENABLED=true` to expose the Hub route
@@ -69,7 +76,12 @@ Local services include:
 - Supabase API: `http://127.0.0.1:54321`
 - Supabase Studio: `http://127.0.0.1:54323`
 - Express API after startup: `http://localhost:8080`
-- Vite frontend after startup: `http://localhost:5173`
+- Operator simulator after startup: `http://localhost:5173/sim`
+- Training Hub after startup: `http://localhost:5173/hub`
+
+The simulator is served under `/sim`. Legacy root URLs such as `/`, `/trainer`
+and `/games/...` are rewritten under that prefix, preserving query and hash, so
+older links keep working.
 
 Use two terminals from the repository root:
 
@@ -239,6 +251,86 @@ Inspect or stop the local stack with `npm run local:status` and
 `npm run local:stop`. Local SMTP capture, URLs, cookie security override, and the
 temporary bootstrap identity are development tooling. The approved product
 identity and governance decisions are recorded in ADR 0001.
+
+## Running without Docker
+
+The isolated stack above needs Docker. A machine without it can run the same
+application against a locally installed PostgreSQL, using PostgREST for data
+and an in-process identity provider instead of Supabase Auth.
+
+Additional prerequisites:
+
+- PostgreSQL installed locally, with `psql` on `PATH` or `PSQL_PATH` set.
+- PostgREST installed and on `PATH`. It is not downloaded by these scripts.
+
+Provision the database. This creates it, creates the `anon`, `authenticated`
+and `service_role` roles the migration grants expect, creates the minimal
+`auth.users` table that `hub_identities.auth_user_id` references, and applies
+every migration in `supabase/migrations` in filename order:
+
+```bash
+npm run setup:local:db -- \
+  --target 'postgresql://postgres@127.0.0.1:5432/trez_local' \
+  --confirm-local-overwrite --with-seed
+```
+
+The target must be loopback, must not carry a password in the URL, and cannot
+be a shared database name such as `postgres`. Recreation is destructive and
+gated behind `--confirm-local-overwrite`.
+
+Generate the PostgREST configuration, the `anon` and `service_role` keys, and
+the environment files:
+
+```bash
+npm run setup:local:api -- \
+  --database 'postgresql://postgres:PASSWORD@127.0.0.1:5432/trez_local'
+```
+
+The keys are HS256 JWTs signed with a generated `jwt-secret`, the same
+mechanism hosted Supabase uses: PostgREST validates the signature and adopts
+the role named in the payload. The generator refuses to overwrite an existing
+`backend/.env.local` or `frontend/.env.local` without `--force`; use
+`--print-env` to inspect the values without writing anything. The generated
+`local/postgrest.conf` holds the `jwt-secret` and the database password, and
+`local/` is ignored.
+
+Then run four processes:
+
+```bash
+postgrest local/postgrest.conf
+npm run local:gateway
+npm run dev:backend
+npm run dev:frontend
+```
+
+`supabase-js` requests `<SUPABASE_URL>/rest/v1/<table>` while PostgREST serves
+`<table>` at its root. Hosted Supabase puts Kong in between to strip that
+prefix; `npm run local:gateway` does only that job, and answers `GET /health`
+without needing PostgREST. `/auth/v1` returns 501 by design.
+
+Hub sign-in uses `HUB_AUTH_MODE=local`, written by the generator. Passwords are
+hashed with scrypt in `auth.users` and sessions are HMAC-signed tokens. Because
+those tokens are stateless, signing out cannot revoke an already-issued access
+token before it expires, so the provider is for development only: the API
+refuses to start if `HUB_AUTH_MODE=local` is set under `NODE_ENV=production`.
+
+What this path does not cover:
+
+- `npm run test:e2e:local`, which requires the Supabase stack and therefore Docker.
+- `npm run local:start`, `local:reset`, `local:status` and `local:bootstrap:admin`,
+  which all drive the Supabase CLI.
+
+The database integration gate does run here, because it uses `psql` directly.
+Point it at a disposable database:
+
+```bash
+TREZ_DISPOSABLE_DATABASE_URL='postgresql://postgres:PASSWORD@127.0.0.1:5432/trez_disposable' \
+TREZ_DISPOSABLE_DATABASE_CONFIRMATION='DISPOSABLE_TEST_DATABASE:127.0.0.1:5432/trez_disposable' \
+npm run test:database:integration
+```
+
+The runner reads the password from that URL and overrides `PGPASSWORD`, so the
+password must be embedded in the connection string.
 
 ## Reproducible gates
 

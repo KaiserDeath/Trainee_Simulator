@@ -54,7 +54,7 @@ test('real local Add Credits lifecycle, queue, trainer reads, and cleanup', asyn
     }
   });
 
-  await page.goto('/');
+  await page.goto('/sim');
   await page.getByLabel('First Name')
     .fill(E2E_TRAINEE_PREFIX);
   await page.getByLabel('Last Name')
@@ -132,7 +132,7 @@ test('real local Add Credits lifecycle, queue, trainer reads, and cleanup', asyn
   );
 
   await page.goto(
-    `/games/orion-stars/${sessionId}`
+    `/sim/games/orion-stars/${sessionId}`
   );
   await expect(page).toHaveTitle('Orion Stars');
   await page.getByPlaceholder('ID or Account')
@@ -275,7 +275,7 @@ test('real local Add Credits lifecycle, queue, trainer reads, and cleanup', asyn
     .getByRole('button', { name: 'OK' })
     .click();
 
-  await page.goto('/');
+  await page.goto('/sim');
   await page.getByRole('button', {
     name: 'Requests (2)'
   }).click();
@@ -579,7 +579,7 @@ test('real local Add Credits lifecycle, queue, trainer reads, and cleanup', asyn
     }
   });
 
-  await trainerPage.goto('/trainer');
+  await trainerPage.goto('/sim/trainer');
   await expect(trainerPage.getByRole(
     'heading',
     { name: 'Trainer Command' }
