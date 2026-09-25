@@ -595,7 +595,7 @@ export default function GoldenDragonPanel({
   }
 
   return (
-    <div className="min-h-screen bg-[#e8e8e8] text-sm text-black">
+    <div className="min-h-screen bg-[#e8e8e8] text-sm text-black [color-scheme:light]">
       <header className="flex h-11 items-center justify-between bg-[#173954] px-5 text-white">
         <div className="text-xl">
           Golden Dragon Pos

@@ -359,7 +359,7 @@ export default function VblinkPanel({ session, sessionId }) {
 
   // =================== UI ===================
   return (
-    <div className="h-screen bg-[#f4f6fb] flex flex-col overflow-hidden" data-testid="vblink-panel">
+    <div className="h-screen bg-[#f4f6fb] text-slate-800 [color-scheme:light] flex flex-col overflow-hidden" data-testid="vblink-panel">
       <Header now={now} view={view} />
 
       <div className="flex flex-1 overflow-hidden">
