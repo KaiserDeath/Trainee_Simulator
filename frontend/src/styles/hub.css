@@ -1,4 +1,5 @@
-:root {
+/* hub.css ships in the main bundle, so a bare :root rule would darken every page. */
+:root:has(.hub-app-shell, .hub-state-page) {
   color-scheme: dark;
 }
 
