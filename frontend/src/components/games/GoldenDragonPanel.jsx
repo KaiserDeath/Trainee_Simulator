@@ -424,11 +424,6 @@ export default function GoldenDragonPanel({
 
     if (createdAccount) {
       setSelected(createdAccount);
-      setReportCustomerId(
-        getGoldenDragonCustomerId(
-          createdAccount
-        )
-      );
     }
   };
 
@@ -868,14 +863,9 @@ export default function GoldenDragonPanel({
                     >
                       <td className="py-2">
                         <button
-                          onClick={() => {
-                            setSelected(account);
-                            setReportCustomerId(
-                              getGoldenDragonCustomerId(
-                                account
-                              )
-                            );
-                          }}
+                          onClick={() =>
+                            setSelected(account)
+                          }
                           className="rounded bg-[#0084bd] px-4 py-2 font-bold text-white"
                         >
                           Select
