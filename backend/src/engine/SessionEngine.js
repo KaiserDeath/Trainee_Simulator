@@ -267,6 +267,9 @@ async function buildValidationRequirements({
         operation,
         requestData: submitted
       });
+    const isGoldenDragon =
+      (operation.game_account?.game ||
+        operation.game) === 'Golden Dragon';
 
     checks.push(
       buildRequirement({
@@ -290,11 +293,15 @@ async function buildValidationRequirements({
         ok: Boolean(submittedPassword)
       }),
       buildRequirement({
-        label: 'Account created',
-        expected: 'Created',
+        label: isGoldenDragon
+          ? 'Mobile ID and Mobile Password'
+          : 'Account created',
+        expected: isGoldenDragon
+          ? 'Match'
+          : 'Created',
         sent: created
-          ? 'Created'
-          : 'Missing',
+          ? (isGoldenDragon ? 'Match' : 'Created')
+          : (isGoldenDragon ? 'No match' : 'Missing'),
         ok: created
       })
     );
