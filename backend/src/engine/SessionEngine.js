@@ -15,6 +15,7 @@ import {
   hasMatchingGameAction
 } from '../services/gameSimulationService.js';
 import {
+  buildCreatedAccountRequirement,
   buildReservationRequirement,
   buildSecretMatchRequirement,
   sanitizeRequestEvidence,
@@ -267,9 +268,6 @@ async function buildValidationRequirements({
         operation,
         requestData: submitted
       });
-    const isGoldenDragon =
-      (operation.game_account?.game ||
-        operation.game) === 'Golden Dragon';
 
     checks.push(
       buildRequirement({
@@ -292,17 +290,9 @@ async function buildValidationRequirements({
           : 'Missing',
         ok: Boolean(submittedPassword)
       }),
-      buildRequirement({
-        label: isGoldenDragon
-          ? 'Mobile ID and Mobile Password'
-          : 'Account created',
-        expected: isGoldenDragon
-          ? 'Match'
-          : 'Created',
-        sent: created
-          ? (isGoldenDragon ? 'Match' : 'Created')
-          : (isGoldenDragon ? 'No match' : 'Missing'),
-        ok: created
+      buildCreatedAccountRequirement({
+        operation,
+        created
       })
     );
   }

@@ -1,3 +1,6 @@
+import { GOLDEN_DRAGON_GAME }
+  from './createAccountGrading.js';
+
 export function sanitizeRequestEvidence(
   requestData = {}
 ) {
@@ -73,6 +76,30 @@ export function buildReservationRequirement(
     expected,
     sent,
     ok: expected !== 'UNKNOWN' && sent === expected
+  };
+}
+
+export function buildCreatedAccountRequirement({
+  operation,
+  created
+}) {
+  if (
+    (operation?.game_account?.game ||
+      operation?.game) === GOLDEN_DRAGON_GAME
+  ) {
+    return {
+      label: 'Mobile ID and Mobile Password',
+      expected: 'Match',
+      sent: created ? 'Match' : 'No match',
+      ok: Boolean(created)
+    };
+  }
+
+  return {
+    label: 'Account created',
+    expected: 'Created',
+    sent: created ? 'Created' : 'Missing',
+    ok: Boolean(created)
   };
 }
 

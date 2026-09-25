@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildCreatedAccountRequirement,
   buildReservationRequirement,
   buildSecretMatchRequirement,
   sanitizeRequestEvidence,
@@ -88,4 +89,74 @@ test('new Add Credits operations expose committed or released reservation eviden
     }),
     null
   );
+});
+
+test('Golden Dragon create account row names the Mobile ID and password match', () => {
+  const operation = {
+    type: 'CREATE ACCOUNT',
+    game: 'Golden Dragon',
+    game_account: null
+  };
+
+  assert.deepEqual(
+    buildCreatedAccountRequirement({ operation, created: true }),
+    {
+      label: 'Mobile ID and Mobile Password',
+      expected: 'Match',
+      sent: 'Match',
+      ok: true
+    }
+  );
+  assert.deepEqual(
+    buildCreatedAccountRequirement({ operation, created: false }),
+    {
+      label: 'Mobile ID and Mobile Password',
+      expected: 'Match',
+      sent: 'No match',
+      ok: false
+    }
+  );
+});
+
+test('Golden Dragon row follows the linked game account over the request game', () => {
+  assert.equal(
+    buildCreatedAccountRequirement({
+      operation: {
+        type: 'CREATE ACCOUNT',
+        game: 'Orion Stars',
+        game_account: { game: 'Golden Dragon' }
+      },
+      created: true
+    }).label,
+    'Mobile ID and Mobile Password'
+  );
+});
+
+test('other games keep the account created row', () => {
+  for (const game of ['Orion Stars', 'Vblink']) {
+    const operation = {
+      type: 'CREATE ACCOUNT',
+      game,
+      game_account: null
+    };
+
+    assert.deepEqual(
+      buildCreatedAccountRequirement({ operation, created: true }),
+      {
+        label: 'Account created',
+        expected: 'Created',
+        sent: 'Created',
+        ok: true
+      }
+    );
+    assert.deepEqual(
+      buildCreatedAccountRequirement({ operation, created: false }),
+      {
+        label: 'Account created',
+        expected: 'Created',
+        sent: 'Missing',
+        ok: false
+      }
+    );
+  }
 });
