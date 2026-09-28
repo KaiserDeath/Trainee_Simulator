@@ -44,8 +44,8 @@ test('prototype add-credits decision currently expects approval', () => {
   );
 });
 
-test('prototype withdrawal decision currently uses the request-time balance snapshot', () => {
-  const sufficientAtRequest = operation('WITHDRAW CREDITS', {
+test('withdrawal must be cancelled when winnings drop below the amount after the request', () => {
+  const reducedAfterRequest = operation('WITHDRAW CREDITS', {
     amount: 80,
     game_balance_at_request: 100,
     game_account: {
@@ -63,8 +63,12 @@ test('prototype withdrawal decision currently uses the request-time balance snap
   });
 
   assert.equal(
-    evaluateMovementOperation(sufficientAtRequest, 'APPROVED'),
+    evaluateMovementOperation(reducedAfterRequest, 'CANCELLED'),
     true
+  );
+  assert.equal(
+    evaluateMovementOperation(reducedAfterRequest, 'APPROVED'),
+    false
   );
   assert.equal(
     evaluateMovementOperation(insufficientAtRequest, 'CANCELLED'),

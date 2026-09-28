@@ -67,10 +67,27 @@ export function evaluateMovementOperation(
     operation.type ===
     'WITHDRAW CREDITS'
   ) {
+    // Winnings can drop after the request (e.g. the customer keeps
+    // playing Golden Dragon), so the trainee must cancel when the live
+    // balance no longer covers the amount, even if the snapshot did.
+    const liveBalance = Number(
+      operation.game_account?.balance
+    );
+    const availableBalance =
+      Number.isFinite(liveBalance)
+        ? Math.min(
+            getGameBalanceAtRequest(
+              operation
+            ),
+            liveBalance
+          )
+        : getGameBalanceAtRequest(
+            operation
+          );
+
     const shouldApprove =
-      getGameBalanceAtRequest(
-        operation
-      ) >= Number(operation.amount);
+      availableBalance >=
+      Number(operation.amount);
 
     return (
       action ===
