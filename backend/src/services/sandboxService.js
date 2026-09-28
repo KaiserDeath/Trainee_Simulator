@@ -135,6 +135,53 @@ function createMovementHistory({
   };
 }
 
+// The game backoffice is a separate system that saw the same approved
+// movement, so a seeded Backend movement on a seeded game account also
+// appears in that game's history for the trainee to compare against.
+export function buildMirroredGameHistory(
+  movement,
+  gameAccounts = []
+) {
+  const details = JSON.parse(
+    movement.description
+  );
+
+  const account = gameAccounts.find(
+    item =>
+      item.customer_id ===
+        movement.customer_id &&
+      item.game === details.game &&
+      item.game_username ===
+        details.playerId
+  );
+
+  if (!account) {
+    return null;
+  }
+
+  return {
+    session_id: account.session_id,
+    customer_id: account.customer_id,
+    game_account_id: account.id,
+    game: account.game,
+    game_username:
+      account.game_username,
+    type: `GAME ${movement.type}`,
+    amount: movement.amount,
+    description: JSON.stringify({
+      kind: 'GAME_HISTORY',
+      game: account.game,
+      mobileId:
+        account.game_username,
+      action: movement.type,
+      amount: movement.amount,
+      executedAt: details.acceptedAt,
+      manager: details.manager
+    }),
+    created_at: movement.created_at
+  };
+}
+
 export async function createSandboxSession(traineeName) {
   // 1. Create session
   const { data: session, error: sessionError } = await supabase
@@ -545,9 +592,13 @@ export async function createSandboxSession(traineeName) {
     );
   }
 
-  const { error: gameError } = await supabase
+  const {
+    data: createdGameAccounts,
+    error: gameError
+  } = await supabase
     .from('sandbox_game_accounts')
-    .insert(gameAccounts);
+    .insert(gameAccounts)
+    .select();
 
   if (gameError) {
     throw gameError;
@@ -582,6 +633,25 @@ export async function createSandboxSession(traineeName) {
 
   if (historyError) {
     throw historyError;
+  }
+
+  // 6. Mirror those movements into each game's own history
+  const gameHistory = history
+    .map(movement =>
+      buildMirroredGameHistory(
+        movement,
+        createdGameAccounts
+      )
+    )
+    .filter(Boolean);
+
+  const { error: gameHistoryError } =
+    await supabase
+    .from('sandbox_game_history')
+    .insert(gameHistory);
+
+  if (gameHistoryError) {
+    throw gameHistoryError;
   }
 
   return session;
