@@ -745,7 +745,6 @@ export default function OrionStarsPanel({
                           <th className="px-3 py-2">Game</th>
                           <th className="px-3 py-2">Date</th>
                           <th className="px-3 py-2">Manager</th>
-                          <th className="px-3 py-2">Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -756,11 +755,10 @@ export default function OrionStarsPanel({
                             <td className="px-3 py-2">{item.game}</td>
                             <td className="px-3 py-2">{formatDateTime(item.acceptedAt || item.created_at)}</td>
                             <td className="px-3 py-2">{item.manager}</td>
-                            <td className="px-3 py-2"><span className="rounded-full border border-green-500 px-3 py-1 font-semibold text-green-600">{item.status}</span></td>
                           </tr>
                         ))}
                         {orionHistory.length === 0 && (
-                          <tr><td colSpan="6" className="px-3 py-6 text-center text-slate-500">No transaction records available</td></tr>
+                          <tr><td colSpan="5" className="px-3 py-6 text-center text-slate-500">No transaction records available</td></tr>
                         )}
                       </tbody>
                     </table>

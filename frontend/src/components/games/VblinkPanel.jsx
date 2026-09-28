@@ -1129,13 +1129,12 @@ function ScoreLogModal({ selected, log, close }) {
               <th className="px-4 py-3 font-medium">Amount</th>
               <th className="px-4 py-3 font-medium">Date</th>
               <th className="px-4 py-3 font-medium">Manager</th>
-              <th className="px-4 py-3 font-medium">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {log.length === 0 && (
               <tr>
-                <td colSpan="5" className="px-4 py-8 text-center text-slate-500">
+                <td colSpan="4" className="px-4 py-8 text-center text-slate-500">
                   No transaction records
                 </td>
               </tr>
@@ -1146,11 +1145,6 @@ function ScoreLogModal({ selected, log, close }) {
                 <td className="px-4 py-3 font-semibold text-slate-800">{item.amount ?? '-'}</td>
                 <td className="px-4 py-3">{formatDateTime(item.acceptedAt || item.created_at)}</td>
                 <td className="px-4 py-3">{item.manager}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full border border-green-500 px-3 py-1 text-xs font-semibold text-green-600">
-                    {item.status}
-                  </span>
-                </td>
               </tr>
             ))}
           </tbody>

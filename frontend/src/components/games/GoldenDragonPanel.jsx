@@ -1537,9 +1537,6 @@ function GoldenDragonModal({
                   <th className="px-3 py-2">
                     Manager
                   </th>
-                  <th className="px-3 py-2">
-                    Status
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -1562,9 +1559,6 @@ function GoldenDragonModal({
                     </td>
                     <td className="px-3 py-2">
                       {item.manager}
-                    </td>
-                    <td className="px-3 py-2">
-                      {item.status}
                     </td>
                   </tr>
                 ))}
