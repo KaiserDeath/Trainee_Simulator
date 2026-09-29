@@ -565,7 +565,7 @@ export default function HubPage() {
               <small>TRAINER and RRHH create Postulante accounts; ADMIN creates TRAINER accounts. Email addresses are not used to sign in.</small>
             </form>
           )}
-          <a className="hub-secondary-link" href="/">Return to Operator Simulator</a>
+          <a className="hub-secondary-link" href="/sim">Return to Operator Simulator</a>
         </div>
       </main>
     );
@@ -709,7 +709,7 @@ export default function HubPage() {
 
       <footer className="hub-footer">
         <span>{staffCopy.footerStatus}</span>
-        <a href="/">{staffCopy.simulatorLink}</a>
+        <a href="/sim">{staffCopy.simulatorLink}</a>
       </footer>
     </div>
   );

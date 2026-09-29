@@ -90,7 +90,7 @@ test('new Orion Stars tab keeps the source screen branding and shows the source-
     });
   });
 
-  await page.goto(`/games/orion-stars/${session.id}`);
+  await page.goto(`/sim/games/orion-stars/${session.id}`);
 
   await expect(page).toHaveTitle('Orion Stars');
   await expect(page.getByRole('heading', { name: /OrionStars/ })).toBeVisible();
@@ -220,7 +220,7 @@ test('Orion reserve and player credit update immediately across consecutive rech
     });
   });
 
-  await page.goto(`/games/orion-stars/${session.id}`);
+  await page.goto(`/sim/games/orion-stars/${session.id}`);
   const resultRow = page.locator('.orion-results-table tbody tr').first();
   const updateButton = resultRow.getByRole('button', { name: 'Update' });
   await expect(resultRow.getByRole('cell').nth(2)).toHaveText('orion-player-one');
@@ -307,7 +307,7 @@ test('populated Orion results keep every Update action completely visible', asyn
     body: JSON.stringify(accounts)
   }));
 
-  await page.goto(`/games/orion-stars/${session.id}`);
+  await page.goto(`/sim/games/orion-stars/${session.id}`);
   const updateButtons = page.getByRole('button', { name: 'Update', exact: true });
   await expect(updateButtons).toHaveCount(7);
 
@@ -371,7 +371,7 @@ test('Backend pencil and Confirm submit the created Orion account information as
     });
   });
 
-  await page.goto('/');
+  await page.goto('/sim');
   await page.getByRole('button', { name: /Requests \(1\)/ }).click();
   await page.getByTestId('operation-orion-create-operation').getByRole('button').click();
   await page.getByLabel('New Game ID').fill('created-orion-id');

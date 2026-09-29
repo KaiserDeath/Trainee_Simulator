@@ -10,11 +10,11 @@ export default function GamesLauncher({
   };
 
   const orionUrl =
-    `/games/orion-stars/${session.id}`;
+    `/sim/games/orion-stars/${session.id}`;
   const goldenDragonUrl =
-    `/games/golden-dragon/${session.id}`;
+    `/sim/games/golden-dragon/${session.id}`;
   const vblinkUrl =
-    `/games/vblink/${session.id}`;
+    `/sim/games/vblink/${session.id}`;
 
   return (
     <div className="bg-white rounded-2xl shadow p-5">

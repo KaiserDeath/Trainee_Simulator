@@ -690,7 +690,7 @@ frontend/src/
 1. `SessionStartPage` → creates session → `TraineeDashboard`
 2. **Operations** — Movements and Requests tabs process the live queue
 3. **Customer** — search, header, movement history, game logs
-4. **Games** — opens simulated platform UIs (`/games/orion-stars/:sessionId`, etc.)
+4. **Games** — opens simulated platform UIs (`/sim/games/orion-stars/:sessionId`, etc.)
 
 ---
 
@@ -816,6 +816,14 @@ Environment variables (typical):
 
 - Backend: `PORT`, `CLIENT_URL`, Supabase URL and service key
 - Frontend: `VITE_API_URL` pointing at the Express API base
+
+`CLIENT_URL` is **required in production**: the API refuses to start without it,
+and it is then the only browser origin allowed by CORS and the Hub CSRF check.
+Development additionally allows `http://localhost:5173` and
+`http://127.0.0.1:5173`; production does not.
+
+Frontend routes live under two prefixes on that single origin: `/sim` for the
+operator simulator and `/hub` for the Training Hub.
 
 ---
 

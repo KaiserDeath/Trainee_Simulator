@@ -15,7 +15,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("renders the current operator-training landing shell without a backend", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/sim");
 
   await expect(page.getByRole("heading", { name: "Simulador DOS" })).toBeVisible();
   await expect(page.getByText("Backoffice Operator Training")).toBeVisible();
@@ -25,7 +25,7 @@ test("renders the current operator-training landing shell without a backend", as
 });
 
 test("validates and confirms an operator name entirely in the browser", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/sim");
 
   await page.getByRole("button", { name: "Continue →" }).click();
   await expect(page.getByText("Please enter your first and last name.")).toBeVisible();

@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
-import socket from './sockets/socket';
+import { lazy, Suspense, useState, useEffect } from "react";
 
 import SessionStartPage from "./pages/SessionStartPage";
-import TraineeDashboard from "./pages/TraineeDashboard";   // renamed from TrainerPage
-import TrainerDashboard from "./pages/DashboardPage";     // renamed alias for clarity
-import OrionStarsPanel from "./components/games/OrionStarsPanel";
-import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
-import VblinkPanel from "./components/games/VblinkPanel";
-import HubPage from "./pages/HubPage";
+import { SIM_BASE, isHubPath, syncLocation, toSimulatorPath } from "./routes";
+
+const TraineeDashboard = lazy(() => import('./pages/TraineeDashboard'));
+const TrainerDashboard = lazy(() => import('./pages/DashboardPage'));
+const OrionStarsPanel = lazy(() => import('./components/games/OrionStarsPanel'));
+const GoldenDragonPanel = lazy(() => import('./components/games/GoldenDragonPanel'));
+const VblinkPanel = lazy(() => import('./components/games/VblinkPanel'));
+const HubPage = lazy(() => import('./pages/HubPage'));
 
 const SESSION_KEY = "casino_trainer_session";
 
@@ -15,23 +16,25 @@ const SESSION_KEY = "casino_trainer_session";
 const DEV_TRAINER_PASSWORD = "superctrl2023";
 
 function getDocumentTitle(path) {
-  if (/^\/games\/orion-stars\/[^/]+$/.test(path)) {
-    return 'Orion Stars';
-  }
-
-  if (/^\/games\/vblink\/[^/]+$/.test(path)) {
-    return 'Vblink';
-  }
-
-  if (/^\/games\/golden-dragon\/[^/]+$/.test(path)) {
-    return 'Golden Dragon';
-  }
-
-  if (path === '/hub' || path.startsWith('/hub/')) {
+  if (isHubPath(path)) {
     return 'Trez Training Hub';
   }
 
-  if (path === '/trainer') {
+  const simPath = toSimulatorPath(path) ?? path;
+
+  if (/^\/games\/orion-stars\/[^/]+$/.test(simPath)) {
+    return 'Orion Stars';
+  }
+
+  if (/^\/games\/vblink\/[^/]+$/.test(simPath)) {
+    return 'Vblink';
+  }
+
+  if (/^\/games\/golden-dragon\/[^/]+$/.test(simPath)) {
+    return 'Golden Dragon';
+  }
+
+  if (simPath === '/trainer') {
     return 'Trez Trainer Dashboard';
   }
 
@@ -40,9 +43,11 @@ function getDocumentTitle(path) {
 
 export default function App() {
   // ⚡ Keep track of the path in a state variable so React re-renders when it shifts
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState(syncLocation);
   const hubEnabled = import.meta.env.VITE_TREZ_HUB_ENABLED === 'true';
-  const isHubRoute = hubEnabled && (currentPath === '/hub' || currentPath.startsWith('/hub/'));
+  const onHubPath = isHubPath(currentPath);
+  const isHubRoute = hubEnabled && onHubPath;
+  const simPath = toSimulatorPath(currentPath);
 
   // Restore session from localStorage on first load
   const [session, setSession] = useState(() => {
@@ -57,16 +62,29 @@ export default function App() {
   useEffect(() => {
     if (isHubRoute) return undefined;
 
+    let active = true;
+    let connectedSocket;
     const handleConnect = () => {
-      console.log('Socket connected:', socket.id);
+      console.log('Socket connected:', connectedSocket?.id);
     };
 
-    socket.connect();
-    socket.on('connect', handleConnect);
+    const connectSocket = async () => {
+      const { default: socket } = await import('./sockets/socket');
+      if (!active) return;
+
+      connectedSocket = socket;
+      connectedSocket.connect();
+      connectedSocket.on('connect', handleConnect);
+    };
+
+    connectSocket();
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.disconnect();
+      active = false;
+      if (connectedSocket) {
+        connectedSocket.off('connect', handleConnect);
+        connectedSocket.disconnect();
+      }
     };
   }, [isHubRoute]);
 
@@ -77,7 +95,7 @@ export default function App() {
   // Listen to popstate events (when browser back/forward buttons or pushState triggers occur)
   useEffect(() => {
     const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname);
+      setCurrentPath(syncLocation());
     };
 
     window.addEventListener('popstate', handleLocationChange);
@@ -113,16 +131,17 @@ export default function App() {
   };
 
   // ── Route matching ──────────────────────────────────────────────────────────
-  const gameMatch = currentPath.match(/^\/games\/orion-stars\/([^/]+)$/);
-  const goldenDragonMatch = currentPath.match(/^\/games\/golden-dragon\/([^/]+)$/);
-  const vblinkMatch = currentPath.match(/^\/games\/vblink\/([^/]+)$/);
-  const isTrainer = currentPath === "/trainer";
+  const routePath = simPath ?? '/';
+  const gameMatch = routePath.match(/^\/games\/orion-stars\/([^/]+)$/);
+  const goldenDragonMatch = routePath.match(/^\/games\/golden-dragon\/([^/]+)$/);
+  const vblinkMatch = routePath.match(/^\/games\/vblink\/([^/]+)$/);
+  const isTrainer = routePath === "/trainer";
 
-  if (isHubRoute) return <HubPage />;
+  if (isHubRoute) return <Suspense fallback={<p>Loading Trez Training Hub...</p>}><HubPage /></Suspense>;
 
-  if (gameMatch) return <OrionStarsPanel session={session} sessionId={gameMatch[1]} />;
-  if (goldenDragonMatch) return <GoldenDragonPanel session={session} sessionId={goldenDragonMatch[1]} />;
-  if (vblinkMatch) return <VblinkPanel session={session} sessionId={vblinkMatch[1]} />;
+  if (gameMatch) return <Suspense fallback={<p>Loading Orion Stars...</p>}><OrionStarsPanel session={session} sessionId={gameMatch[1]} /></Suspense>;
+  if (goldenDragonMatch) return <Suspense fallback={<p>Loading Golden Dragon...</p>}><GoldenDragonPanel session={session} sessionId={goldenDragonMatch[1]} /></Suspense>;
+  if (vblinkMatch) return <Suspense fallback={<p>Loading Vblink...</p>}><VblinkPanel session={session} sessionId={vblinkMatch[1]} /></Suspense>;
   
   // 🔒 Secure the trainer view utilizing your protection layer
   if (isTrainer) {
@@ -139,18 +158,18 @@ export default function App() {
       } else {
         // Wrong password or canceled! Boot them back to the landing screen safely
         alert("❌ Unauthorized Access Denied.");
-        window.history.replaceState({}, '', '/');
-        setTimeout(() => setCurrentPath('/'), 0);
+        window.history.replaceState({}, '', SIM_BASE);
+        setTimeout(() => setCurrentPath(SIM_BASE), 0);
         return <SessionStartPage onSessionCreated={handleSessionCreated} />;
       }
     }
     
-    return <TrainerDashboard />;
+    return <Suspense fallback={<p>Loading trainer dashboard...</p>}><TrainerDashboard /></Suspense>;
   }
 
   if (!session) {
     return <SessionStartPage onSessionCreated={handleSessionCreated} />;
   }
 
-  return <TraineeDashboard session={session} onSessionEnded={handleSessionEnded} />;
+  return <Suspense fallback={<p>Loading simulator...</p>}><TraineeDashboard session={session} onSessionEnded={handleSessionEnded} /></Suspense>;
 }
