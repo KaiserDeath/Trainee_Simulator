@@ -184,6 +184,73 @@ function normalizeCustomerHistoryItem(item, gameAccounts = []) {
   };
 }
 
+// A credit request still in the queue already shows in the customer's
+// movements as Pending, so the trainee can check it against the game
+// history (e.g. when the system already loaded it into the game).
+export function buildPendingMovementRow(operation) {
+  const operationCode =
+    String(operation.id).slice(0, 8).toUpperCase();
+  const gameUsername =
+    operation.game_account?.game_username || '—';
+
+  return {
+    id: operation.id,
+    session_id: operation.session_id,
+    customer_id: operation.customer_id,
+    type: operation.type,
+    amount: operation.amount,
+    description: '',
+    created_at: operation.created_at,
+    operation_code: operationCode,
+    operationCode: operationCode,
+    game: operation.game_account?.game || '—',
+    game_username: gameUsername,
+    gameUsername: gameUsername,
+    mobile_id: gameUsername,
+    mobileId: gameUsername,
+    manager: '—',
+    processed_by: '—',
+    processedBy: '—',
+    status: 'PENDING',
+    requested_at: operation.created_at,
+    requestedAt: operation.created_at,
+    processed_at: null,
+    processedAt: null,
+    approved_at: null,
+    approvedAt: null
+  };
+}
+
+async function getPendingCustomerMovements({
+  sessionId,
+  customerId
+}) {
+  const { data, error } = await supabase
+    .from('sandbox_operations')
+    .select(`
+      id,
+      session_id,
+      customer_id,
+      type,
+      amount,
+      created_at,
+      game_account:sandbox_game_accounts(
+        game,
+        game_username
+      )
+    `)
+    .eq('session_id', sessionId)
+    .eq('customer_id', customerId)
+    .eq('status', 'PENDING')
+    .in('type', ['ADD CREDITS', 'WITHDRAW CREDITS']);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data || []).map(buildPendingMovementRow);
+}
+
 export async function getCustomerHistory({
   sessionId,
   customerId
@@ -212,11 +279,23 @@ export async function getCustomerHistory({
     .eq('session_id', sessionId)
     .eq('customer_id', customerId);
 
-  return filterBackendHistoryRows(data)
+  const settled = filterBackendHistoryRows(data)
     .map(item =>
       normalizeCustomerHistoryItem(
         item,
         gameAccounts || []
       )
     );
+
+  const pending =
+    await getPendingCustomerMovements({
+      sessionId,
+      customerId
+    });
+
+  return [...pending, ...settled].sort(
+    (a, b) =>
+      new Date(b.created_at) -
+      new Date(a.created_at)
+  );
 }

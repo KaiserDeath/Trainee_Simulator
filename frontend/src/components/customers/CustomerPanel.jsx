@@ -8,6 +8,10 @@ function formatDate(iso) {
   return new Date(iso).toISOString().replace('T', ' ').slice(0, 19);
 }
 
+function isPending(item) {
+  return String(item.status || '').toUpperCase() === 'PENDING';
+}
+
 function OperationBadge({ type, amount }) {
   const isAdd = type === 'ADD CREDITS' || type === 'ADD_CREDITS';
   const isWithdraw = type === 'WITHDRAW CREDITS' || type === 'WITHDRAW_CREDITS';
@@ -170,7 +174,7 @@ function HistoryView({ customer, session, onBack }) {
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-500">
                         <div><span className="font-medium text-slate-400">R: </span>{formatDate(item.created_at || item.requested_at)}</div>
-                        <div><span className="font-medium text-slate-400">A: </span>{formatDate(item.processed_at || item.approved_at || item.created_at)}</div>
+                        <div><span className="font-medium text-slate-400">A: </span>{isPending(item) ? '—' : formatDate(item.processed_at || item.approved_at || item.created_at)}</div>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{item.processed_by || item.manager || 'Bot'}</td>
                       <td className="px-4 py-3"><StatusBadge status={item.status || 'APPROVED'} /></td>
