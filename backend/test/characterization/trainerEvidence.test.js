@@ -132,7 +132,7 @@ test('Golden Dragon row follows the linked game account over the request game', 
   );
 });
 
-test('other games keep the account created row', () => {
+test('other games show a Game ID and password row', () => {
   for (const game of ['Orion Stars', 'Vblink']) {
     const operation = {
       type: 'CREATE ACCOUNT',
@@ -143,18 +143,18 @@ test('other games keep the account created row', () => {
     assert.deepEqual(
       buildCreatedAccountRequirement({ operation, created: true }),
       {
-        label: 'Account created',
-        expected: 'Created',
-        sent: 'Created',
+        label: 'Game ID and password',
+        expected: 'Match',
+        sent: 'Match',
         ok: true
       }
     );
     assert.deepEqual(
       buildCreatedAccountRequirement({ operation, created: false }),
       {
-        label: 'Account created',
-        expected: 'Created',
-        sent: 'Missing',
+        label: 'Game ID and password',
+        expected: 'Match',
+        sent: 'No match',
         ok: false
       }
     );

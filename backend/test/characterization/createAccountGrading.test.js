@@ -209,29 +209,67 @@ test('any game fails without a Game ID', async () => {
   }
 });
 
-test('other games still require the account to belong to the requested customer', async () => {
-  const orionAccount = {
+function orionAccount(overrides = {}) {
+  return {
     id: 'os-account',
     session_id: SESSION,
+    customer_id: REQUESTED_CUSTOMER,
     game: 'Orion Stars',
     game_username: 'jdoe_os',
     password: '123456',
-    created_at: '2026-09-25T15:02:00.000Z'
+    created_at: '2026-09-25T15:02:00.000Z',
+    ...overrides
   };
-  const answer = { gameId: 'jdoe_os', newPassword: '123456' };
+}
 
+const orionAnswer = Object.freeze({
+  gameId: 'jdoe_os',
+  newPassword: '123456',
+  kiosk: 'OrionStars'
+});
+
+test('Orion Stars passes for an account linked to the requested customer', async () => {
   assert.equal(
-    await grade([{ ...orionAccount, customer_id: REQUESTED_CUSTOMER }], {
+    await grade([orionAccount()], {
       operation: createAccountOperation('Orion Stars'),
-      requestData: answer
+      requestData: orionAnswer
     }),
     true
   );
+});
+
+// The Orion panel links a new account to whichever player row is
+// selected, or to a customer found by the typed Account, so a correct
+// answer can land on another customer.
+test('Orion Stars passes when the account got linked to another customer', async () => {
   assert.equal(
-    await grade([{ ...orionAccount, customer_id: OTHER_CUSTOMER }], {
+    await grade([orionAccount({ customer_id: OTHER_CUSTOMER })], {
       operation: createAccountOperation('Orion Stars'),
-      requestData: answer
+      requestData: orionAnswer
     }),
+    true
+  );
+});
+
+test('Orion Stars fails when the login password does not match', async () => {
+  assert.equal(
+    await grade([orionAccount()], {
+      operation: createAccountOperation('Orion Stars'),
+      requestData: { ...orionAnswer, newPassword: '654321' }
+    }),
+    false
+  );
+});
+
+test('Orion Stars fails for an account that existed before the request', async () => {
+  assert.equal(
+    await grade(
+      [orionAccount({ created_at: '2026-09-25T14:59:59.000Z' })],
+      {
+        operation: createAccountOperation('Orion Stars'),
+        requestData: orionAnswer
+      }
+    ),
     false
   );
 });

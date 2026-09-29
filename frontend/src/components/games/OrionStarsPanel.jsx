@@ -279,7 +279,7 @@ export default function OrionStarsPanel({
     setActionError('');
     setModal(name);
     if (name === 'create') {
-      setForm({ gameUsername: selected?.customer?.username || '' });
+      setForm({ gameUsername: '' });
       return;
     }
     if (name === 'recharge') {
@@ -388,7 +388,6 @@ export default function OrionStarsPanel({
           activeSessionId,
           GAME,
           {
-            customerId: selected?.customer_id,
             gameUsername: form.gameUsername,
             nickname:
               String(form.nickname || '').trim() ||

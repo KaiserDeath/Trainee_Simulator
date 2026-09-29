@@ -831,26 +831,37 @@ export async function getConfirmedCreatedAccountEvidence({
   const gameUsername =
     String(requestData.gameId ?? '').trim();
 
+  const password =
+    String(requestData.newPassword ?? '').trim();
+
   if (
     operation.type !== 'CREATE ACCOUNT' ||
     (operation.game_account?.game || operation.game) !== ORION_STARS_GAME ||
-    !gameUsername
+    !gameUsername ||
+    !password ||
+    !operation.created_at
   ) {
     return null;
   }
 
-  const { data, error } = await supabase
+  // Matches the grading rule in createAccountGrading.js: the account is
+  // identified by Game ID and password, not by the customer it got linked to.
+  const { data: rows, error } = await supabase
     .from('sandbox_game_accounts')
     .select('id, session_id, customer_id, game, game_username, created_at')
     .eq('session_id', operation.session_id)
-    .eq('customer_id', operation.customer_id)
     .eq('game', ORION_STARS_GAME)
     .eq('game_username', gameUsername)
-    .maybeSingle();
+    .eq('password', password)
+    .gte('created_at', operation.created_at)
+    .order('created_at', { ascending: true })
+    .limit(1);
 
   if (error) {
     throw error;
   }
+
+  const data = rows[0];
 
   if (!data) {
     return null;

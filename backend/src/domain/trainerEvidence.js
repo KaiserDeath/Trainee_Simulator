@@ -96,9 +96,9 @@ export function buildCreatedAccountRequirement({
   }
 
   return {
-    label: 'Account created',
-    expected: 'Created',
-    sent: created ? 'Created' : 'Missing',
+    label: 'Game ID and password',
+    expected: 'Match',
+    sent: created ? 'Match' : 'No match',
     ok: Boolean(created)
   };
 }
