@@ -942,7 +942,7 @@ function PlayersTable({ accounts, selected, setSelected, openModal, openScoreLog
 // ======================================================
 function ModalShell({ title, children, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 pt-12">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 py-12">
       <div className="w-full max-w-3xl rounded-lg bg-white shadow-xl">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <h2 className="text-xl font-semibold text-slate-800">{title}</h2>

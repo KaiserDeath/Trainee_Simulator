@@ -273,3 +273,97 @@ test('Orion Stars fails for an account that existed before the request', async (
     false
   );
 });
+
+function vblinkAccount(overrides = {}) {
+  return {
+    id: 'vb-account',
+    session_id: SESSION,
+    customer_id: REQUESTED_CUSTOMER,
+    game: 'Vblink',
+    game_username: 'jdoe_vb',
+    password: 'abc123',
+    created_at: '2026-09-25T15:02:00.000Z',
+    ...overrides
+  };
+}
+
+const vblinkAnswer = Object.freeze({
+  gameId: 'jdoe_vb',
+  newPassword: 'abc123',
+  kiosk: 'Vblink'
+});
+
+test('Vblink passes for an account linked to the requested customer', async () => {
+  assert.equal(
+    await grade([vblinkAccount()], {
+      operation: createAccountOperation('Vblink'),
+      requestData: vblinkAnswer
+    }),
+    true
+  );
+});
+
+// The Vblink panel links a new account to the customer found or created
+// from the typed Name (or the User Name when Name is blank).
+test('Vblink passes when the typed Name linked the account to another customer', async () => {
+  assert.equal(
+    await grade([vblinkAccount({ customer_id: OTHER_CUSTOMER })], {
+      operation: createAccountOperation('Vblink'),
+      requestData: vblinkAnswer
+    }),
+    true
+  );
+});
+
+test('Vblink ignores surrounding whitespace in the answer', async () => {
+  assert.equal(
+    await grade([vblinkAccount()], {
+      operation: createAccountOperation('Vblink'),
+      requestData: { gameId: ' jdoe_vb ', newPassword: ' abc123 ' }
+    }),
+    true
+  );
+});
+
+test('Vblink fails when the User Name does not match', async () => {
+  assert.equal(
+    await grade([vblinkAccount()], {
+      operation: createAccountOperation('Vblink'),
+      requestData: { ...vblinkAnswer, gameId: 'someone_else' }
+    }),
+    false
+  );
+});
+
+test('Vblink fails when the password does not match', async () => {
+  assert.equal(
+    await grade([vblinkAccount()], {
+      operation: createAccountOperation('Vblink'),
+      requestData: { ...vblinkAnswer, newPassword: 'xyz789' }
+    }),
+    false
+  );
+});
+
+test('Vblink fails for an account that existed before the request', async () => {
+  assert.equal(
+    await grade(
+      [vblinkAccount({ created_at: '2026-09-25T14:59:59.000Z' })],
+      {
+        operation: createAccountOperation('Vblink'),
+        requestData: vblinkAnswer
+      }
+    ),
+    false
+  );
+});
+
+test('Vblink fails for an Orion Stars account with the same credentials', async () => {
+  assert.equal(
+    await grade([vblinkAccount({ game: 'Orion Stars' })], {
+      operation: createAccountOperation('Vblink'),
+      requestData: vblinkAnswer
+    }),
+    false
+  );
+});
