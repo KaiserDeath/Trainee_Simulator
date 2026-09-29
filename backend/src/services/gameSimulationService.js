@@ -325,10 +325,39 @@ function throwGameMovementError(error) {
   throw error;
 }
 
+export const PLAYER_IN_GAME_MESSAGE =
+  'Player is on the game, do not operate';
+
+// A pending PLAYER_IN_GAME request locks its game account: the game refuses
+// Add/Withdraw so the trainee learns to cancel instead of forcing it.
+async function assertPlayerNotInGame(account) {
+  const { data, error } = await supabase
+    .from('sandbox_operations')
+    .select('id')
+    .eq('session_id', account.session_id)
+    .eq('game_account_id', account.id)
+    .eq('status', 'PENDING')
+    .eq('movement_scenario', 'PLAYER_IN_GAME')
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  if (data.length > 0) {
+    const blocked =
+      new Error(PLAYER_IN_GAME_MESSAGE);
+    blocked.statusCode = 409;
+    blocked.code = 'PLAYER_IN_GAME';
+    throw blocked;
+  }
+}
+
 export async function rechargeAccount({
   accountId,
   amount,
-  note
+  note,
+  bySystem = false
 }) {
   const account =
     await getGameAccount(accountId);
@@ -343,6 +372,10 @@ export async function rechargeAccount({
       new Error('Valid amount required');
     error.statusCode = 400;
     throw error;
+  }
+
+  if (!bySystem) {
+    await assertPlayerNotInGame(account);
   }
 
   const description =
@@ -372,7 +405,8 @@ export async function rechargeAccount({
 export async function redeemAccount({
   accountId,
   amount,
-  note
+  note,
+  bySystem = false
 }) {
   const account =
     await getGameAccount(accountId);
@@ -396,6 +430,10 @@ export async function redeemAccount({
       );
     error.statusCode = 400;
     throw error;
+  }
+
+  if (!bySystem) {
+    await assertPlayerNotInGame(account);
   }
 
   const description =

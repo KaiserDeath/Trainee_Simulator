@@ -32,6 +32,8 @@ import {
 import {
   getOrionAccountCreationPrompt
 } from '../../gameAdapters/orionStarsAdapter';
+import PlayerInGameModal from './PlayerInGameModal.jsx';
+import { isPlayerInGameError } from './playerInGame.js';
 import '../../styles/orion-stars.css';
 
 const GAME = 'Orion Stars';
@@ -291,6 +293,11 @@ export default function OrionStarsPanel({
     setForm({});
   };
 
+  const [
+    playerInGameMessage,
+    setPlayerInGameMessage
+  ] = useState('');
+
   const closeModal = () => {
     setModal(null);
     setForm({});
@@ -406,6 +413,12 @@ export default function OrionStarsPanel({
         await fetchHistory();
       }
     } catch (error) {
+      if (isPlayerInGameError(error)) {
+        closeModal();
+        setPlayerInGameMessage(error.response.data.error);
+        return;
+      }
+
       setActionError(error.response?.data?.error || 'The Orion Stars operation could not be completed.');
     } finally {
       setActionBusy(false);
@@ -446,6 +459,10 @@ export default function OrionStarsPanel({
 
   return (
     <div className="orion-shell">
+      <PlayerInGameModal
+        message={playerInGameMessage}
+        onClose={() => setPlayerInGameMessage('')}
+      />
       <header className="orion-topbar">
         <h2 className="orion-brand">
           OrionStars <span>(Release) / User Management</span>

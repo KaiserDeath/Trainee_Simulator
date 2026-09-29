@@ -1,5 +1,12 @@
 import { supabase } from '../config/supabase.js';
-import { generateOperation } from '../engine/OperationGenerator.js';
+import {
+  generateOperation,
+  pickMovementScenario
+} from '../engine/OperationGenerator.js';
+import {
+  rechargeAccount,
+  redeemAccount
+} from '../services/gameSimulationService.js';
 import {
   canGenerateOperations,
   getPendingCount,
@@ -228,6 +235,51 @@ class GameMaster {
     return Array.isArray(data)
       ? data[0]
       : data;
+  }
+
+  //
+  // MOVEMENT DIFFICULTY SCENARIOS
+  //
+  async applyMovementScenario(operation) {
+    const scenario =
+      pickMovementScenario(operation.type);
+
+    if (!scenario) {
+      return;
+    }
+
+    if (scenario === 'ALREADY_PROCESSED') {
+      // The system does the game side the same second the request appears.
+      const move =
+        operation.type === 'ADD CREDITS'
+          ? rechargeAccount
+          : redeemAccount;
+
+      try {
+        await move({
+          accountId: operation.game_account_id,
+          amount: operation.amount,
+          bySystem: true
+        });
+      } catch (err) {
+        console.warn(
+          `Skipping ALREADY_PROCESSED for ${operation.id}: ${err.message}`
+        );
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from('sandbox_operations')
+      .update({ movement_scenario: scenario })
+      .eq('id', operation.id);
+
+    if (error) {
+      console.error(
+        `Failed to tag operation ${operation.id} as ${scenario}:`,
+        error
+      );
+    }
   }
 
   //
@@ -475,6 +527,9 @@ class GameMaster {
 
           if (inserted) {
             operations.push(inserted);
+            await this.applyMovementScenario(
+              inserted
+            );
             occupyPendingOperation(
               occupancy,
               generated

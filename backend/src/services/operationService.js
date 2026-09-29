@@ -103,7 +103,10 @@ export async function getPendingOperations(
     throw error;
   }
 
-  return data;
+  // The difficulty twist must stay hidden from the trainee.
+  return data.map(
+    ({ movement_scenario, ...operation }) => operation
+  );
 }
 
 async function getOperationForProcessing(id) {

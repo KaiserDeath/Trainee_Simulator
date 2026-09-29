@@ -14,6 +14,8 @@ import {
   resetGamePassword,
   searchGameAccounts
 } from '../../api/client';
+import PlayerInGameModal from './PlayerInGameModal.jsx';
+import { isPlayerInGameError } from './playerInGame.js';
 
 const GAME = 'Vblink';
 
@@ -189,6 +191,11 @@ export default function VblinkPanel({ session, sessionId }) {
     setModal(name);
   };
 
+  const [
+    playerInGameMessage,
+    setPlayerInGameMessage
+  ] = useState('');
+
   const closeModal = () => {
     setModal(null);
     setForm({});
@@ -291,6 +298,12 @@ export default function VblinkPanel({ session, sessionId }) {
       await fetchAccounts();
       setNotice({ title: 'Message', message: 'Score updated successfully' });
     } catch (err) {
+      if (isPlayerInGameError(err)) {
+        closeModal();
+        setPlayerInGameMessage(err.response.data.error);
+        return;
+      }
+
       setFormError(err.response?.data?.error || 'Set Score failed');
     }
   };
@@ -360,6 +373,10 @@ export default function VblinkPanel({ session, sessionId }) {
   // =================== UI ===================
   return (
     <div className="h-screen bg-[#f4f6fb] text-slate-800 [color-scheme:light] flex flex-col overflow-hidden" data-testid="vblink-panel">
+      <PlayerInGameModal
+        message={playerInGameMessage}
+        onClose={() => setPlayerInGameMessage('')}
+      />
       <Header now={now} view={view} />
 
       <div className="flex flex-1 overflow-hidden">

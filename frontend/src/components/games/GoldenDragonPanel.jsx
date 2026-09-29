@@ -14,6 +14,8 @@ import {
   resetGamePassword,
   searchGameAccounts
 } from '../../api/client';
+import PlayerInGameModal from './PlayerInGameModal.jsx';
+import { isPlayerInGameError } from './playerInGame.js';
 
 const GAME = 'Golden Dragon';
 
@@ -346,6 +348,11 @@ export default function GoldenDragonPanel({
     setForm({});
   };
 
+  const [
+    playerInGameMessage,
+    setPlayerInGameMessage
+  ] = useState('');
+
   const closeModal = () => {
     setModal(null);
     setForm({});
@@ -485,6 +492,12 @@ export default function GoldenDragonPanel({
         refreshSelected(response.data);
       }
     } catch (err) {
+      if (isPlayerInGameError(err)) {
+        closeModal();
+        setPlayerInGameMessage(err.response.data.error);
+        return;
+      }
+
       showNotice(
         'Message',
         err.response?.data?.error ||
@@ -591,6 +604,10 @@ export default function GoldenDragonPanel({
 
   return (
     <div className="min-h-screen bg-[#e8e8e8] text-sm text-black [color-scheme:light]">
+      <PlayerInGameModal
+        message={playerInGameMessage}
+        onClose={() => setPlayerInGameMessage('')}
+      />
       <header className="flex h-11 items-center justify-between bg-[#173954] px-5 text-white">
         <div className="text-xl">
           Golden Dragon Pos

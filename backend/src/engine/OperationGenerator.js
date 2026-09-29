@@ -101,3 +101,28 @@ export function generateOperation(
       null
   };
 }
+
+// Roughly 1 in 12 credit movements gets each difficulty twist.
+export const MOVEMENT_SCENARIO_RATE = 1 / 12;
+
+export function pickMovementScenario(
+  operationType,
+  random = Math.random()
+) {
+  if (
+    operationType !== 'ADD CREDITS' &&
+    operationType !== 'WITHDRAW CREDITS'
+  ) {
+    return null;
+  }
+
+  if (random < MOVEMENT_SCENARIO_RATE) {
+    return 'ALREADY_PROCESSED';
+  }
+
+  if (random < MOVEMENT_SCENARIO_RATE * 2) {
+    return 'PLAYER_IN_GAME';
+  }
+
+  return null;
+}
