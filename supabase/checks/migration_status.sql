@@ -81,6 +81,14 @@ checks (migration, applied, rerun_safe) AS (
       AND EXISTS (SELECT 1 FROM fn
                   WHERE proname = 'settle_backend_movement_operation'
                     AND prosrc LIKE '%ALREADY_PROCESSED%'),
+    true),
+  ('20261029000000_pending_reconciliation.sql',
+    EXISTS (SELECT 1 FROM col
+            WHERE table_name = 'sandbox_operations'
+              AND column_name = 'bot_applied')
+      AND EXISTS (SELECT 1 FROM fn
+                  WHERE proname = 'settle_backend_movement_operation'
+                    AND prosrc LIKE '%PENDING_RECONCILIATION%'),
     true)
 )
 SELECT
@@ -92,6 +100,6 @@ SELECT
     ELSE 'Run this file once; it fails if it already partly ran'
   END AS action
 FROM checks
--- Apply MISSING files in this order; for 20260830/20260925/20260929 use
+-- Apply MISSING files in this order; for 20260830/20260925/20260929/20261029 use
 -- supabase/checks/catch_up_simulator_migrations.sql instead.
 ORDER BY migration;

@@ -10,7 +10,10 @@ import {
 } from './scoringService.js';
 
 import {
-  getMovementCancellationReason
+  assertReconciliationAnswer,
+  buildReconciliationNote,
+  getMovementCancellationReason,
+  isPendingReconciliation
 } from './operationPolicy.js';
 
 import {
@@ -103,10 +106,24 @@ export async function getPendingOperations(
     throw error;
   }
 
-  // The difficulty twist must stay hidden from the trainee.
-  return data.map(
-    ({ movement_scenario, ...operation }) => operation
-  );
+  // The difficulty twist must stay hidden from the trainee; only a pending
+  // reconciliation is announced, never whether the bot applied it.
+  return data.map((operation) => {
+    const {
+      movement_scenario,
+      bot_applied,
+      ...visible
+    } = operation;
+
+    return isPendingReconciliation(operation)
+      ? {
+          ...visible,
+          needs_reconciliation: true,
+          reconciliation_note:
+            buildReconciliationNote(operation)
+        }
+      : visible;
+  });
 }
 
 async function getOperationForProcessing(id) {
@@ -546,6 +563,11 @@ export async function processOperation(
     await getOperationForProcessing(
       operationId
     );
+
+  assertReconciliationAnswer({
+    operation,
+    requestData
+  });
 
   const cancellationReason =
     getMovementCancellationReason({

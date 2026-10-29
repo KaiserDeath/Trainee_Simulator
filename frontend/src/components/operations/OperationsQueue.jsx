@@ -82,11 +82,16 @@ function getInitialRequestForm(operation) {
 export default function OperationsQueue({
   session,
   isSessionClosed,
-  onSessionMissing
+  onSessionMissing,
+  activeTab = 'movements',
+  onCountsChange
 }) {
   const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('movements');
+  const [movementTab, setMovementTab] = useState('pending');
+  const [reconciliationReasons, setReconciliationReasons] = useState({});
+  const [reconciliationSubmitting, setReconciliationSubmitting] = useState(null);
+  const [reconciliationErrors, setReconciliationErrors] = useState({});
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [requestForm, setRequestForm] = useState({});
   const [movementDecision, setMovementDecision] = useState(null);
@@ -327,6 +332,46 @@ export default function OperationsQueue({
     );
   }, [operations]);
 
+  const reconciliationOperations = useMemo(() => {
+    return movementOperations.filter(op => op.needs_reconciliation);
+  }, [movementOperations]);
+
+  useEffect(() => {
+    onCountsChange?.({
+      movements: movementOperations.length,
+      requests: requestOperations.length
+    });
+  }, [movementOperations.length, requestOperations.length, onCountsChange]);
+
+  // "It applied" settles as APPROVED, "It did not apply" as CANCELLED; the
+  // trainee never operates the game for a pending reconciliation.
+  const answerReconciliation = async (operation, applied) => {
+    const reason = (reconciliationReasons[operation.id] || '').trim();
+    if (!reason || reconciliationSubmitting) return;
+
+    setReconciliationSubmitting(operation.id);
+    setReconciliationErrors(current => ({ ...current, [operation.id]: '' }));
+
+    const result = await processOperation(
+      operation.id,
+      applied ? 'APPROVED' : 'CANCELLED',
+      {
+        reconciliation: true,
+        cancellationReason: reason
+      }
+    );
+
+    setReconciliationSubmitting(null);
+
+    if (!result.ok) {
+      setReconciliationErrors(current => ({
+        ...current,
+        [operation.id]: result.error
+      }));
+      if (result.conflict) void fetchOperations();
+    }
+  };
+
   const displayedOperations =
     activeTab === 'movements' ? movementOperations : requestOperations;
 
@@ -419,36 +464,32 @@ export default function OperationsQueue({
 
   return (
     <div>
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="text-xl font-semibold">Operations</h3>
-          <p className="text-sm text-slate-500">Process incoming requests</p>
+      {/* MOVEMENT TABS */}
+      {activeTab === 'movements' && (
+        <div className="mb-[22px] flex gap-[30px] border-b border-[#e8eaf2]">
+          {[
+            ['pending', 'Pending', movementOperations.length],
+            ['reconciliation', 'Needs reconciliation', reconciliationOperations.length]
+          ].map(([tab, label, count]) => (
+            <button
+              key={tab}
+              ref={tab === 'pending' ? movementFallbackRef : undefined}
+              type="button"
+              onClick={() => setMovementTab(tab)}
+              className={`-mb-px border-b-2 px-1 py-2.5 transition ${
+                movementTab === tab
+                  ? 'border-[#6d6fe0] font-semibold text-[#6d6fe0]'
+                  : 'border-transparent text-[#59607a]'
+              }`}
+            >
+              {label}
+              <span className="ml-1.5 rounded-full bg-[#e6e8fa] px-[7px] py-px text-[11px] text-[#6d6fe0]">
+                {count}
+              </span>
+            </button>
+          ))}
         </div>
-      </div>
-
-      {/* TABS */}
-      <div className="flex gap-3 mb-6">
-        <button
-          ref={movementFallbackRef}
-          type="button"
-          onClick={() => setActiveTab('movements')}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            activeTab === 'movements' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
-          }`}
-        >
-          Movements ({movementOperations.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('requests')}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            activeTab === 'requests' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
-          }`}
-        >
-          Requests ({requestOperations.length})
-        </button>
-      </div>
+      )}
 
       {movementStatus && (
         <p
@@ -461,15 +502,95 @@ export default function OperationsQueue({
       )}
 
       {/* EMPTY */}
-      {displayedOperations.length === 0 && (
-        <div className="bg-slate-100 p-5 rounded-xl text-slate-500">No pending operations</div>
+      {activeTab === 'movements' && (
+        movementTab === 'pending'
+          ? movementOperations.length === 0
+          : reconciliationOperations.length === 0
+      ) && (
+        <div className="border-t border-[#e8eaf2] py-12 text-center text-[15px] text-[#8a93a8]">
+          Nothing to process
+        </div>
+      )}
+
+      {/* ─────────────── NEEDS RECONCILIATION ─────────────── */}
+      {activeTab === 'movements' && movementTab === 'reconciliation' && (
+        <div className="space-y-[18px]">
+          {reconciliationOperations.map(operation => {
+            const reason = reconciliationReasons[operation.id] || '';
+            const submitting = reconciliationSubmitting === operation.id;
+            const canAnswer = reason.trim() !== '' && !reconciliationSubmitting;
+
+            return (
+              <div
+                key={operation.id}
+                data-testid={`reconciliation-${operation.id}`}
+                className="rounded-md border border-[#f2e3c8] border-l-4 border-l-[#f0a81c] bg-[#fff5e6] px-5 py-4"
+              >
+                <div className="flex justify-between text-sm font-bold">
+                  <span>
+                    {getGame(operation).toUpperCase().replace(/[^A-Z0-9]+/g, '_')} - {operation.type.replace(' ', '_')}
+                  </span>
+                  <em className="text-xl not-italic">{Number(operation.amount || 0).toFixed(2)}</em>
+                </div>
+                <p className="mt-1 text-xs text-[#333]">
+                  {getCustomerName(operation)} · {getEmail(operation)}
+                </p>
+                <p className="mt-1 text-xs text-[#7c8294]">
+                  player {getUsername(operation)} &nbsp;·&nbsp; {getMobileId(operation)}
+                </p>
+                <p className="mt-1 text-xs text-[#7c8294]">
+                  received {operation.created_at ? new Date(operation.created_at).toLocaleString() : '—'}
+                  &nbsp;·&nbsp; code {getOperationCode(operation)}
+                </p>
+                <p className="my-2.5 text-xs">{operation.reconciliation_note}</p>
+
+                <input
+                  value={reason}
+                  onChange={event => setReconciliationReasons(current => ({
+                    ...current,
+                    [operation.id]: event.target.value
+                  }))}
+                  maxLength={1000}
+                  placeholder="Reason (required) - e.g. found the bot's load in the game history"
+                  className="w-full rounded-[7px] border border-[#e3d6c0] bg-[#fffaf2] p-3 text-[12.5px] outline-none focus:border-[#f0a81c]"
+                />
+
+                {reconciliationErrors[operation.id] && (
+                  <p role="alert" className="mt-2 text-xs text-[#d93a3a]">
+                    {reconciliationErrors[operation.id]}
+                  </p>
+                )}
+
+                <div className="mt-3 flex justify-end gap-2.5">
+                  <button
+                    type="button"
+                    disabled={!canAnswer}
+                    onClick={() => answerReconciliation(operation, false)}
+                    className="rounded-[7px] border border-[#efc4c4] bg-white px-3.5 py-2 text-xs font-semibold text-[#d93a3a] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    ⊗ It did not apply
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canAnswer}
+                    onClick={() => answerReconciliation(operation, true)}
+                    className="rounded-[7px] border border-[#9bd3b8] bg-white px-3.5 py-2 text-xs font-semibold text-[#16a068] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {submitting ? 'Saving…' : '⊙ It applied'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* ─────────────── MOVEMENTS (Card Layout) ─────────────── */}
-      {activeTab === 'movements' && (
+      {activeTab === 'movements' && movementTab === 'pending' && (
         <div className="space-y-4">
           {movementOperations.map(operation => {
             const theme = cardTheme(operation.type);
+            const isReconciliation = operation.needs_reconciliation;
             const username = getUsername(operation);
             const mobileId = getMobileId(operation); 
 
@@ -482,6 +603,12 @@ export default function OperationsQueue({
                 {/* ── Top bar ── */}
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-6 py-3 lg:grid lg:grid-cols-3 lg:justify-items-start lg:gap-x-8">
                   {/* Status badge */}
+                  {isReconciliation ? (
+                    <div className="flex items-center gap-1 rounded-md border border-[#f0b94a] bg-[#fff3d6] px-3 py-1 text-xs">
+                      <span className="font-medium text-black">Status:</span>
+                      <span className="font-bold text-[#d8920a]">🕘 Pending reconciliation</span>
+                    </div>
+                  ) : (
                   <div className="flex items-center gap-2 rounded-md border border-amber-500 bg-amber-500/25 px-3 py-1 text-xs">
                     <span className="font-medium text-black">Status:</span>
                     <div className="flex items-center gap-1">
@@ -489,6 +616,7 @@ export default function OperationsQueue({
                       <span className="font-bold text-amber-600 text-xs">Pending</span>
                     </div>
                   </div>
+                  )}
 
                   {/* Operation type + timestamp */}
                   <div className={`rounded-full px-8 py-2 text-center text-white text-sm ${theme.badgeBg}`}>
@@ -548,6 +676,15 @@ export default function OperationsQueue({
                   {/* Actions column – spans 2 rows */}
                   <div className="flex flex-col px-3 py-1 items-center border-0 md:row-span-2">
                     <strong className="text-[13px] text-[#292929]">Actions</strong>
+                    {isReconciliation ? (
+                      <button
+                        type="button"
+                        onClick={() => setMovementTab('reconciliation')}
+                        className="mt-1 max-w-[160px] rounded-[10px] border border-[#f0b94a] bg-white px-3 py-2 text-center text-[11px] font-semibold text-[#4a5578] hover:bg-[#fff3d6] md:mt-2"
+                      >
+                        Do not operate. Check it in Needs reconciliation →
+                      </button>
+                    ) : (
                     <div className="flex flex-wrap justify-center gap-2 mt-1 md:mt-2">
                       <button
                         type="button"
@@ -576,6 +713,7 @@ export default function OperationsQueue({
                         <span className="text-xs text-white font-semibold">Cancel</span>
                       </button>
                     </div>
+                    )}
                   </div>
 
                   {/* Row 2 */}
@@ -596,6 +734,12 @@ export default function OperationsQueue({
                     <span className="text-[#292929] break-all">{operation.amount ?? '—'}</span>
                   </div>
                 </div>
+
+                {isReconciliation && (
+                  <p className="px-9 pb-4 text-[11.5px] text-[#444]">
+                    <b className="text-[#222]">Reason:</b> {operation.reconciliation_note}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -604,10 +748,10 @@ export default function OperationsQueue({
 
       {/* ─────────────── REQUESTS (Row Layout) ─────────────── */}
       {activeTab === 'requests' && (
-        <div className="rounded-[16px] border-b-[0.1px] bg-white border-[#E5E7EB] mx-auto w-full">
+        <div className="mx-auto w-full overflow-hidden rounded-[14px] border border-[#e8eaf2] bg-[#f8f9fc]">
           {/* Header row */}
           <div
-            className="h-[56px] rounded-t-[16px] text-center font-[Inter] font-semibold text-[14px] sm:text-[16px] justify-center items-center bg-black text-white"
+            className="h-[48px] text-center text-[11px] font-semibold tracking-[.5px] uppercase justify-center items-center bg-[#fafbfe] text-[#8a93a8] border-b border-[#e8eaf2]"
             style={{
               display: 'grid',
               gridTemplateColumns: '0.8fr 0.6fr 0.8fr 0.8fr 0.7fr 0.6fr 0.7fr 0.5fr',

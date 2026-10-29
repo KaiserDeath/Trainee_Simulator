@@ -11,9 +11,10 @@ import GamesLauncher from '../components/games/GamesLauncher';
 
 
 export default function TraineeDashboard({ session, onSessionEnded }) {
-  const [activeView, setActiveView] = useState('operations');
+  const [activeView, setActiveView] = useState('movements');
   const [sessionState, setSessionState] = useState(session);
   const [sessionReport, setSessionReport] = useState(null);
+  const [operationCounts, setOperationCounts] = useState({});
 
   // ── OPTIMIZED: MEMOIZED SELECTION CLEANUP UPON NAV VIEW NAVIGATION ──
   const handleViewChange = useCallback((newView) => {
@@ -121,6 +122,7 @@ export default function TraineeDashboard({ session, onSessionEnded }) {
           <Sidebar
             activeView={activeView}
             onViewChange={handleViewChange} // Safe, stable reference
+            counts={operationCounts}
           />
         }
         header={
@@ -132,24 +134,30 @@ export default function TraineeDashboard({ session, onSessionEnded }) {
           />
         }
       >
-        {activeView === 'operations' && (
-          <div className="grid grid-cols-6 gap-6">
-            <div className="col-span-5 bg-white rounded-2xl shadow p-5">
-              <h3 className="text-lg font-semibold mb-4">Live Operations Queue</h3>
-              <OperationsQueue
-                session={sessionState}
-                isSessionClosed={isSessionClosed}
-                onSessionMissing={handleMissingSession}
-              />
-            </div>
-            <div className="bg-white rounded-2xl shadow p-5">
-              <PerformancePanel
-                session={sessionState}
-                onSessionMissing={handleMissingSession}
-              />
-            </div>
+        {/* Stays mounted on every view so the sidebar counts keep updating. */}
+        <div
+          className={
+            activeView === 'movements' || activeView === 'requests'
+              ? 'grid grid-cols-6 gap-6'
+              : 'hidden'
+          }
+        >
+          <div className="col-span-5 min-w-0">
+            <OperationsQueue
+              session={sessionState}
+              isSessionClosed={isSessionClosed}
+              onSessionMissing={handleMissingSession}
+              activeTab={activeView === 'requests' ? 'requests' : 'movements'}
+              onCountsChange={setOperationCounts}
+            />
           </div>
-        )}
+          <div className="rounded-[14px] border border-[#e8eaf2] bg-white p-5">
+            <PerformancePanel
+              session={sessionState}
+              onSessionMissing={handleMissingSession}
+            />
+          </div>
+        </div>
 
         {activeView === 'customers' && (
           <CustomerPanel session={sessionState} />

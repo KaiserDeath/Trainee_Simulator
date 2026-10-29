@@ -372,7 +372,7 @@ test('Backend pencil and Confirm submit the created Orion account information as
   });
 
   await page.goto('/');
-  await page.getByRole('button', { name: /Requests \(1\)/ }).click();
+  await page.getByRole('navigation').getByRole('button', { name: /Games Requests\s*1/ }).click();
   await page.getByTestId('operation-orion-create-operation').getByRole('button').click();
   await page.getByLabel('New Game ID').fill('created-orion-id');
   await page.getByLabel('New Password').fill('created-orion-password');

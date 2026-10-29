@@ -124,5 +124,9 @@ export function pickMovementScenario(
     return 'PLAYER_IN_GAME';
   }
 
+  if (random < MOVEMENT_SCENARIO_RATE * 3) {
+    return 'PENDING_RECONCILIATION';
+  }
+
   return null;
 }

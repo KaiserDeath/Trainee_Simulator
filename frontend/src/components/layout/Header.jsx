@@ -1,6 +1,26 @@
 import { useState, useEffect } from "react";
 import client from "../../api/client";
 
+function Clock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div>
+      <b className="block text-[17px] text-[#6d6fe0]">
+        {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
+      </b>
+      <small className="text-[11px] text-[#666677]">
+        {now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
+      </small>
+    </div>
+  );
+}
+
 export default function Header({ session, traineeName, onSessionEnded, onRefreshSession }) {
   const [confirming, setConfirming] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -67,11 +87,13 @@ export default function Header({ session, traineeName, onSessionEnded, onRefresh
   return (
     <>
       <div className="w-full flex items-center justify-between">
-        {/* Left: title */}
-        <div>
-          <h2 className="text-xl font-semibold text-slate-800">Operations Dashboard</h2>
-          <p className="text-sm text-slate-500">Live Training Session</p>
-        </div>
+        {/* Left: clock */}
+        <Clock />
+
+        {/* Center: title */}
+        <h1 className="text-[22px] font-bold tracking-[1px] bg-gradient-to-r from-[#6d6fe0] to-[#8a5fc9] bg-clip-text text-transparent">
+          DASHBOARD
+        </h1>
 
         {/* Right: trainee info + timer + end button */}
         <div className="flex items-center gap-3">
@@ -88,8 +110,12 @@ export default function Header({ session, traineeName, onSessionEnded, onRefresh
             </div>
           )}
 
-          <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow text-sm font-medium">
-            Operator: {traineeName || session?.trainee_name || "—"}
+          <div className="flex items-center gap-2.5 rounded-xl border border-[#e8eaf2] bg-[#f0f1fb] px-3 py-1.5">
+            <div className="h-[38px] w-[38px] rounded-full bg-gradient-to-br from-[#5b7cff] to-[#a6c0ff]" />
+            <div>
+              <b className="block text-[13px] text-[#1c2338]">{traineeName || session?.trainee_name || "—"}</b>
+              <small className="text-[11px] text-[#6d6fe0]">OPERATOR</small>
+            </div>
           </div>
 
           <button

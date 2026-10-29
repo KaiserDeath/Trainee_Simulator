@@ -248,7 +248,16 @@ class GameMaster {
       return;
     }
 
-    if (scenario === 'ALREADY_PROCESSED') {
+    // PENDING_RECONCILIATION: the bot tried the movement but could not
+    // confirm it; about half the time it really did reach the game.
+    const botApplied =
+      scenario === 'ALREADY_PROCESSED' ||
+      (
+        scenario === 'PENDING_RECONCILIATION' &&
+        Math.random() < 0.5
+      );
+
+    if (botApplied) {
       // The system does the game side the same second the request appears.
       const move =
         operation.type === 'ADD CREDITS'
@@ -271,7 +280,10 @@ class GameMaster {
 
     const { error } = await supabase
       .from('sandbox_operations')
-      .update({ movement_scenario: scenario })
+      .update({
+        movement_scenario: scenario,
+        bot_applied: botApplied
+      })
       .eq('id', operation.id);
 
     if (error) {
