@@ -130,3 +130,21 @@ export function pickMovementScenario(
 
   return null;
 }
+
+// Golden Dragon shows the Customer ID as the password. In about half of its
+// Reset Password requests the password was changed in the game: it shows a
+// Reset button instead, and only after Reset → OK is it the Customer ID again.
+export const GOLDEN_DRAGON_CHANGED_PASSWORD_PREFIX = 'CHANGED:';
+export const GOLDEN_DRAGON_CHANGED_PASSWORD_RATE = 1 / 2;
+
+export function needsGoldenDragonReset(
+  operationType,
+  game,
+  random = Math.random()
+) {
+  return (
+    operationType === 'RESET PASSWORD' &&
+    game === 'Golden Dragon' &&
+    random < GOLDEN_DRAGON_CHANGED_PASSWORD_RATE
+  );
+}

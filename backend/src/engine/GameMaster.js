@@ -1,6 +1,8 @@
 import { supabase } from '../config/supabase.js';
 import {
   generateOperation,
+  GOLDEN_DRAGON_CHANGED_PASSWORD_PREFIX,
+  needsGoldenDragonReset,
   pickMovementScenario
 } from '../engine/OperationGenerator.js';
 import {
@@ -295,6 +297,50 @@ class GameMaster {
   }
 
   //
+  // GOLDEN DRAGON CHANGED PASSWORD
+  //
+  // Grading compares the typed password with the account's current one, so
+  // while it still carries the prefix only Reset → OK makes it gradeable.
+  async applyGoldenDragonPasswordChange(
+    operation,
+    gameAccount
+  ) {
+    const password =
+      String(gameAccount?.password || '');
+
+    if (
+      !needsGoldenDragonReset(
+        operation.type,
+        gameAccount?.game
+      ) ||
+      !password ||
+      password.startsWith(
+        GOLDEN_DRAGON_CHANGED_PASSWORD_PREFIX
+      )
+    ) {
+      return;
+    }
+
+    const changedPassword =
+      `${GOLDEN_DRAGON_CHANGED_PASSWORD_PREFIX}${password}`;
+
+    const { error } = await supabase
+      .from('sandbox_game_accounts')
+      .update({ password: changedPassword })
+      .eq('id', gameAccount.id);
+
+    if (error) {
+      console.error(
+        `Failed to change Golden Dragon password for ${gameAccount.id}:`,
+        error
+      );
+      return;
+    }
+
+    gameAccount.password = changedPassword;
+  }
+
+  //
   // GENERATE OPERATIONS
   //
   async generateOperations(sessionId) {
@@ -541,6 +587,10 @@ class GameMaster {
             operations.push(inserted);
             await this.applyMovementScenario(
               inserted
+            );
+            await this.applyGoldenDragonPasswordChange(
+              inserted,
+              selected.gameAccount
             );
             occupyPendingOperation(
               occupancy,
