@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock3,
   FileText,
   Search,
   Trash2,
@@ -37,12 +36,18 @@ export default function TraineesDirectory({
   setSelectedSession,
   toggleSelectAll,
   toggleSessionSelection,
-  traineeSearch
+  traineeSearch,
+  setTraineeSearch,
+  sessionStatus,
+  setSessionStatus
 }) {
+  const [sortOrder, setSortOrder] = useState('recent');
   const traineeGroups =
     useMemo(
-      () => groupSessionsByTrainee(filteredSessions),
-      [filteredSessions]
+      () => groupSessionsByTrainee(filteredSessions).sort((a, b) => sortOrder === 'name'
+        ? a.traineeName.localeCompare(b.traineeName)
+        : new Date(b.sessions[0]?.started_at || 0) - new Date(a.sessions[0]?.started_at || 0)),
+      [filteredSessions, sortOrder]
     );
   const [expandedNames, setExpandedNames] =
     useState(() => new Set());
@@ -60,7 +65,7 @@ export default function TraineesDirectory({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="trainer-directory space-y-6">
       <header className="flex flex-col gap-4 border-b border-slate-800/60 pb-6 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
@@ -70,7 +75,7 @@ export default function TraineesDirectory({
             Training Sessions
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-400">
-            Sessions are grouped by trainee. Expand a trainee, then open a session to view live activity, reports, audit logs, and session statistics.
+            Find a trainee, expand their history, and open a session to review activity or reports. Legacy histories share an entered name, not a verified account identity.
           </p>
         </div>
 
@@ -89,6 +94,12 @@ export default function TraineesDirectory({
           />
         </div>
       </header>
+
+      <div className="trainer-directory-filters">
+        <label>Find trainee or session<input type="search" placeholder="Name or session ID" value={traineeSearch} onChange={(event) => setTraineeSearch(event.target.value)} /></label>
+        <label>Session status<select aria-label="Session status" value={sessionStatus} onChange={(event) => setSessionStatus(event.target.value)}><option value="">All statuses</option><option value="active">Active</option><option value="submitted">Submitted</option><option value="completed">Completed</option></select></label>
+        <label>Order histories<select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}><option value="recent">Most recent activity</option><option value="name">Name A–Z</option></select></label>
+      </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/45 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3 text-sm text-slate-400">
@@ -226,6 +237,7 @@ function TraineeGroup({
     <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50">
       <button
         type="button"
+        aria-expanded={isExpanded}
         onClick={() => toggleExpanded(group.traineeName)}
         className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left transition hover:bg-slate-800/35"
       >
@@ -274,7 +286,7 @@ function TraineeGroup({
 
       {isExpanded && (
         <div className="border-t border-slate-800 bg-slate-950/25 p-4">
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
+          <div className="trainer-session-list">
             {group.sessions.map((session) => (
               <SessionTile
                 key={session.id}
@@ -315,86 +327,24 @@ function StatusCounter({
   );
 }
 
-function SessionTile({
-  checked,
-  session,
-  setSelectedSession,
-  toggleSessionSelection
-}) {
-  const status =
-    SESSION_STATUS_META[session.status] || {
-      label: session.status || 'Unknown',
-      dot: 'bg-slate-500',
-      classes: 'border-slate-700 bg-slate-800 text-slate-300'
-    };
-
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 transition hover:border-slate-700 hover:bg-slate-900">
-      <div className="flex items-start justify-between gap-3">
-        <label className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={() =>
-              toggleSessionSelection(session.id)
-            }
-            className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-cyan-500"
-          />
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-semibold ${status.classes}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
-            {status.label}
-          </span>
-        </label>
-        <button
-          type="button"
-          onClick={() => setSelectedSession(session)}
-          className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-500/15"
-        >
-          <FileText className="h-3.5 w-3.5" />
-          Open
-        </button>
-      </div>
-
-      <div className="mt-4 space-y-2">
-        <p className="truncate font-mono text-xs text-slate-500">
-          {session.id}
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <TimeBox
-            label="Started"
-            value={session.started_at}
-          />
-          <TimeBox
-            label="Ended"
-            value={session.completed_at || session.ended_at}
-            fallback="Open"
-          />
-        </div>
-      </div>
+function SessionTile({ checked, session, setSelectedSession, toggleSessionSelection }) {
+  const status = SESSION_STATUS_META[session.status] || { label: session.status || 'Unknown', classes: 'border-slate-700 text-slate-300' };
+  const ended = session.completed_at || session.ended_at;
+  const duration = ended && session.started_at ? Math.max(0, Math.round((new Date(ended) - new Date(session.started_at)) / 60000)) : null;
+  return <div className="trainer-session-row">
+    <input type="checkbox" aria-label={`Select session ${session.id}`} checked={checked} onChange={() => toggleSessionSelection(session.id)} />
+    <div className="trainer-session-row-info">
+      <div><span className={`trainer-session-status ${status.classes}`}>{status.label}</span><span>{session.started_at ? formatDateTime(session.started_at) : 'Start not recorded'}</span></div>
+      <span className="trainer-session-reference">{session.id}</span>
+      <span className="trainer-session-duration">{duration !== null && Number.isFinite(duration) ? `${duration} min` : session.status === 'active' ? 'In progress' : 'Duration not recorded'}</span>
     </div>
-  );
-}
-
-function TimeBox({
-  fallback = 'N/A',
-  label,
-  value
-}) {
-  return (
-    <div className="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2">
-      <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-500">
-        <Clock3 className="h-3 w-3" />
-        {label}
-      </span>
-      <span className="mt-1 block font-mono text-xs text-slate-300">
-        {value ? formatDateTime(value) : fallback}
-      </span>
-    </div>
-  );
+    <button type="button" onClick={() => setSelectedSession(session)} className="trainer-open-session"><FileText className="h-3.5 w-3.5" />Open</button>
+  </div>;
 }
 
 function formatDateTime(value) {
   return new Date(value).toLocaleString([], {
+    year: 'numeric',
     month: 'short',
     day: '2-digit',
     hour: '2-digit',

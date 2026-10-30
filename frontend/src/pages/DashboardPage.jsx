@@ -13,6 +13,7 @@ import LiveSessionView from '../components/dashboard/LiveSessionView';
 import SessionStatisticsView from '../components/dashboard/SessionStatisticsView';
 import TraineesDirectory from '../components/dashboard/TraineesDirectory';
 import socket from '../sockets/socket';
+import '../styles/trainer-console.css';
 
 export default function DashboardPage() {
   const [sessions, setSessions] = useState([]);
@@ -27,6 +28,8 @@ export default function DashboardPage() {
   const [minOpm, setMinOpm] = useState(2);
   const [maxOpm, setMaxOpm] = useState(4);
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState('');
 
   // Load settings from backend on mount
   useEffect(() => {
@@ -197,18 +200,14 @@ export default function DashboardPage() {
 
   const filteredSessions = useMemo(() => {
     const search = traineeSearch.trim().toLowerCase();
-    if (!search) {
-      return sessions;
-    }
-
     return sessions.filter((session) => {
       const traineeName = (session.trainee_name || '').toLowerCase();
-      return (
+      return (!sessionStatus || session.status === sessionStatus) && (
         traineeName.includes(search) ||
         session.id.toLowerCase().includes(search)
       );
     });
-  }, [sessions, traineeSearch]);
+  }, [sessions, traineeSearch, sessionStatus]);
 
   const allSelected =
     filteredSessions.length > 0 &&
@@ -332,7 +331,12 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-200 overflow-hidden font-sans">
+    <div className="trainer-console" data-sidebar-open={sidebarOpen}>
+      <header className="trainer-console-topbar">
+        <div><strong>Trainer workspace</strong><span>Simulator controls · Sessions · Reports</span></div>
+        <button type="button" className="trainer-menu-toggle" aria-expanded={sidebarOpen} aria-controls="trainer-sidebar" onClick={() => setSidebarOpen((open) => !open)}>{sidebarOpen ? 'Close controls' : 'Menu & controls'}</button>
+        <span className="trainer-console-context">{dashboardSection === 'statistics' ? 'Global statistics' : selectedSession ? 'Session review' : 'Session directory'}</span>
+      </header>
       <DashboardSidebar
         activeSessionCount={activeSessionCount}
         allSelected={allSelected}
@@ -363,9 +367,7 @@ export default function DashboardPage() {
       />
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col h-full bg-[#0a0f18] relative overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <main className="trainer-console-main">
         
         {dashboardSection === 'statistics' ? (
           <div className="flex-1 overflow-y-auto p-8 relative z-10">
@@ -448,9 +450,10 @@ export default function DashboardPage() {
             </header>
 
             {/* VIEW MODE TABS */}
-            <div className="flex gap-4 mb-6 border-b border-slate-800/50 pb-4">
+            <div className="trainer-session-tabs flex flex-wrap gap-3 mb-6 border-b border-slate-800/50 pb-4" role="group" aria-label="Session report views">
               {selectedSession?.status === 'active' && (
               <button
+                aria-pressed={effectiveViewMode === 'live'}
                 onClick={() => setViewMode('live')}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   viewMode === 'live'
@@ -462,6 +465,7 @@ export default function DashboardPage() {
               </button>
             )}
             <button
+                aria-pressed={effectiveViewMode === 'report'}
                 onClick={() => setViewMode('report')}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   viewMode === 'report'
@@ -472,6 +476,7 @@ export default function DashboardPage() {
                 Report
               </button>
               <button
+                aria-pressed={effectiveViewMode === 'session-statistics'}
                 onClick={() => setViewMode('session-statistics')}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   viewMode === 'session-statistics'
@@ -482,6 +487,7 @@ export default function DashboardPage() {
                 Session Statistics
               </button>
               <button
+                aria-pressed={effectiveViewMode === 'audit'}
                 onClick={() => setViewMode('audit')}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   viewMode === 'audit'
@@ -515,6 +521,9 @@ export default function DashboardPage() {
               toggleSelectAll={toggleSelectAll}
               toggleSessionSelection={toggleSessionSelection}
               traineeSearch={traineeSearch}
+              setTraineeSearch={setTraineeSearch}
+              sessionStatus={sessionStatus}
+              setSessionStatus={setSessionStatus}
             />
           </div>
         )}

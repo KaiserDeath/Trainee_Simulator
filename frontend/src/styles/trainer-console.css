@@ -1,0 +1,86 @@
+/* /trainer only: operational surfaces, accessible controls, no decorative motion. */
+.trainer-console {
+  display:grid;
+  grid-template-columns:280px minmax(0,1fr);
+  grid-template-rows:64px minmax(0,1fr);
+  height:100dvh;
+  overflow:hidden;
+  background:#0d141d;
+  color:#dce5ee;
+  font-family:Arial,Helvetica,sans-serif;
+  color-scheme:dark;
+}
+.trainer-console * { box-sizing:border-box; }
+.trainer-console-topbar { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 24px; border-bottom:1px solid #334151; background:#101923; }
+.trainer-console-topbar > div { display:grid; gap:4px; }
+.trainer-console-topbar strong { font-size:.95rem; }
+.trainer-console-topbar span { color:#aebdcc; font-size:.75rem; }
+.trainer-console > aside { width:auto; min-height:0; overflow-y:auto; background:#101923; border-color:#334151; box-shadow:none; }
+.trainer-console-main { min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; background:#0d141d; }
+.trainer-console-main > div { min-width:0; min-height:0; padding:24px; }
+.trainer-console [class*="shadow-"] { box-shadow:none; }
+.trainer-console [class*="rounded-"] { border-radius:5px; }
+.trainer-console [class*="animate-"] { animation:none; }
+.trainer-console button { transition:none; min-height:36px; cursor:pointer; }
+.trainer-console button:disabled { cursor:not-allowed; }
+.trainer-console button:focus-visible, .trainer-console select:focus-visible, .trainer-console input:focus-visible { outline:2px solid #a9dfed; outline-offset:3px; }
+.trainer-console h1 { font-size:1rem; }
+.trainer-console h2 { font-size:1.5rem; }
+.trainer-console h3 { font-size:1rem; }
+.trainer-console .text-slate-500, .trainer-console .text-slate-600 { color:#a2b1c2; }
+.trainer-console .text-cyan-300, .trainer-console .text-cyan-400, .trainer-console .text-cyan-200 { color:#b2dbe9; }
+.trainer-console > aside > div:first-child { padding:18px 16px; }
+.trainer-console > aside > div:nth-child(2) { padding:12px; }
+.trainer-console > aside button[aria-current="page"] { background:#1c3040; border-color:#58758a; box-shadow:inset 2px 0 #a9dfed; }
+.trainer-sidebar-settings { padding:18px 16px; display:grid; gap:18px; }
+.trainer-settings-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.trainer-settings-heading h2 { margin:0; font-size:.9rem; }
+.trainer-sidebar-settings > p, .trainer-queue-note span { margin:0; font-size:.75rem; line-height:1.6; color:#acbac9; }
+.trainer-rate-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.trainer-queue-note { display:grid; gap:6px; padding:12px; border:1px solid #334151; border-radius:4px; background:#0d1620; }
+.trainer-queue-note strong { font-size:.8rem; font-weight:600; }
+.trainer-directory > header { gap:16px; padding-bottom:20px; }
+.trainer-directory > header h2 { margin-top:4px; }
+.trainer-directory > header p { line-height:1.6; }
+.trainer-directory-filters { display:grid; grid-template-columns:minmax(180px,2fr) repeat(2,minmax(130px,1fr)); gap:16px; padding:16px; border:1px solid #334151; border-radius:4px; background:#121d29; }
+.trainer-directory-filters label { display:grid; gap:8px; font-size:.8rem; color:#bdcbd8; }
+.trainer-directory-filters input, .trainer-directory-filters select { width:100%; min-width:0; min-height:42px; border:1px solid #4b5c70; border-radius:4px; padding:8px 10px; background:#0d1620; color:#e1eaf2; font:inherit; }
+.trainer-directory > div > section { background:#121d29; border-color:#334151; }
+.trainer-directory > div > section > button { padding:16px; }
+.trainer-directory > div > section > button > div:first-child > div:first-child { width:36px; height:36px; background:#1c3040; border-color:#456073; }
+.trainer-directory > div > section > div { padding:12px; }
+.trainer-console-main table { font-size:.82rem; }
+.trainer-console-main header > div { min-width:0; }
+.trainer-console-main header .font-mono { overflow-wrap:anywhere; }
+.trainer-menu-toggle { display:none; }
+@media (max-width:1000px) { .trainer-console { grid-template-columns:240px minmax(0,1fr); } .trainer-directory-filters { grid-template-columns:1fr 1fr; } .trainer-directory-filters label:first-child { grid-column:1/-1; } }
+@media (max-width:720px) {
+  .trainer-console { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); }
+  .trainer-console-topbar { padding:12px; gap:10px; }
+  .trainer-console-topbar > div > span, .trainer-console-context { display:none; }
+  .trainer-menu-toggle { display:block; border:1px solid #58758a; border-radius:4px; padding:8px 12px; background:#1c3040; color:#e1eaf2; font-size:.8rem; }
+  .trainer-console > aside { display:none; }
+  .trainer-console[data-sidebar-open="true"] > aside { display:flex; }
+  .trainer-console[data-sidebar-open="true"] > main { display:none; }
+  .trainer-console-main > div { padding:16px; }
+  .trainer-console-main header { flex-wrap:wrap; gap:16px; }
+  .trainer-console-main header > div:last-child { flex-wrap:wrap; }
+  .trainer-directory-filters { padding:12px; gap:12px; }
+  .trainer-console-main .flex.gap-3.mb-8 { flex-wrap:wrap; }
+  .trainer-directory > div > section > button { gap:8px; padding:12px; }
+  .trainer-directory > div > section > button > div:first-child { gap:8px; }
+}
+
+.trainer-directory > header > div:last-child { display:flex; flex-wrap:wrap; gap:8px; }
+.trainer-directory > header > div:last-child > div { padding:10px 14px; min-width:80px; background:#121d29; }
+.trainer-directory > header > div:last-child > div p:last-child { margin-top:2px; font-size:1.1rem; }
+.trainer-session-list { display:grid; gap:8px; }
+.trainer-session-row { display:grid; grid-template-columns:18px minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px; background:#101923; border:1px solid #334151; border-radius:4px; }
+.trainer-session-row input { width:16px; height:16px; accent-color:#a9dfed; }
+.trainer-session-row-info { display:grid; gap:6px; min-width:0; font-size:.8rem; }
+.trainer-session-row-info > div { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.trainer-session-status { border-width:1px; border-radius:4px; padding:3px 7px; font-size:.7rem; }
+.trainer-session-reference { color:#acbac9; font-family:monospace; font-size:.7rem; overflow-wrap:anywhere; }
+.trainer-session-duration { font-size:.72rem; color:#acbac9; }
+.trainer-open-session { display:flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid #58758a; border-radius:4px; background:#1c3040; color:#d4e9f2; font-size:.8rem; }
+.trainer-session-tabs button[aria-pressed="true"] { background:#1c3040; border:1px solid #88cddd; color:#d4e9f2; }

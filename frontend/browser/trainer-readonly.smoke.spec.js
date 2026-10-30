@@ -63,7 +63,25 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
     page.getByRole('heading', { name: 'Trainer Command' })
   ).toBeVisible();
 
+  await page.getByLabel('Find trainee or session').fill('no such trainee');
+  await expect(page.getByText('No trainee sessions match the current filter.')).toBeVisible();
+  await page.getByLabel('Find trainee or session').fill('');
+  await page.getByLabel('Session status', { exact: true }).selectOption('active');
+  await expect(page.getByText('No trainee sessions match the current filter.')).toBeVisible();
+  await page.getByLabel('Session status', { exact: true }).selectOption('completed');
+  await page.getByLabel('Order histories').selectOption('name');
   await page.getByRole('button', { name: /Neutral Trainer Fixture/ }).click();
+  await expect(page.getByRole('button', { name: /Neutral Trainer Fixture/ })).toHaveAttribute('aria-expanded', 'true');
+  await page.screenshot({ path: '../outputs/trainer-console-directory-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole('button', { name: 'Menu & controls' }).click();
+  await expect(page.getByLabel('Min operations/min')).toBeVisible();
+  await expect(page.getByLabel('Max operations/min')).toBeVisible();
+  await page.screenshot({ path: '../outputs/trainer-console-controls-mobile.png', fullPage: true });
+  await page.getByRole('button', { name: 'Close controls' }).click();
+  await page.screenshot({ path: '../outputs/trainer-console-directory-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.getByRole('button', { name: 'Open', exact: true }).first().click();
 
   await expect(
@@ -81,6 +99,10 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
   await expect(page.getByText('ID: 22222222-2222-4222-8222-222222222222', { exact: true })).toBeVisible();
   await expect(page.getByText(/Prototype evaluation metrics/)).toBeVisible();
   expect(requests.some((request) => request.pathname === '/api/trainer/sessions/22222222-2222-4222-8222-222222222222/report')).toBe(true);
+  await page.screenshot({ path: '../outputs/trainer-console-report-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: '../outputs/trainer-console-report-mobile.png', fullPage: true });
 
   expect(
     requests.filter(request => request.method !== 'GET')

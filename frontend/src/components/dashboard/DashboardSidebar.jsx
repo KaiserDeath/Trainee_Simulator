@@ -4,10 +4,7 @@ import {
   CheckCircle2,
   Clock3,
   RadioTower,
-  Search,
-  Settings2,
   SlidersHorizontal,
-  Trash2,
   Users,
   XCircle
 } from 'lucide-react';
@@ -44,7 +41,7 @@ export default function DashboardSidebar({
   traineeSearch
 }) {
   return (
-    <aside className="flex h-full w-[22rem] shrink-0 flex-col border-r border-slate-800 bg-[#09111f] text-slate-200 shadow-2xl">
+    <aside id="trainer-sidebar" aria-label="Trainer navigation and controls" className="flex h-full w-[22rem] shrink-0 flex-col border-r border-slate-800 bg-[#09111f] text-slate-200 shadow-2xl">
       <div className="border-b border-slate-800/80 px-5 py-5">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
@@ -80,7 +77,7 @@ export default function DashboardSidebar({
             active={dashboardSection === 'trainees'}
             description={`${filteredSessions.length} visible`}
             icon={Users}
-            label="Trainees"
+            label="Sessions & reports"
             onClick={() => setDashboardSection('trainees')}
           />
           <SidebarNavButton
@@ -124,137 +121,18 @@ export default function DashboardSidebar({
   );
 }
 
-function TraineeSidebarContent({
-  allSelected,
-  deleteSelectedSessions,
-  filteredSessions,
-  handleMaxOpmChange,
-  handleMinOpmChange,
-  handleTimeoutChange,
-  loading,
-  maxOpm,
-  minOpm,
-  saveStatus,
-  selectedSessionIds,
-  sessionTimeoutMinutes,
-  setTraineeSearch,
-  toggleSelectAll,
-  traineeSearch
-}) {
-  return (
-    <>
-      <div className="border-b border-slate-800/80 p-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/55 p-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4 text-cyan-300" />
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Controls
-              </p>
-            </div>
-            <SaveStatus status={saveStatus} />
-          </div>
-
-          <div className="space-y-4">
-            <NumberField
-              label="Session limit"
-              min="1"
-              suffix="min"
-              value={sessionTimeoutMinutes}
-              onChange={handleTimeoutChange}
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <NumberField
-                label="Min operations/min"
-                min="0"
-                value={minOpm}
-                onChange={handleMinOpmChange}
-              />
-              <NumberField
-                label="Max operations/min"
-                min="0"
-                value={maxOpm}
-                onChange={handleMaxOpmChange}
-              />
-            </div>
-            <p className="text-xs leading-relaxed text-slate-400">Rate includes credit movements and account requests. Generation pauses at 20 pending operations per session.</p>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-3">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-            <input
-              type="text"
-              value={traineeSearch}
-              onChange={(event) =>
-                setTraineeSearch(event.target.value)
-              }
-              placeholder="Search trainee or session ID"
-              className="w-full rounded-xl border border-slate-800 bg-slate-950/60 py-2.5 pl-9 pr-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/10"
-            />
-          </label>
-
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={toggleSelectAll}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-700 hover:bg-slate-800"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {allSelected ? 'Clear all' : 'Select all'}
-            </button>
-
-            {selectedSessionIds.size > 0 && (
-              <button
-                type="button"
-                onClick={deleteSelectedSessions}
-                className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/15"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete {selectedSessionIds.size}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 p-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Trainee Directory
-          </p>
-          <p className="mt-2 text-sm leading-5 text-slate-400">
-            Trainees and their sessions are now grouped in the main workspace.
-          </p>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                Visible
-              </p>
-              <p className="mt-1 text-xl font-bold text-white">
-                {filteredSessions.length}
-              </p>
-            </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-900/70 p-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                Selected
-              </p>
-              <p className="mt-1 text-xl font-bold text-cyan-300">
-                {selectedSessionIds.size}
-              </p>
-            </div>
-          </div>
-          {loading && (
-            <p className="mt-4 text-xs text-slate-500">
-              Loading latest sessions...
-            </p>
-          )}
-        </div>
-      </div>
-    </>
-  );
+function TraineeSidebarContent({ handleMaxOpmChange, handleMinOpmChange, handleTimeoutChange, maxOpm, minOpm, saveStatus, sessionTimeoutMinutes }) {
+  return <section className="trainer-sidebar-settings" aria-labelledby="trainer-settings-title">
+    <div className="trainer-settings-heading"><h2 id="trainer-settings-title">Simulator settings</h2><SaveStatus status={saveStatus} /></div>
+    <p>Global settings · Changes save automatically.</p>
+    <NumberField label="Session limit" min="1" suffix="min" value={sessionTimeoutMinutes} onChange={handleTimeoutChange} />
+    <div className="trainer-rate-fields">
+      <NumberField label="Min operations/min" min="0" value={minOpm} onChange={handleMinOpmChange} />
+      <NumberField label="Max operations/min" min="0" value={maxOpm} onChange={handleMaxOpmChange} />
+    </div>
+    <p>Rate includes credit movements and account requests. Updated rates apply on the next generation cycle.</p>
+    <div className="trainer-queue-note"><strong>20 pending operations</strong><span>Maximum per session. Generation resumes when requests are resolved.</span></div>
+  </section>;
 }
 
 function StatisticsSidebarContent({
@@ -354,6 +232,7 @@ function SidebarNavButton({
     <button
       type="button"
       onClick={onClick}
+      aria-current={active ? 'page' : undefined}
       className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
         active
           ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200 shadow-[inset_3px_0_0_rgba(34,211,238,0.8)]'
