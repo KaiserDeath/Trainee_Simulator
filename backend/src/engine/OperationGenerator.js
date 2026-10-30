@@ -102,8 +102,9 @@ export function generateOperation(
   };
 }
 
-// Roughly 1 in 12 credit movements gets each difficulty twist.
+// Already processed and player in game each affect roughly 1 in 12 movements.
 export const MOVEMENT_SCENARIO_RATE = 1 / 12;
+export const PENDING_RECONCILIATION_RATE = 0.4;
 
 export function pickMovementScenario(
   operationType,
@@ -124,7 +125,7 @@ export function pickMovementScenario(
     return 'PLAYER_IN_GAME';
   }
 
-  if (random < MOVEMENT_SCENARIO_RATE * 3) {
+  if (random < MOVEMENT_SCENARIO_RATE * 2 + PENDING_RECONCILIATION_RATE) {
     return 'PENDING_RECONCILIATION';
   }
 
