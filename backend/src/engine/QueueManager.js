@@ -2,7 +2,7 @@ import { supabase }
   from '../config/supabase.js';
 
 export const QUEUE_LIMITS = {
-  maxPendingOperations: 15,
+  maxPendingOperations: 20,
   generationIntervalMs: 30000,
   minGeneratedOperations: 1,
   maxGeneratedOperations: 2
