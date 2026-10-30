@@ -1,3 +1,5 @@
+import HubAttemptHistory from './HubAttemptHistory';
+import HubReportBreakdown from './HubReportBreakdown';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -29,6 +31,9 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
   const [newAccount, setNewAccount] = useState({ firstName: '', surname: '' });
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [workspace, setWorkspace] = useState('people');
+  const [accountSearch, setAccountSearch] = useState('');
+  const [accountStatus, setAccountStatus] = useState('active');
 
   const load = useCallback(async () => {
     const [accountResponse, courseResponse, settingsResponse, reportResponse, policyResponse] = await Promise.all([
@@ -154,7 +159,17 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
 
   const toggleType = (type) => setSettings((current) => ({ ...current, operation_types: current.operation_types.includes(type) ? current.operation_types.filter((item) => item !== type) : [...current.operation_types, type] }));
   const updateFilter = (name) => (event) => setFilters((current) => ({ ...current, [name]: event.target.value }));
-  const applyFilters = async (event) => { event.preventDefault(); setBusy(true); try { setReport((await getHubAssessmentReport(filters)).data); } finally { setBusy(false); } };
+  const fetchReport = async (values) => {
+    setBusy(true); setNotice('');
+    try { setReport((await getHubAssessmentReport(values)).data); }
+    catch (error) { setNotice(error?.response?.data?.error?.message || 'The report could not be loaded. Please try again.'); }
+    finally { setBusy(false); }
+  };
+  const applyFilters = async (event) => { event.preventDefault(); await fetchReport(filters); };
+  const visibleAccounts = accounts.filter((account) =>
+    (!accountStatus || account.status === accountStatus) &&
+    `${account.displayName} ${account.username}`.toLowerCase().includes(accountSearch.trim().toLowerCase())
+  );
   const stats = report.statistics || {};
   const evaluationById = new Map((evaluationPolicies.evaluations || []).map((evaluation) => [evaluation.id, evaluation]));
   const setById = new Map((evaluationPolicies.attemptSets || []).map((set) => [set.id, set]));
@@ -167,13 +182,33 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
   const failureText = (failures) => Array.isArray(failures) && failures.length > 0 ? failures.join('; ') : '—';
 
   return <div className="hub-assessment-admin">
+    <header className="hub-workspace-header">
+      <div><p className="hub-eyebrow">Training administration</p><h2>Trainer workspace</h2><p>Manage people, configure evaluations, and review results in one place.</p></div>
+      <div className="hub-workspace-summary"><strong>{accounts.filter((account) => account.status === 'active').length}</strong><span>Active Postulantes</span></div>
+    </header>
+    <nav className="hub-workspace-nav" aria-label="Training administration">
+      {[
+        ['people', 'Postulantes', 'Accounts & course assignments'],
+        ['evaluations', 'Evaluations', 'Rules & attempt reopening'],
+        ['reports', 'Reports', 'Results & performance'],
+      ].map(([id, label, description]) => <button type="button" key={id} aria-pressed={workspace === id} aria-controls={`hub-workspace-${id}`} onClick={() => setWorkspace(id)}><strong>{label}</strong><span>{description}</span></button>)}
+    </nav>
+    {notice && <p className="hub-page-notice" role="status">{notice}</p>}
+    <div id="hub-workspace-people" hidden={workspace !== 'people'}>
     <section className="hub-admin-accounts" aria-labelledby="postulante-management-title">
       <p className="hub-eyebrow">TRAINER / RRHH</p><h2 id="postulante-management-title">Postulante management</h2>
       <form className="hub-account-form" onSubmit={create}><label>First name<input required value={newAccount.firstName} onChange={(event) => setNewAccount((value) => ({ ...value, firstName: event.target.value }))} /></label><label>First surname<input required value={newAccount.surname} onChange={(event) => setNewAccount((value) => ({ ...value, surname: event.target.value }))} /></label><button className="hub-primary-button" disabled={busy}>Create Postulante</button></form>
-      <div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>Username</th><th>Full name</th><th>Status</th><th>Course assignment</th><th>Actions</th></tr></thead><tbody>{accounts.map((account) => <tr key={account.id}><td>{account.username}</td><td>{account.displayName}</td><td>{account.status}</td><td><select aria-label={`Course for ${account.displayName}`} value={courseSelections[account.id] || courses[0]?.id || ''} onChange={(event) => setCourseSelections((current) => ({ ...current, [account.id]: event.target.value }))}>{courses.map((course) => <option value={course.id} key={course.id}>{course.title}{course.is_provisional ? ' (provisional)' : ''}</option>)}</select> <button type="button" onClick={() => assignCourse(account)} disabled={busy || account.status !== 'active' || courses.length === 0}>Assign</button></td><td><button type="button" onClick={() => edit(account)} disabled={busy || account.status !== 'active'}>Edit</button> <button type="button" onClick={() => deactivate(account)} disabled={busy || account.status !== 'active'}>Deactivate</button></td></tr>)}</tbody></table></div>
+      <div className="hub-directory-toolbar">
+        <label>Search Postulantes<input type="search" placeholder="Name or username" value={accountSearch} onChange={(event) => setAccountSearch(event.target.value)} /></label>
+        <label>Account status<select value={accountStatus} onChange={(event) => setAccountStatus(event.target.value)}><option value="active">Active</option><option value="">All statuses</option><option value="deactivated">Deactivated</option></select></label>
+        <p>{visibleAccounts.length} of {accounts.length} Postulantes</p>
+      </div>
+      <div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>Username</th><th>Full name</th><th>Status</th><th>Course assignment</th><th>Actions</th></tr></thead><tbody>{visibleAccounts.map((account) => <tr key={account.id}><td>{account.username}</td><td>{account.displayName}</td><td>{account.status}</td><td><select aria-label={`Course for ${account.displayName}`} value={courseSelections[account.id] || courses[0]?.id || ''} onChange={(event) => setCourseSelections((current) => ({ ...current, [account.id]: event.target.value }))}>{courses.map((course) => <option value={course.id} key={course.id}>{course.title}{course.is_provisional ? ' (provisional)' : ''}</option>)}</select> <button type="button" onClick={() => assignCourse(account)} disabled={busy || account.status !== 'active' || courses.length === 0}>Assign</button></td><td><button type="button" onClick={() => edit(account)} disabled={busy || account.status !== 'active'}>Edit</button> <button type="button" onClick={() => deactivate(account)} disabled={busy || account.status !== 'active'}>Deactivate</button></td></tr>)}{visibleAccounts.length === 0 && <tr><td colSpan="5" className="hub-empty-state">No Postulantes match. Try another name or account status.</td></tr>}</tbody></table></div>
     </section>
 
-    {settings && <section className="hub-admin-accounts" aria-labelledby="assessment-settings-title"><p className="hub-eyebrow">Assessment</p><h2 id="assessment-settings-title">Final assessment settings</h2><form className="hub-account-form" onSubmit={saveSettings}>
+    </div>
+    <div id="hub-workspace-evaluations" hidden={workspace !== 'evaluations'}>
+    {settings && <section className="hub-admin-accounts" aria-labelledby="assessment-settings-title"><p className="hub-eyebrow">Assessment</p><h2 id="assessment-settings-title">Final assessment settings</h2><p className="hub-readonly-note">These limits set the total operations in each assessment attempt. Simulator operations per minute are configured in the simulator dashboard.</p><form className="hub-account-form" onSubmit={saveSettings}>
       <label>Duration (minutes)<input type="number" min="1" disabled={!canEditEvaluations} value={settings.duration_minutes} onChange={(event) => setSettings((value) => ({ ...value, duration_minutes: event.target.value }))} /></label>
       <label>Minimum operations<input type="number" min="1" disabled={!canEditEvaluations} value={settings.minimum_operations} onChange={(event) => setSettings((value) => ({ ...value, minimum_operations: event.target.value }))} /></label>
       <label>Maximum operations<input type="number" min="1" disabled={!canEditEvaluations} value={settings.maximum_operations} onChange={(event) => setSettings((value) => ({ ...value, maximum_operations: event.target.value }))} /></label>
@@ -221,25 +256,26 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
       {(evaluationPolicies.reopenEvents || []).length > 0 && <details><summary>Private TRAINER / RRHH reopening audit</summary><div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>When</th><th>Postulante ID</th><th>Reopened by</th><th>Reason</th></tr></thead><tbody>{evaluationPolicies.reopenEvents.map((event) => <tr key={event.id}><td>{new Date(event.created_at).toLocaleString()}</td><td>{event.identity_id}</td><td>{event.reopenedBy?.display_name || event.reopenedBy?.username}</td><td>{event.reason}</td></tr>)}</tbody></table></div></details>}
     </section>
 
+    </div>
+    <div id="hub-workspace-reports" hidden={workspace !== 'reports'}>
     <section className="hub-admin-accounts" aria-labelledby="assessment-report-title"><p className="hub-eyebrow">Reporting</p><h2 id="assessment-report-title">Assessment attempts and statistics</h2>
       <form className="hub-assessment-filters" onSubmit={applyFilters}>
         <label>Postulante<select value={filters.postulanteId} onChange={updateFilter('postulanteId')}><option value="">All</option>{accounts.map((account) => <option value={account.id} key={account.id}>{account.displayName}</option>)}</select></label>
         <label>From<input type="date" value={filters.from} onChange={updateFilter('from')} /></label><label>To<input type="date" value={filters.to} onChange={updateFilter('to')} /></label>
         <label>Status<select value={filters.status} onChange={updateFilter('status')}><option value="">All</option>{['in_progress','passed','unsuccessful','timed_out','abandoned'].map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Result<select value={filters.result} onChange={updateFilter('result')}><option value="">All</option><option value="passed">Passed</option><option value="unsuccessful">Unsuccessful</option></select></label>
-        <label>Operation<select value={filters.operationType} onChange={updateFilter('operationType')}><option value="">All</option>{OPERATION_TYPES.map((value) => <option key={value}>{value}</option>)}</select></label>
+        <details className="hub-advanced-filters"><summary>More filters</summary><div className="hub-assessment-filters"><label>Operation<select value={filters.operationType} onChange={updateFilter('operationType')}><option value="">All</option>{OPERATION_TYPES.map((value) => <option key={value}>{value}</option>)}</select></label>
         <label>Category<select value={filters.category} onChange={updateFilter('category')}><option value="">All</option><option value="movement">Movement</option><option value="request">Request</option></select></label>
         <label>Game<input value={filters.game} onChange={updateFilter('game')} /></label><label>Failure<input value={filters.failure} onChange={updateFilter('failure')} /></label>
         <label>Minimum score<input type="number" min="0" max="100" value={filters.scoreMin} onChange={updateFilter('scoreMin')} /></label><label>Maximum score<input type="number" min="0" max="100" value={filters.scoreMax} onChange={updateFilter('scoreMax')} /></label>
         <label>Minimum minutes<input type="number" min="0" value={filters.durationMin} onChange={updateFilter('durationMin')} /></label><label>Maximum minutes<input type="number" min="0" value={filters.durationMax} onChange={updateFilter('durationMax')} /></label>
         <label>Configuration revision<input type="number" min="1" value={filters.settingsRevision} onChange={updateFilter('settingsRevision')} /></label>
-        <button className="hub-primary-button" disabled={busy}>Apply filters</button><button type="button" className="hub-secondary-button" onClick={() => setFilters(emptyFilters)}>Clear</button>
+        </div></details><div className="hub-filter-actions"><button className="hub-primary-button" disabled={busy}>{busy ? 'Loading…' : 'Apply filters'}</button><button type="button" disabled={busy} className="hub-secondary-button" onClick={() => { setFilters(emptyFilters); void fetchReport(emptyFilters); }}>Clear filters</button></div>
       </form>
       <div className="hub-assessment-stats">{[['Attempts',stats.attempts],['Postulantes',stats.uniquePostulantes],['Pass rate',`${stats.passRate || 0}%`],['First-attempt pass',`${stats.firstAttemptPassRate || 0}%`],['Average score',stats.averageScore ?? '—'],['Best score',stats.bestScore ?? '—'],['Latest score',stats.latestScore ?? '—'],['Average attempts to pass',stats.averageAttemptsToPass ?? '—'],['Average minutes',stats.averageDurationMinutes ?? '—'],['Timed out',stats.timedOut || 0],['Abandoned',stats.abandoned || 0],['Module ready',stats.moduleReadyPostulantes || 0]].map(([label,value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
-      <div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>Postulante</th><th>Attempt</th><th>Status</th><th>Score</th><th>Started</th></tr></thead><tbody>{(report.attempts || []).map((attempt) => <tr key={attempt.id}><td>{attempt.postulante?.display_name}</td><td>{attempt.attempt_number}</td><td>{attempt.status}</td><td>{attempt.score ?? '—'}</td><td>{new Date(attempt.started_at).toLocaleString()}</td></tr>)}</tbody></table></div>
-      <details><summary>Accuracy and failure breakdown</summary><pre>{JSON.stringify({ byOperationType: stats.accuracyByOperationType, byGame: stats.accuracyByGame, byCategory: stats.accuracyByCategory, failures: stats.failureBreakdown }, null, 2)}</pre></details>
-      <details><summary>Progress over time</summary><pre>{JSON.stringify(stats.progressOverTime || [], null, 2)}</pre></details>
+      <HubAttemptHistory attempts={report.attempts || []} />
+      <HubReportBreakdown statistics={stats} />
     </section>
-    {notice && <p className="hub-page-notice" role="status">{notice}</p>}
+    </div>
   </div>;
 }

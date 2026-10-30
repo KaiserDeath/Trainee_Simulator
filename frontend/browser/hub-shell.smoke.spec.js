@@ -666,6 +666,25 @@ test('trainer can switch the progress view to Spanish', async ({ page }) => {
   await expect(page.locator('.hub-app-shell')).toHaveAttribute('lang', 'es');
 });
 
+test('trainer searches learner progress without changing course totals', async ({ page }) => {
+  await page.route('**/api/hub/context', (route) => route.fulfill({ json: { subject: { id: 'trainer-progress', roles: ['TRAINER'] } } }));
+  await page.route('**/api/hub/trainer/postulantes', (route) => route.fulfill({ json: { postulantes: [
+    { id: 'juan', displayName: 'Juan Pérez', username: 'Jperez', enrolments: [{ id: 'course-juan', status: 'in_progress', course: { title: 'Operator Foundations' }, modules: [{ activities: [{ status: 'completed' }, { status: 'assigned' }] }] }] },
+    { id: 'ana', displayName: 'Ana Torres', username: 'Atorres', enrolments: [] },
+  ] } }));
+  await page.goto('/hub');
+  const progress = page.getByRole('region', { name: 'All Postulante progress' });
+  await expect(progress.getByText('1 / 2', { exact: true })).toBeVisible();
+  await page.getByLabel('Search learner progress').fill('atorres');
+  await expect(progress.getByRole('rowheader', { name: 'Ana Torres' })).toBeVisible();
+  await expect(progress.getByRole('rowheader', { name: 'Juan Pérez' })).toHaveCount(0);
+  await page.getByLabel('Search learner progress').fill('missing');
+  await expect(progress.getByText('No learners match your search.')).toBeVisible();
+  await page.getByLabel('Search learner progress').fill('');
+  await expect(progress.getByRole('progressbar')).toHaveAttribute('value', '1');
+  await page.screenshot({ path: '../outputs/trainer-progress-desktop.png', fullPage: true });
+});
+
 test('TRAINER manages all Postulantes, assigns a course, and saves advanced assessment settings', async ({ page }) => {
   const postulantes = [{ id: 'postulante-1', username: 'Jperez', firstName: 'Juan', surname: 'Pérez', displayName: 'Juan Pérez', roles: ['POSTULANTE'], status: 'active' }];
   let settingsUpdate;
@@ -692,10 +711,16 @@ test('TRAINER manages all Postulantes, assigns a course, and saves advanced asse
   await page.goto('/hub');
   await expect(page.getByRole('heading', { name: 'Postulante management' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
-  await page.getByRole('button', { name: 'Assign' }).click();
+  await page.getByRole('button', { name: 'Assign', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Course assigned to Juan Pérez.');
   expect(assignedCourse).toEqual({ courseId: 'course-1' });
 
+  await page.getByLabel('Search Postulantes', { exact: true }).fill('nobody');
+  await expect(page.getByText('No Postulantes match. Try another name or account status.')).toBeVisible();
+  await page.getByLabel('Search Postulantes', { exact: true }).fill('jperez');
+  await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
+  await page.getByRole('button', { name: 'Evaluations Rules & attempt reopening' }).click();
+  await expect(page.getByRole('heading', { name: 'Postulante management' })).not.toBeVisible();
   await page.getByLabel('Duration (minutes)').fill('45');
   await page.getByLabel('Advanced Settings').check();
   await page.getByRole('checkbox', { name: 'RESET PASSWORD' }).uncheck();
@@ -704,6 +729,58 @@ test('TRAINER manages all Postulantes, assigns a course, and saves advanced asse
   expect(settingsUpdate).toMatchObject({ durationMinutes: 45, minimumOperations: 2, maximumOperations: 6, advancedEnabled: true });
   expect(settingsUpdate.operationTypes).not.toContain('RESET PASSWORD');
   await expect(page.getByText(/Configuration revision 2/)).toBeVisible();
+  await page.getByRole('button', { name: 'Reports Results & performance' }).click();
+  await expect(page.getByRole('heading', { name: 'Assessment attempts and statistics' })).toBeVisible();
+  await expect(page.getByLabel('Minimum score', { exact: true })).not.toBeVisible();
+  await page.getByText('More filters', { exact: true }).click();
+  await page.getByLabel('Minimum score', { exact: true }).fill('90');
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  const clearRequest = page.waitForRequest((request) => request.url().includes('/api/hub/assessment/report') && !request.url().includes('scoreMin=90'));
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await clearRequest;
+  await expect(page.getByLabel('Minimum score', { exact: true })).toHaveValue('');
+  await page.getByRole('button', { name: 'Postulantes Accounts & course assignments' }).click();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: '../outputs/trainer-ux-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole('button', { name: 'Postulantes Accounts & course assignments' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: '../outputs/trainer-ux-mobile.png', fullPage: true });
+});
+
+test('trainer reports keep account histories separate and expose chronological attempt evidence', async ({ page }) => {
+  await page.route('**/api/hub/context', (route) => route.fulfill({ json: { subject: { id: 'trainer-report', roles: ['TRAINER'] } } }));
+  await page.route('**/api/hub/trainer/postulantes', (route) => route.fulfill({ json: { postulantes: [] } }));
+  const attempt = (id, identity, username, number, started, value) => ({ id, identity_id: identity, postulante: { id: identity, display_name: 'Juan Pérez', username }, attempt_number: number, status: 'unsuccessful', score: value, started_at: started, completed_at: new Date(Date.parse(started) + 120000).toISOString(), settings_snapshot: { revision: 3 }, operationResults: [] });
+  await page.route('**/api/hub/assessment/report**', (route) => route.fulfill({ json: { attempts: [
+    attempt('attempt-old', 'account-a', 'Jperez', 1, '2026-10-29T12:00:00Z', 0),
+    { ...attempt('attempt-new', 'account-a', 'Jperez', 2, '2026-10-30T12:00:00Z', 75), legacy_trainee_session_id: 'linked-session', operationResults: [{ id: 'result-1', operation_type: 'ADD CREDITS', game: 'Orion Stars', is_correct: false, status: 'APPROVED', failure_points: ['Incorrect amount'] }] },
+    { ...attempt('attempt-other', 'account-b', 'Jperez2', 1, '2026-10-30T13:00:00Z', null), status: 'in_progress', completed_at: null },
+  ], statistics: { attempts: 3, accuracyByGame: { 'Orion Stars': { correct: 0, total: 1, accuracy: 0 } } } } }));
+  await page.goto('/hub');
+  await page.getByRole('button', { name: 'Reports Results & performance' }).click();
+  const histories = page.locator('.hub-person-history');
+  await expect(histories).toHaveCount(2);
+  const person = histories.filter({ has: page.locator('small', { hasText: /^Jperez · View attempts$/ }) });
+  await person.locator(':scope > summary').click();
+  await expect(person.locator('tbody > tr').first().getByRole('rowheader')).toHaveText('#2');
+  await expect(person.getByText('0%', { exact: true })).toBeVisible();
+  await person.getByText('Review attempt 2', { exact: true }).click();
+  await expect(person.getByText('Incorrect amount', { exact: true })).toBeVisible();
+  await expect(person.getByText('linked-session', { exact: true })).toBeVisible();
+  await expect(histories.filter({ hasText: 'Jperez2' }).getByText('Latest: Not scored', { exact: true })).toBeVisible();
+  await page.getByLabel('Find a report').fill('Jperez2');
+  await expect(histories).toHaveCount(1);
+  await page.getByLabel('Find a report').fill('');
+  await person.locator(':scope > summary').click();
+  await person.getByText('Review attempt 2', { exact: true }).click();
+  await page.getByText('By game', { exact: true }).click();
+  await expect(page.locator('.hub-report-breakdowns').getByRole('cell', { name: '0%', exact: true })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: '../outputs/trainer-reports-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: '../outputs/trainer-reports-mobile.png', fullPage: true });
 });
 
 test('ADMIN does not request TRAINER Postulante visibility', async ({ page }) => {

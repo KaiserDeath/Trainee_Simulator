@@ -1403,3 +1403,155 @@
     animation-duration: 2s;
   }
 }
+
+/* Trainer workspace: focused navigation and consistent, readable controls. */
+.hub-workspace-header { display:flex; align-items:center; justify-content:space-between; gap:24px; padding-top:32px; }
+.hub-workspace-header h2 { margin:4px 0 8px; font-size:1.8rem; color:#f4f8fc; }
+.hub-workspace-header p { color:#a8bac7; margin:0; }
+.hub-workspace-summary { display:grid; gap:4px; padding:16px 24px; border-left:2px solid #61d5c2; white-space:nowrap; }
+.hub-workspace-summary strong { font-size:2rem; color:#79dfcd; }
+.hub-workspace-summary span { color:#a8bac7; font-size:.8rem; }
+.hub-workspace-nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.hub-workspace-nav button { display:grid; gap:5px; text-align:left; padding:18px 20px; border:1px solid #314858; border-radius:12px; background:#102330; color:#e8eef8; cursor:pointer; font:inherit; }
+.hub-workspace-nav button span { color:#a8bac7; font-size:.8rem; }
+.hub-workspace-nav button[aria-pressed="true"] { background:#143c3c; border-color:#61d5c2; box-shadow:inset 0 -3px #61d5c2; }
+.hub-workspace-nav button:hover { border-color:#61d5c2; }
+.hub-assessment-admin > div:not([hidden]) { display:grid; gap:24px; min-width:0; }
+.hub-assessment-admin [hidden] { display:none; }
+.hub-assessment-admin .hub-admin-accounts { background:#0f2331; border-color:#2a4151; padding:clamp(18px,3vw,30px); color:#e8eef8; }
+.hub-assessment-admin h2 { margin:6px 0 18px; color:#f4f8fc; font-size:1.45rem; }
+.hub-assessment-admin h3 { color:#f4f8fc; }
+.hub-assessment-admin .hub-readonly-note { color:#a8bac7; line-height:1.6; margin:12px 0 20px; }
+.hub-assessment-admin input:not([type="checkbox"]), .hub-assessment-admin select,
+.hub-directory-toolbar input, .hub-directory-toolbar select, .hub-progress-search input { min-width:0; min-height:44px; width:100%; padding:10px 12px; border:1px solid #456073; border-radius:8px; color:#e8eef8; background:#091b28; font:inherit; }
+.hub-assessment-admin input[type="checkbox"] { accent-color:#61d5c2; width:18px; height:18px; }
+.hub-assessment-admin label { color:#bdcdd9; font-size:.85rem; }
+.hub-assessment-admin button:focus-visible, .hub-assessment-admin input:focus-visible, .hub-assessment-admin select:focus-visible, .hub-progress-search input:focus-visible { outline:3px solid #61d5c2; outline-offset:3px; }
+.hub-assessment-admin td button { min-height:36px; padding:6px 12px; margin:4px 4px 4px 0; border:1px solid #456073; border-radius:7px; background:#163448; color:#e8eef8; cursor:pointer; }
+.hub-assessment-admin button:disabled { opacity:.5; cursor:not-allowed; }
+.hub-assessment-admin .hub-account-form { margin:18px 0; padding:18px; background:#0a1c29; border:1px solid #2a4151; border-radius:12px; }
+.hub-directory-toolbar { display:flex; align-items:end; flex-wrap:wrap; gap:16px; padding-top:18px; border-top:1px solid #2a4151; }
+.hub-directory-toolbar label { display:grid; gap:7px; flex:1 1 180px; }
+.hub-directory-toolbar label:first-child { flex-grow:2; }
+.hub-directory-toolbar p { color:#a8bac7; font-size:.8rem; }
+.hub-advanced-filters, .hub-filter-actions { grid-column:1 / -1; }
+.hub-advanced-filters summary { cursor:pointer; color:#79dfcd; padding:10px 0; }
+.hub-filter-actions { display:flex; gap:12px; flex-wrap:wrap; }
+.hub-assessment-admin .hub-assessment-stats > div { background:#0a1c29; border-color:#2a4151; }
+.hub-assessment-admin .hub-assessment-stats span { color:#a8bac7; }
+.hub-assessment-admin .hub-assessment-stats strong { color:#f4f8fc; font-size:1.4rem; }
+.hub-assessment-admin .hub-evaluation-policy-card { background:#0a1c29; color:#e8eef8; border-color:#2a4151; }
+.hub-assessment-admin .hub-evaluation-policy-card header strong { color:#79dfcd; }
+.hub-assessment-admin pre { overflow:auto; max-height:320px; color:#bdcdd9; }
+.hub-progress-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:24px 0; }
+.hub-progress-summary > div { display:grid; gap:12px; padding:18px; border:1px solid #2a4151; border-radius:12px; background:#0a1c29; }
+.hub-progress-summary span { color:#a8bac7; font-size:.8rem; }
+.hub-progress-summary strong { font-size:1.8rem; color:#f4f8fc; }
+.hub-progress-search { display:grid; gap:8px; max-width:420px; margin:0 0 18px; color:#bdcdd9; font-size:.85rem; }
+.hub-progress-cell { display:grid; gap:7px; min-width:100px; }
+.hub-progress-cell progress { width:100%; max-width:160px; height:7px; accent-color:#61d5c2; }
+.hub-status-pill { display:inline-block; border:1px solid #456073; border-radius:20px; padding:4px 10px; font-size:.78rem; white-space:nowrap; color:#c9d7e1; }
+.hub-status-completed { background:#123e35; border-color:#357e65; color:#9be4bf; }
+.hub-status-in_progress { background:#15374b; border-color:#387e9f; color:#a4d8f4; }
+@media (max-width:640px) {
+ .hub-workspace-header { align-items:start; flex-direction:column; }
+ .hub-workspace-summary { display:none; }
+ .hub-workspace-nav { grid-template-columns:1fr; }
+ .hub-workspace-nav button { padding:12px 16px; }
+ .hub-progress-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .hub-assessment-admin .hub-account-form { padding:12px; grid-template-columns:1fr; }
+}
+
+.hub-assessment-admin .hub-admin-accounts, .hub-assessment-admin .hub-account-table-wrap { min-width:0; max-width:100%; }
+.hub-assessment-admin .hub-account-table-wrap { overflow-x:auto; }
+.hub-assessment-admin .hub-account-table-wrap table { min-width:660px; }
+.hub-trainer-section > h2 { font-family:inherit; font-size:clamp(1.5rem,3vw,2rem); }
+.hub-password-panel { margin-top:24px; background:#0f2331; border-color:#2a4151; color:#bdcdd9; }
+.hub-password-panel input { background:#091b28; color:#e8eef8; border-color:#456073; }
+.hub-evaluation-policy-card > header span { color:#a8bac7; }
+
+/* Trainer console: compact controls, quiet surfaces, and functional accents. */
+.hub-staff-console { background:#0d141d; --console-border:#334151; --console-muted:#acbac9; }
+.hub-staff-console .hub-topbar { background:#101923; backdrop-filter:none; border-color:var(--console-border); }
+.hub-staff-console .hub-brand-mark { border-radius:4px; background:#223746; color:#a9dfed; box-shadow:none; border:1px solid #496477; }
+.hub-staff-console .hub-main { padding-top:20px; }
+.hub-staff-console .hub-trainer-section { margin-top:0; padding:20px; border-radius:6px; background:#121d29; box-shadow:none; border-color:var(--console-border); }
+.hub-staff-console .hub-trainer-section > h2 { font-size:1.4rem; }
+.hub-staff-console .hub-eyebrow { color:#a6c4d5; font-size:.68rem; letter-spacing:.08em; }
+.hub-staff-console .hub-workspace-header { padding-top:20px; gap:16px; }
+.hub-staff-console .hub-workspace-header h2 { font-size:1.35rem; }
+.hub-staff-console .hub-workspace-header p { color:var(--console-muted); font-size:.85rem; }
+.hub-staff-console .hub-workspace-summary { display:flex; align-items:baseline; gap:8px; padding:8px 12px; border-left:1px solid var(--console-border); }
+.hub-staff-console .hub-workspace-summary strong { color:#d8e7f1; font-size:1.15rem; font-variant-numeric:tabular-nums; }
+.hub-staff-console .hub-workspace-summary span { color:var(--console-muted); }
+.hub-staff-console .hub-assessment-admin { gap:16px; }
+.hub-staff-console .hub-workspace-nav { display:flex; flex-wrap:wrap; gap:0; border-bottom:1px solid var(--console-border); }
+.hub-staff-console .hub-workspace-nav button { flex:1 1 160px; gap:4px; border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; padding:12px 16px; }
+.hub-staff-console .hub-workspace-nav button[aria-pressed="true"] { background:#172735; border-bottom-color:#88cddd; box-shadow:none; }
+.hub-staff-console .hub-workspace-nav button:hover { background:#1a2b3b; }
+.hub-staff-console .hub-workspace-nav button span { font-size:.75rem; color:var(--console-muted); }
+.hub-staff-console .hub-admin-accounts, .hub-staff-console .hub-password-panel, .hub-staff-console .hub-evaluation-policy-card { padding:20px; background:#121d29; border-color:var(--console-border); border-radius:6px; box-shadow:none; }
+.hub-staff-console .hub-assessment-admin h2 { font-size:1.2rem; margin-bottom:14px; }
+.hub-staff-console .hub-assessment-admin .hub-account-form { padding:14px; margin:14px 0; border-radius:4px; background:#101923; border-color:var(--console-border); }
+.hub-staff-console .hub-assessment-admin input:not([type="checkbox"]), .hub-staff-console .hub-assessment-admin select, .hub-staff-console .hub-progress-search input, .hub-staff-console .hub-password-panel input { background:#0d1620; border-color:#4b5c70; border-radius:4px; }
+.hub-staff-console .hub-primary-button { background:#b4d8e4; border-color:#b4d8e4; color:#101d29; border-radius:4px; }
+.hub-staff-console .hub-secondary-button, .hub-staff-console .hub-assessment-admin td button { border-radius:4px; background:#1c2e3e; border-color:#4b5c70; color:#e1ebf3; }
+.hub-staff-console .hub-progress-summary { gap:0; margin:16px 0; border-block:1px solid var(--console-border); }
+.hub-staff-console .hub-progress-summary > div { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:12px 16px; border:0; border-right:1px solid var(--console-border); border-radius:0; background:transparent; }
+.hub-staff-console .hub-progress-summary > div:last-child { border-right:0; }
+.hub-staff-console .hub-progress-summary strong { font-size:1.2rem; font-variant-numeric:tabular-nums; }
+.hub-staff-console .hub-assessment-stats > div { border-radius:4px; background:#101923; }
+.hub-staff-console .hub-assessment-stats strong { font-size:1.15rem; font-variant-numeric:tabular-nums; }
+.hub-staff-console .hub-status-pill { border-radius:4px; }
+.hub-staff-console .hub-trainer-table th, .hub-staff-console .hub-trainer-table td { padding:12px 10px; }
+.hub-staff-console .hub-progress-cell progress { accent-color:#88cddd; }
+.hub-staff-console .hub-progress-cell progress::-webkit-progress-bar { background:#344455; border-radius:2px; }
+.hub-staff-console .hub-progress-cell progress::-webkit-progress-value { background:#88cddd; border-radius:2px; }
+.hub-staff-console .hub-progress-cell progress::-moz-progress-bar { background:#88cddd; }
+.hub-staff-console .hub-footer { border-color:var(--console-border); }
+@media (max-width:640px) {
+ .hub-staff-console .hub-workspace-summary { display:none; }
+ .hub-staff-console .hub-workspace-nav button { flex-basis:100%; padding:12px; }
+ .hub-staff-console .hub-admin-accounts { padding:16px; }
+ .hub-staff-console .hub-progress-summary > div { border-right:0; padding:12px 8px; }
+}
+
+/* Report histories prioritize the person, then the individual attempt. */
+.hub-attempt-history { margin-top:24px; }
+.hub-person-history { margin-top:12px; border:1px solid #405063; border-radius:4px; background:#101923; }
+.hub-person-history > summary { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; padding:16px; cursor:pointer; list-style:disclosure-closed inside; }
+.hub-person-history[open] > summary { border-bottom:1px solid #334151; background:#172735; }
+.hub-person-history > summary > span:first-child { display:grid; gap:5px; }
+.hub-person-history summary small { color:#acbac9; font-weight:400; }
+.hub-history-overview { display:flex; flex-wrap:wrap; gap:10px 20px; font-size:.8rem; color:#c1d0dd; font-variant-numeric:tabular-nums; }
+.hub-history-meta { padding:0 16px; color:#acbac9; font-size:.78rem; overflow-wrap:anywhere; }
+.hub-person-history .hub-account-table-wrap { padding:0 12px 12px; }
+.hub-person-history summary:focus-visible, .hub-report-breakdowns summary:focus-visible, .hub-attempt-evidence summary:focus-visible { outline:3px solid #88cddd; outline-offset:3px; }
+.hub-attempt-evidence { min-width:160px; max-width:420px; }
+.hub-attempt-evidence > summary { padding:8px 0; color:#a9dfed; cursor:pointer; }
+.hub-history-fields { display:grid; gap:10px; margin:12px 0; font-size:.78rem; }
+.hub-history-fields dt { color:#acbac9; }
+.hub-history-fields dd { margin:4px 0 0; overflow-wrap:anywhere; }
+.hub-history-results { display:grid; gap:10px; padding:0; list-style:none; }
+.hub-history-results > li { display:grid; gap:6px; padding:10px; border:1px solid #334151; border-radius:4px; font-size:.8rem; overflow-wrap:anywhere; }
+.hub-history-results ul { padding-left:18px; color:#f0c0bd; }
+.hub-report-breakdowns { display:grid; gap:12px; margin-top:24px; }
+.hub-report-breakdowns > details { padding:14px; border:1px solid #334151; border-radius:4px; }
+.hub-report-breakdowns summary { color:#c6d8e5; cursor:pointer; }
+.hub-report-breakdowns p { color:#acbac9; font-size:.85rem; }
+@media (max-width:640px) { .hub-history-overview { gap:8px 12px; } .hub-person-history > summary { padding:12px; } }
+
+.hub-attempt-history, .hub-person-history, .hub-report-breakdowns, .hub-report-breakdowns > details { min-width:0; max-width:100%; }
+.hub-report-breakdowns > details > .hub-account-table-wrap { min-width:0; max-width:100%; overflow-x:auto; }
+.hub-person-history summary small { overflow-wrap:anywhere; }
+
+@media (max-width:640px) {
+ .hub-person-history .hub-account-table-wrap table { min-width:0; width:100%; }
+ .hub-person-history .hub-trainer-table thead { display:none; }
+ .hub-person-history .hub-trainer-table tbody { display:block; }
+ .hub-person-history .hub-trainer-table tbody > tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); padding:12px 0; border-bottom:1px solid #334151; }
+ .hub-person-history .hub-trainer-table tbody th, .hub-person-history .hub-trainer-table tbody td { display:block; border:0; padding:8px; overflow-wrap:anywhere; }
+ .hub-person-history .hub-trainer-table tbody td:last-child { grid-column:1 / -1; }
+ .hub-person-history [data-label]::before { content:attr(data-label); display:block; margin-bottom:6px; color:#acbac9; font-size:.68rem; text-transform:uppercase; font-weight:400; }
+ .hub-person-history .hub-attempt-evidence { max-width:100%; min-width:0; }
+}

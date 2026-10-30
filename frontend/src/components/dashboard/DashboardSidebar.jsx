@@ -166,18 +166,19 @@ function TraineeSidebarContent({
 
             <div className="grid grid-cols-2 gap-3">
               <NumberField
-                label="Min OPM"
+                label="Min operations/min"
                 min="0"
                 value={minOpm}
                 onChange={handleMinOpmChange}
               />
               <NumberField
-                label="Max OPM"
+                label="Max operations/min"
                 min="0"
                 value={maxOpm}
                 onChange={handleMaxOpmChange}
               />
             </div>
+            <p className="text-xs leading-relaxed text-slate-400">Rate includes credit movements and account requests. Generation pauses at 20 pending operations per session.</p>
           </div>
         </div>
 

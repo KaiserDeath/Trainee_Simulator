@@ -590,7 +590,7 @@ export default function HubPage() {
   const course = path?.course || {};
 
   return (
-    <div className="hub-app-shell" lang={staffLanguage}>
+    <div className={`hub-app-shell${isTrainer ? ' hub-staff-console' : ''}`} lang={staffLanguage}>
       <header className="hub-topbar">
         <a className="hub-brand" href="/hub" aria-label="Trez Training Hub home">
           <span className="hub-brand-mark" aria-hidden="true">T</span>
@@ -640,8 +640,6 @@ export default function HubPage() {
 
         {isAdministrator && <HubAdminAccounts />}
 
-        {canManagePostulantes && <HubAssessmentManagement canEditEvaluations={isTrainer} />}
-
         {isTrainer && (
           <section className="hub-trainer-section" aria-labelledby="hub-trainer-title">
             <p className="hub-eyebrow">{staffCopy.trainerView}</p>
@@ -657,6 +655,8 @@ export default function HubPage() {
             )}
           </section>
         )}
+
+        {canManagePostulantes && <HubAssessmentManagement canEditEvaluations={isTrainer} />}
 
         {isAuditor && (
           <section className="hub-trainer-section" aria-labelledby="hub-auditor-title">

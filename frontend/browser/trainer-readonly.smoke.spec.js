@@ -28,7 +28,7 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
       return route.fulfill({ json: {} });
     }
     if (pathname === '/api/trainer/sessions') {
-      return route.fulfill({ json: [session] });
+      return route.fulfill({ json: [session, { ...session, id: '22222222-2222-4222-8222-222222222222', started_at: '2026-08-19T12:00:00.000Z' }] });
     }
     if (pathname === '/api/trainer/operation-time-stats') {
       return route.fulfill({ json: {} });
@@ -64,7 +64,7 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
   ).toBeVisible();
 
   await page.getByRole('button', { name: /Neutral Trainer Fixture/ }).click();
-  await page.getByRole('button', { name: 'Open' }).click();
+  await page.getByRole('button', { name: 'Open', exact: true }).first().click();
 
   await expect(
     page.getByText(/Prototype evaluation metrics/)
@@ -75,6 +75,12 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
   await expect(
     page.getByText('Audit log is currently unavailable.')
   ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Report', exact: true }).click();
+  await page.getByLabel('Session history for this entered name').selectOption('22222222-2222-4222-8222-222222222222');
+  await expect(page.getByText('ID: 22222222-2222-4222-8222-222222222222', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Prototype evaluation metrics/)).toBeVisible();
+  expect(requests.some((request) => request.pathname === '/api/trainer/sessions/22222222-2222-4222-8222-222222222222/report')).toBe(true);
 
   expect(
     requests.filter(request => request.method !== 'GET')

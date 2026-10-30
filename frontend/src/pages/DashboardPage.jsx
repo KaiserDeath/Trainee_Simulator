@@ -221,6 +221,11 @@ export default function DashboardPage() {
       ? 'report'
       : viewMode;
 
+  const relatedSessions = selectedSession
+    ? sessions.filter((session) => session.trainee_name === selectedSession.trainee_name)
+      .sort((a, b) => new Date(b.started_at || 0) - new Date(a.started_at || 0))
+    : [];
+
   const sidebarOperationRows =
     operationTimeStats?.allOperations || [];
   const sidebarTopOperation =
@@ -368,7 +373,18 @@ export default function DashboardPage() {
           </div>
         ) : selectedSession ? (
           <div className="flex-1 overflow-y-auto p-8 relative z-10">
-            <header className="mb-8 flex justify-between items-end border-b border-slate-800/50 pb-6">
+            <div className="mb-5 rounded border border-slate-700 bg-slate-900 p-4">
+              <label className="grid gap-2 text-sm text-slate-200">Session history for this entered name
+                <select className="min-h-11 w-full rounded border border-slate-600 bg-slate-950 p-2 text-slate-100" value={selectedSession.id} onChange={(event) => {
+                  const next = relatedSessions.find((session) => session.id === event.target.value);
+                  if (next) setSelectedSession(next);
+                }}>
+                  {relatedSessions.map((session) => <option key={session.id} value={session.id}>{session.started_at ? new Date(session.started_at).toLocaleString() : 'Date not recorded'} · {session.status} · {session.id.slice(0, 8)}</option>)}
+                </select>
+              </label>
+              <p className="mt-2 text-xs text-slate-400">{relatedSessions.length} sessions, newest first. Legacy sessions are grouped by entered name, which is not a verified account identity.</p>
+            </div>
+            <header className="mb-8 flex flex-wrap gap-4 justify-between items-end border-b border-slate-800/50 pb-6">
               <div>
                 <button
                   type="button"
