@@ -82,9 +82,16 @@ class GameMaster {
 
     let interval = null;
 
+    // Claim the session before awaiting generation so recovery and /start
+    // cannot install duplicate timers for the same session.
+    const timers = { interval: null, timeout: null, autoCloseMs };
+    this.activeSessions.set(sessionId, timers);
+
     if (!randomGenerationDisabled) {
       // Generate initial operations immediately
       await this.generateOperations(sessionId);
+
+      if (this.activeSessions.get(sessionId) !== timers) return;
 
       interval = setInterval(async () => {
         await this.generateOperations(
@@ -102,14 +109,7 @@ class GameMaster {
       autoCloseMs
     );
 
-    this.activeSessions.set(
-      sessionId,
-      {
-        interval,
-        timeout,
-        autoCloseMs
-      }
-    );
+    Object.assign(timers, { interval, timeout });
   }
 
   scheduleAutoClose(sessionId, autoCloseMs) {
