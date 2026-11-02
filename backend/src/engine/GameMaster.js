@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase.js';
+import { v5 as uuidV5 } from 'uuid';
 import {
   generateOperation,
   GOLDEN_DRAGON_CHANGED_PASSWORD_PREFIX,
@@ -214,11 +215,11 @@ class GameMaster {
     return data || [];
   }
 
-  async insertGeneratedOperation(operation) {
+  async insertGeneratedOperation(operation, delivery) {
     const { data, error } = await supabase
       .rpc(
-        'create_reserved_sandbox_operation',
-        { p_operation: operation }
+        delivery ? 'create_fenced_sandbox_operation' : 'create_reserved_sandbox_operation',
+        { p_operation: operation, ...(delivery ? {p_job_id:delivery.jobId,p_lease_token:delivery.leaseToken} : {}) }
       );
 
     if (error) {
@@ -259,6 +260,11 @@ class GameMaster {
         Math.random() < 0.5
       );
 
+    if (process.env.TREZ_DURABLE_SIMULATION === 'true' || process.env.NODE_ENV === 'production') {
+      const {error}=await supabase.rpc('apply_sandbox_movement_scenario',{p_operation_id:operation.id,p_scenario:scenario,p_bot_applied:botApplied});
+      if(error)throw error;
+      return;
+    }
     if (botApplied) {
       // The system does the game side the same second the request appears.
       const move =
@@ -343,7 +349,7 @@ class GameMaster {
   //
   // GENERATE OPERATIONS
   //
-  async generateOperations(sessionId) {
+  async generateOperations(sessionId, delivery) {
 
     try {
 
@@ -373,21 +379,23 @@ class GameMaster {
       // GET CUSTOMERS
       // =========================
 
-      const { data: customers } =
+      const { data: customers, error: customersError } =
         await supabase
           .from('sandbox_customers')
           .select('*')
           .eq('session_id', sessionId);
+      if(customersError)throw customersError;
 
       // =========================
       // GET GAME ACCOUNTS
       // =========================
 
-      const { data: gameAccounts } =
+      const { data: gameAccounts, error: gameAccountsError } =
         await supabase
           .from('sandbox_game_accounts')
           .select('*')
           .eq('session_id', sessionId);
+      if(gameAccountsError)throw gameAccountsError;
 
       if (
         !customers?.length ||
@@ -578,9 +586,10 @@ class GameMaster {
           );
 
         if (generated) {
+          if(delivery)generated.id=uuidV5(`${delivery.deliveryId}:${i}`,uuidV5.URL);
           const inserted =
             await this.insertGeneratedOperation(
-              generated
+              generated, delivery
             );
 
           if (inserted) {
@@ -627,6 +636,7 @@ class GameMaster {
         'GameMaster error:',
         err
       );
+      if(delivery)throw err;
     }
   }
 }

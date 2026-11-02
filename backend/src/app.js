@@ -28,6 +28,9 @@ import { createHubAccountService } from './auth/hubAccountService.js';
 import { getHubAuthConfig } from './config/hubAuthConfig.js';
 import { createSupabaseAuthClient, supabase } from './config/supabase.js';
 import { HubError } from './hub/HubError.js';
+import { createHubWorkspaceService } from './hub/hubWorkspaceService.js';
+import { createHubAccountPracticeService } from './hub/hubAccountPracticeService.js';
+import { createSimulatorAccess } from './auth/simulatorAccess.js';
 import { buildSessionReport } from './engine/SessionEngine.js';
 import { getSessionActionLog } from './engine/AuditLogger.js';
 
@@ -125,6 +128,9 @@ export function createApp(options = {}) {
   const focusedPracticeRepository = options.focusedPracticeRepository || defaults.focusedPracticeRepository;
   const hubAssessmentService = options.hubAssessmentService || defaults.assessmentService;
   const app = express();
+  app.locals.hubIdentityVerifier = hubIdentityVerifier;
+  app.locals.hubAuthConfig = defaults.authConfig;
+  app.locals.simulatorAuthRequired = options.simulatorAuthRequired ?? (process.env.NODE_ENV === 'production' || process.env.TREZ_SIMULATOR_AUTH_REQUIRED === 'true');
 
   app.use(
     cors({
@@ -145,11 +151,13 @@ export function createApp(options = {}) {
     });
   });
 
-  app.use('/api/sessions', sessionRoutes);
-  app.use('/api/operations', operationRoutes);
-  app.use('/api/customers', customerRoutes);
-  app.use('/api/games', gameRoutes);
-  app.use('/api/trainer', trainerRoutes);
+  const simulatorAccess = app.locals.simulatorAuthRequired
+    ? createSimulatorAccess({identityVerifier:hubIdentityVerifier,csrfProtection:hubCsrfProtection,client:supabase}) : [];
+  app.use('/api/sessions', ...simulatorAccess, sessionRoutes);
+  app.use('/api/operations', ...simulatorAccess, operationRoutes);
+  app.use('/api/customers', ...simulatorAccess, customerRoutes);
+  app.use('/api/games', ...simulatorAccess, gameRoutes);
+  app.use('/api/trainer', ...simulatorAccess, trainerRoutes);
   if (defaults.authConfig.configured) {
     app.use('/api/hub/auth', createHubAuthRouter({
       accountService: hubAccountService,
@@ -176,6 +184,8 @@ export function createApp(options = {}) {
       auditorService: hubAuditorService,
       focusedPracticeRepository,
       assessmentService: hubAssessmentService,
+      workspaceService: options.hubWorkspaceService || createHubWorkspaceService({ client: supabase }),
+      accountPracticeService: options.hubAccountPracticeService || createHubAccountPracticeService({ client: supabase }),
     })
   );
 

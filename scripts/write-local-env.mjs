@@ -46,6 +46,8 @@ const backendEnv = [
   'PORT=8080',
   'HOST=127.0.0.1',
   'CLIENT_URL=http://localhost:5173',
+  'TREZ_SIMULATOR_AUTH_REQUIRED=true',
+  'TREZ_DURABLE_SIMULATION=true',
   ''
 ].join('\n');
 
@@ -53,6 +55,7 @@ const frontendEnv = [
   '# Generated for local development. Do not commit.',
   'VITE_API_URL=http://localhost:8080',
   'VITE_TREZ_HUB_ENABLED=true',
+  'VITE_TREZ_AUTH_REQUIRED=true',
   ''
 ].join('\n');
 

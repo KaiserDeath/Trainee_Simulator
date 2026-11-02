@@ -12,6 +12,7 @@ import {
 } from '../hub/hubAuthorization.js';
 import { createHubService } from '../hub/hubService.js';
 import { createHubFocusedPracticeService } from '../hub/hubFocusedPracticeService.js';
+import { createHubWorkspaceRouter } from './hubWorkspaceRoutes.js';
 
 function asyncRoute(handler) {
   return async (req, res) => {
@@ -32,6 +33,8 @@ export function createHubRouter({
   auditorService,
   focusedPracticeRepository,
   assessmentService,
+  workspaceService,
+  accountPracticeService,
 }) {
   const router = Router();
   const service = createHubService(repository);
@@ -44,6 +47,19 @@ export function createHubRouter({
 
   router.use(authenticateHub(identityVerifier));
   router.use(csrfProtection.middleware);
+  if (workspaceService) router.use('/workspace', createHubWorkspaceRouter({ service: workspaceService }));
+  router.post('/activities/:activityId/account-practice/:command',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
+    if(!accountPracticeService)throw new HubError(503,'HUB_ACCOUNT_PRACTICE_UNAVAILABLE','Account practice is not configured.');
+    res.json(await accountPracticeService.command(req.hubIdentity,req.params.activityId,req.params.command,req.body||{}));
+  }));
+  router.post('/activities/:activityId/credential-practice/:command',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
+    if(!accountPracticeService)throw new HubError(503,'HUB_ACCOUNT_PRACTICE_UNAVAILABLE','Credential practice is not configured.');
+    res.json(await accountPracticeService.command(req.hubIdentity,req.params.activityId,req.params.command,req.body||{},true));
+  }));
+  router.post('/activities/:activityId/exception-practice/:command',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
+    if(!accountPracticeService)throw new HubError(503,'HUB_ACCOUNT_PRACTICE_UNAVAILABLE','Exception practice is not configured.');
+    res.json(await accountPracticeService.command(req.hubIdentity,req.params.activityId,req.params.command,req.body||{},'exception'));
+  }));
 
   router.get('/context', (req, res) => {
     res.json(publicIdentityContext(req.hubIdentity));

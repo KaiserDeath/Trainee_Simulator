@@ -10,19 +10,12 @@ import GameMaster
 import {
   completeSession,
   deleteSession,
-  deleteSessionsWithoutActivity,
   submitSession
 } from '../engine/SessionEngine.js';
 
 const router = Router();
 
 router.get('/', async (req, res) => {
-  try {
-    const deletedIds = await deleteSessionsWithoutActivity();
-    deletedIds.forEach(id => GameMaster.stopSession(id));
-  } catch (cleanupError) {
-    console.error('Failed to clean inactive sessions', cleanupError);
-  }
 
   const { data, error } = await supabase
     .from('trainee_sessions')
@@ -55,6 +48,12 @@ router.post('/start', async (req, res) => {
       await createSandboxSession(
         traineeName
       );
+    if (req.app.locals.simulatorAuthRequired) {
+      const owner = await supabase.from('hub_identities').select('id').eq('external_subject_reference',req.hubIdentity.subjectId).eq('status','active').single();
+      if(owner.error||!owner.data){await deleteSession(session.id);throw new Error('Simulator identity is unavailable.');}
+      const link=await supabase.from('hub_simulator_sessions').insert({session_id:session.id,identity_id:owner.data.id});
+      if(link.error){await deleteSession(session.id);throw new Error('Simulator identity could not be linked.');}
+    }
 
     let minutes = Number(durationMinutes);
     if (!Number.isFinite(minutes) || minutes <= 0) {
@@ -76,22 +75,17 @@ router.post('/start', async (req, res) => {
     }
     const durationMs = Math.round(minutes * 60 * 1000);
 
-    // START GAMEMASTER
-    await GameMaster.startSession(
-      session.id,
-      durationMs
-    );
-
-    // Save selected duration to the session in DB so trainee client can access it
-    try {
-      await supabase
+    // Persist timing and register the durable job before reporting success.
+    const timing = await supabase
         .from('trainee_sessions')
-        .update({ duration_minutes: minutes })
+        .update({ duration_minutes: minutes, runtime_mode: 'free_simulator' })
         .eq('id', session.id);
-      session.duration_minutes = minutes;
-    } catch (updateErr) {
-      console.error('Failed to save duration_minutes on trainee_session:', updateErr);
+    if(timing.error){
+      await deleteSession(session.id);
+      throw new Error('Session timing could not be saved.');
     }
+    session.duration_minutes = minutes;
+    if(process.env.TREZ_DURABLE_SIMULATION!=='true'&&process.env.NODE_ENV!=='production')await GameMaster.startSession(session.id,durationMs);
 
     res.json({
       message:

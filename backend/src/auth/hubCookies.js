@@ -19,11 +19,12 @@ function cookieOptions(config, httpOnly) {
     httpOnly,
     secure: config.secureCookies,
     sameSite: 'lax',
-    path: '/api/hub',
+    path: '/api',
   };
 }
 
 export function setHubSessionCookies(response, config, session) {
+  for (const name of [HUB_ACCESS_COOKIE,HUB_REFRESH_COOKIE]) appendCookie(response,serialize(name,'',{...cookieOptions(config,true),path:'/api/hub',expires:new Date(0),maxAge:0}));
   appendCookie(response, serialize(
     HUB_ACCESS_COOKIE,
     session.access_token,
@@ -37,6 +38,7 @@ export function setHubSessionCookies(response, config, session) {
 }
 
 export function setHubCsrfCookie(response, config, token) {
+  appendCookie(response,serialize(HUB_CSRF_COOKIE,'',{...cookieOptions(config,false),path:'/api/hub',expires:new Date(0),maxAge:0}));
   appendCookie(response, serialize(
     HUB_CSRF_COOKIE,
     token,
@@ -50,6 +52,7 @@ export function clearHubSessionCookies(response, config) {
     [HUB_REFRESH_COOKIE, true],
     [HUB_CSRF_COOKIE, false],
   ]) {
+    appendCookie(response,serialize(name,'',{...cookieOptions(config,httpOnly),path:'/api/hub',expires:new Date(0),maxAge:0}));
     appendCookie(response, serialize(name, '', {
       ...cookieOptions(config, httpOnly),
       expires: new Date(0),

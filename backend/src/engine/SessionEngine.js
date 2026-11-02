@@ -380,6 +380,29 @@ async function buildValidationRequirements({
 
 async function buildOperationReportRows(operations) {
   return Promise.all(operations.map(async operation => {
+    const snapshot = operation.final_evidence_snapshot;
+    if (snapshot?.version === 1) {
+      const customer = snapshot.customer || {};
+      const verdict = snapshot.isCorrect;
+      const requirements = typeof verdict === 'boolean' ? [{
+        label: 'Recorded scorer verdict', expected: 'Correct',
+        sent: verdict ? 'Correct' : 'Incorrect', ok: verdict,
+      }] : [];
+      return {
+        ...stripRawRequestPayload(operation), customer, game_account: snapshot.gameAccount,
+        game: snapshot.gameAccount?.game || snapshot.game || '',
+        customerName: formatCustomerName(customer), customer_name: formatCustomerName(customer),
+        customerUsername: customer.username || '', mobileId: snapshot.gameAccount?.game_username || '',
+        mobile_id: snapshot.gameAccount?.game_username || '',
+        status:snapshot.status, is_correct:typeof verdict==='boolean'?verdict:null,
+        original_is_correct:typeof verdict==='boolean'?verdict:null,
+        sentResult:snapshot.status, sent_result:snapshot.status,
+        expectedResult: 'Recorded scorer verdict', expected_result: 'Recorded scorer verdict',
+        requestData:{}, request_data:{},
+        validationRequirements:requirements,validation_requirements:requirements,
+        evidence_projection_version:2,evidence_status:'captured_at_settlement',
+      };
+    }
     const requestData =
       parseRequestData(operation);
     const requestEvidence =
@@ -497,7 +520,7 @@ export async function buildSessionReport(
     operationRows.map(operation => ({
       ...operation,
       original_is_correct: operation.is_correct ?? null,
-      evidence_projection_version: 1,
+      evidence_projection_version: operation.evidence_projection_version || 1,
       is_correct:
         getReportCorrectness(operation)
     }));

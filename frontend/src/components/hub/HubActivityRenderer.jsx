@@ -5,6 +5,9 @@ import HubAddCreditsActivity from './HubAddCreditsActivity';
 import HubWithdrawCreditsActivity from './HubWithdrawCreditsActivity';
 import HubExactPlayerSearchActivity from './HubExactPlayerSearchActivity';
 import HubFocusedBalanceActivity from './HubFocusedBalanceActivity';
+import HubAccountPracticeActivity from './HubAccountPracticeActivity';
+import HubPasswordResetActivity from './HubPasswordResetActivity';
+import HubExceptionPracticeActivity from './HubExceptionPracticeActivity';
 
 const normaliseItems = (items = []) => items.map((item, index) => ({
   id: typeof item === 'string' ? `item-${index}` : item.id || `item-${index}`,
@@ -182,7 +185,10 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
       {type === 'acknowledgement' && (
         <AcknowledgementContent activity={activity} disabled={disabled} onComplete={onComplete} />
       )}
-      {type === 'interactive_rule_lab' && (
+      {['account_id_lab','account_creation'].includes(activity.content?.executionKind) && <HubAccountPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
+      {activity.content?.executionKind === 'reset_current_account' && <HubPasswordResetActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
+      {activity.content?.executionKind === 'exception_decision' && <HubExceptionPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
+      {type === 'interactive_rule_lab' && activity.content?.executionKind !== 'account_id_lab' && (
         <HubAccountIdLabActivity activity={activity} disabled={disabled} onComplete={onComplete} />
       )}
       {type === 'focused_practice' && (

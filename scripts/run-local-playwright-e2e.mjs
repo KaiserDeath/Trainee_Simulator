@@ -123,6 +123,11 @@ const childEnvironment = {
   TREZ_LOCAL_E2E: '1',
   TREZ_E2E_DISABLE_RANDOM_OPERATIONS:
     '1',
+  // Existing financial workflow gate remains a compatibility-mode gate.
+  // Real Auth/cutover behavior is verified separately by verify:local:hub:auth.
+  TREZ_SIMULATOR_AUTH_REQUIRED: 'false',
+  TREZ_DURABLE_SIMULATION: 'false',
+  VITE_TREZ_AUTH_REQUIRED: 'false',
   TREZ_E2E_BACKEND_URL: backendUrl,
   TREZ_E2E_FRONTEND_URL: frontendUrl,
   TREZ_E2E_DATABASE_URL:

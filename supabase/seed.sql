@@ -1166,3 +1166,10 @@ SET stable_code = EXCLUDED.stable_code,
     history_review_days = EXCLUDED.history_review_days,
     history_record_limit = EXCLUDED.history_record_limit,
     updated_at = NOW();
+
+-- Current behavior approved as the editable Hub baseline on 2026-11-02.
+UPDATE hub_activities SET content=content || '{"policyStatus":"approved","executionKind":"account_id_lab","policyVersionId":"20000000-0000-4000-8000-000000000001"}'::jsonb WHERE stable_code='native-account-id-lab';
+UPDATE hub_activities SET content=(content-'blockedReason') || '{"policyStatus":"approved","executionKind":"account_creation","policyVersionId":"20000000-0000-4000-8000-000000000001"}'::jsonb WHERE stable_code='create-linked-training-account';
+UPDATE hub_activities SET content=(content-'blockedReason') || '{"artifactStatus":"available","executionKind":"exact_player_search"}'::jsonb WHERE stable_code='search-created-account';
+UPDATE hub_activities SET content=(content-'blockedReason')||'{"policyStatus":"approved","executionKind":"reset_current_account"}'::jsonb WHERE stable_code='reset-password-policy-gated-practice';
+UPDATE hub_activities SET content=(content-'blockedReason')||'{"policyStatus":"approved","executionKind":"exception_decision"}'::jsonb WHERE stable_code='exceptional-operations-policy-gated-practice';

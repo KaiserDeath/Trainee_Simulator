@@ -1,5 +1,27 @@
 # Casino Operator Training Simulator (Sandbox)
 
+## Training Hub upgrade in progress — 2026-11-02
+
+The user authorized the existing scoring/ID behavior as the starting rules,
+an editable commercial structure, an Orion-first rollout and an initial target
+of 10 concurrent learners. Current implementation and verification are tracked
+in `docs/TRAINING_HUB_EXECUTION_STATUS_2026-11-02.md`; the expanded curriculum is
+in `docs/TRAINING_HUB_CURRICULUM_TRACEABILITY_2026-11-02.md`.
+
+New local features include reviewed instruction/account-policy changes, pinned
+lesson/policy snapshots, private coaching revisions, the Orion account creation
+and exact-search link, credential reset and exception practice, immutable
+settlement evidence, controlled Hub identity cutover and durable simulation jobs.
+Older milestone/hosted-status paragraphs below are historical baselines; do not
+use them to infer current hosted schema or declare the upgrade complete.
+
+Production requires Hub authentication; local generated configuration enables
+the same boundary. Compatibility browser/financial tests explicitly select the
+legacy development mode; `verify:local:hub:auth` separately verifies real login,
+CSRF, simulator ownership and role boundaries. New gates are
+`npm run verify:local:workspace` and `npm run verify:local:capacity` (local only).
+No hosted migration or deployment is certified by the work-in-progress status.
+
 ## Local foundation verification
 
 The reproducible local Supabase bootstrap and all foundation commands are

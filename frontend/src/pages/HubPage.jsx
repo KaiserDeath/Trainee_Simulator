@@ -23,6 +23,9 @@ import HubLearningPath, { ProgressBar } from '../components/hub/HubLearningPath'
 import HubPasswordPanel from '../components/hub/HubPasswordPanel';
 import HubScoredEvaluationOverview from '../components/hub/HubScoredEvaluationOverview';
 import HubTrainerOverview from '../components/hub/HubTrainerOverview';
+import HubContentStudio from '../components/hub/HubContentStudio';
+import HubCoachingWorkspace from '../components/hub/HubCoachingWorkspace';
+import HubPolicyStudio from '../components/hub/HubPolicyStudio';
 import '../styles/hub.css';
 
 const TRAINER_ROLE = 'TRAINER';
@@ -460,7 +463,9 @@ export default function HubPage() {
     const idempotencyKey = pendingCompletionKeys.current.get(activity.id) || crypto.randomUUID();
     pendingCompletionKeys.current.set(activity.id, idempotencyKey);
     try {
-      if (activity.type === 'focused_practice' && activity.content?.surface === 'balance') {
+      if (['account_id_lab','account_creation','reset_current_account','exception_decision'].includes(activity.content?.executionKind) && activityState.serverCompleted) {
+        // The dedicated command already committed server-verified completion.
+      } else if (activity.type === 'focused_practice' && activity.content?.surface === 'balance') {
         await submitHubRefreshBalance(activity.id, {
           ...activityState,
           idempotencyKey,
@@ -637,8 +642,13 @@ export default function HubPage() {
         </section>}
 
         {notice && <p className="hub-page-notice" role="status">{notice}</p>}
+        {roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">Open free operator simulator</a></p>}
+        {isTrainer && <p><a className="hub-secondary-link" href="/trainer">Open simulator session reports</a></p>}
 
         {isAdministrator && <HubAdminAccounts />}
+        {isAdministrator && <HubPolicyStudio locale={staffLanguage} />}
+        {(isAdministrator || isTrainer) && <HubContentStudio canEdit={isAdministrator} locale={staffLanguage} />}
+        {canManagePostulantes && <HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} />}
 
         {isTrainer && (
           <section className="hub-trainer-section" aria-labelledby="hub-trainer-title">

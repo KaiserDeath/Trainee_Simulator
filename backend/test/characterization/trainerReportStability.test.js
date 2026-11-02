@@ -34,3 +34,22 @@ test('historical report exposes stored outcome separately when mutable balance e
     supabase.from = original;
   }
 });
+
+test('new settlement snapshot keeps its scorer verdict and observed account after live state changes', async()=>{
+  process.env.SUPABASE_URL='http://127.0.0.1:54321';process.env.SUPABASE_SERVICE_ROLE_KEY='local-characterization-only';
+  const {supabase}=await import('../../src/config/supabase.js');
+  const {buildSessionReport}=await import('../../src/engine/SessionEngine.js');
+  const operation={id:'snapshot-op',session_id:'session',type:'REFRESH BALANCE',status:'APPROVED',is_correct:true,
+    game_account:{game:'Vblink',game_username:'changed-live-player',balance:999,password:'never-report-this'},
+    request_data:{newPassword:'never-report-this'},
+    final_evidence_snapshot:{version:1,isCorrect:true,status:'APPROVED',game:'Vblink',gameAccount:{game:'Vblink',game_username:'original-player',balance:10},customer:{username:'original-customer'}}};
+  const original=supabase.from;
+  supabase.from=table=>{assert.ok(['trainee_sessions','sandbox_operations'].includes(table));const result={data:table==='trainee_sessions'?{id:'session'}:[structuredClone(operation)],error:null};return {select(){return this;},eq(){return this;},single(){return Promise.resolve(result);},then(resolve,reject){return Promise.resolve(result).then(resolve,reject);}};};
+  try{
+    const first=await buildSessionReport('session');operation.game_account.balance=1234;operation.game_account.game_username='another-player';
+    const second=await buildSessionReport('session');assert.deepEqual(second,first);
+    assert.equal(second.operations[0].is_correct,true);assert.equal(second.operations[0].evidence_projection_version,2);
+    assert.equal(second.operations[0].game_account.game_username,'original-player');assert.equal(second.operations[0].game_account.balance,10);
+    assert.doesNotMatch(JSON.stringify(second),/never-report-this|changed-live-player|another-player/);
+  }finally{supabase.from=original;}
+});

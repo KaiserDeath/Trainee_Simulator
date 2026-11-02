@@ -6,6 +6,7 @@ import http from 'node:http';
 import { assertLocalE2EBackendEnvironment } from '../../src/config/localE2EGuard.js';
 import { createApp } from '../../src/app.js';
 import { supabase } from '../../src/config/supabase.js';
+import GameMaster from '../../src/engine/GameMaster.js';
 
 assertLocalE2EBackendEnvironment();
 
@@ -78,6 +79,7 @@ async function cleanupDatabase() {
   const fixtureVersions = `SELECT v.id FROM public.hub_content_versions v WHERE v.author_identity_id IN (${fixtureIdentities}) OR v.reviewed_by_identity_id IN (${fixtureIdentities})`;
   const sql = `BEGIN;
 SET LOCAL session_replication_role = replica;
+DELETE FROM public.hub_simulator_sessions WHERE identity_id IN (${fixtureIdentities});
 DELETE FROM public.hub_content_review_events WHERE content_version_id IN (${fixtureVersions}) OR actor_identity_id IN (${fixtureIdentities});
 DELETE FROM public.hub_content_versions WHERE id IN (${fixtureVersions});
 DELETE FROM public.hub_evidence_events WHERE attempt_id IN (${fixtureAttempts});
@@ -382,12 +384,13 @@ async function createPostulante(staffSession, payload) {
 }
 
 let server;
+let simulatorSessionId;
 try {
   await cleanupDatabase();
   await cleanupAuthUsers();
   await verifyGovernanceConcurrency();
   const bootstrap = await createBootstrapAdmin();
-  server = http.createServer(createApp());
+  server = http.createServer(createApp({simulatorAuthRequired:true}));
   await new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(8080, '127.0.0.1', resolve);
@@ -422,6 +425,25 @@ try {
   const trainee = await createPostulante(trainer.session, accountInputs.postulante);
   const adminB = await createDirectLocalStaff(accountInputs.adminB, 'adminb');
   const auditor = await createDirectLocalStaff(accountInputs.rrhh, 'rrhh');
+  const simulatorRequest=async(path,session,method='GET',body,csrf=true)=>{
+    const response=await fetch(`http://localhost:8080/api${path}`,{method,headers:{
+      ...(session?{cookie:session.jar.header()}:{}),
+      ...(method!=='GET'&&csrf?{origin:clientOrigin,'x-trez-csrf':session?.csrf||'missing'}:{}),
+      ...(body?{'content-type':'application/json'}:{}),
+    },...(body?{body:JSON.stringify(body)}:{})});
+    const result=await response.json();return {status:response.status,body:result};
+  };
+  assert.equal((await simulatorRequest('/trainer/sessions')).status,401);
+  assert.equal((await simulatorRequest('/trainer/sessions',trainee.session)).status,403);
+  assert.equal((await simulatorRequest('/trainer/sessions',auditor.session)).status,403);
+  assert.equal((await simulatorRequest('/sessions/start',trainee.session,'POST',{traineeName:'Forged name'},false)).status,403);
+  const simulator=await simulatorRequest('/sessions/start',trainee.session,'POST',{traineeName:'Forged name',durationMinutes:5});
+  assert.equal(simulator.status,200,JSON.stringify(simulator.body));simulatorSessionId=simulator.body.session.id;
+  assert.equal(simulator.body.session.trainee_name,trainee.identity.displayName);
+  assert.equal((await simulatorRequest(`/sessions/${simulatorSessionId}`,trainee.session)).status,200);
+  assert.equal((await simulatorRequest(`/sessions/${randomUUID()}`,trainee.session)).status,404);
+  assert.equal((await simulatorRequest(`/games/accounts/${randomUUID()}/recharge`,trainer.session,'POST',{amount:1})).status,403);
+  assert.equal((await simulatorRequest(`/sessions/${simulatorSessionId}/submit`,trainee.session,'POST',{})).status,200);
 
   for (const invalidInvitation of [
     {
@@ -678,6 +700,7 @@ try {
 
   console.log('Local Supabase Auth verification passed: username/password login, HTTP-only JWT cookies, CSRF, generated usernames, exclusive roles, locale policy, global TRAINER/RRHH Postulante visibility, assessment defaults/reporting, staff password controls, course assignment, retention, two-person publishing, read-only RRHH evidence reporting with redaction and explicit lineage, deactivation, and logout.');
 } finally {
+  if(simulatorSessionId)GameMaster.stopSession(simulatorSessionId);
   if (server) await new Promise((resolve) => server.close(() => resolve()));
   await cleanupDatabase();
   await cleanupAuthUsers();

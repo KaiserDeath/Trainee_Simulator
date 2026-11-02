@@ -30,6 +30,7 @@ export default defineConfig({
     env: {
       VITE_API_URL: baseURL,
       VITE_TREZ_HUB_ENABLED: "true",
+      VITE_TREZ_AUTH_REQUIRED: "false",
     },
     url: baseURL,
     reuseExistingServer: false,

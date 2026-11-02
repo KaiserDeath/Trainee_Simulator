@@ -8,6 +8,7 @@ import { supabase } from './config/supabase.js';
 import GameMaster from './engine/GameMaster.js';
 import { completeSession } from './engine/SessionEngine.js';
 import { recoverActiveSessions } from './engine/sessionRecovery.js';
+import { startSimulationWorker } from './engine/simulationWorker.js';
 import {
   assertLocalE2EBackendEnvironment
 } from './config/localE2EGuard.js';
@@ -36,6 +37,7 @@ const server = http.createServer(app);
   Initialize Socket.IO
 */
 export const io = new Server(server, {
+  path: app.locals.simulatorAuthRequired ? '/api/realtime' : '/socket.io',
   cors: {
     origin: [
       'http://localhost:5173',
@@ -44,6 +46,17 @@ export const io = new Server(server, {
     credentials: true,
   },
 });
+if(app.locals.simulatorAuthRequired){
+  io.use(async(socket,next)=>{
+    try{
+      if(socket.handshake.headers.origin!==app.locals.hubAuthConfig.clientOrigin)throw new Error('Invalid origin');
+      const response={append(){throw new Error('Refresh the HTTP session before reconnecting.');},set(){}};
+      const identity=await app.locals.hubIdentityVerifier.verify(socket.request,response);
+      if(!identity?.roles?.includes('TRAINER'))throw new Error('Trainer identity required');
+      socket.data.identityId=identity.hubIdentityId;next();
+    }catch{next(new Error('Authenticated trainer session required.'));}
+  });
+}
 
 /*
   Socket connection events
@@ -66,6 +79,9 @@ server.listen(PORT, HOST, () => {
   console.log(
     `Server running on ${HOST || 'all interfaces'}:${PORT}`
   );
+  if(process.env.TREZ_DURABLE_SIMULATION==='true'||process.env.NODE_ENV==='production'){
+    const worker=startSimulationWorker();server.on('close',()=>worker.stop());return;
+  }
 
   let recovering = false;
   const recover = async () => {

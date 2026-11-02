@@ -1,0 +1,49 @@
+# Training Hub execution status
+
+Implementation started 2026-11-02, following the user's instruction to build the architecture plan. Branch: `codex/training-hub-completion`; baseline: `42e76777e911f3076abbe51e3e6b954df8813d15`.
+
+## Scope and decisions
+
+Local implementation and verification are authorized. Existing untracked operational artifacts are preserved. The architecture plan is the delivery backlog, with accepted ADRs and direct user decisions taking precedence.
+
+The user answered all five kickoff decision groups: Orion-first internal release, followed by other adapters; initial peak 10 simultaneous learners, with an extensible sellable structure and editable information; preserve current scoring and account-ID behavior as the starting rules; finalize curriculum/checkpoint mapping under the existing constraints; full permission for push, tested authentication cutover, hosted migrations and deployment; private versioned notes, staff-only formal evidence, two-year retention and private Supabase media storage approved. Scalability beyond the tested pilot is a future measured capacity target, not an unlimited-concurrency claim.
+
+Current ID reference behavior was inspected directly in `Evaluations/src/rules.js`: Golden Dragon display-name structure uses customer plus game initials; Orion uses initials + underscore + first six normalized customer characters + three digits; Vblink uses first eight normalized characters + initials + four digits. The standalone source is read-only; these rules will be versioned on the server. Existing score/settlement behavior remains the baseline.
+
+## Foundation progress
+
+- Created the implementation branch without resetting existing work.
+- Reconfirmed Node v24.13.1, satisfying the proposed queue spike's Node floor.
+- Initial local Supabase health failed because Docker Desktop was stopped. Started the installed Docker Desktop; `docker info` now reports the Linux engine.
+- Full existing `verify:foundation` gate completed with exit code 0: backend 201/201, shared rules, database-safety 61/61, frontend lint/build and mocked browser 38/38 passed. The build's existing size warning remains. Browser-generated tracked screenshots were restored to their pre-run repository contents; no user changes were overwritten.
+- First isolated `local:start` applied migrations and seed but failed creating the full container set due to a Windows Go runtime out-of-memory error. Retrying with nonessential local services excluded, without changing unrelated containers or machine memory settings. Generated local environment values remain private and uncommitted.
+- Confirmed availability of the original Operator Backend PPTX and all four referenced training-day DOCX files. Their actual content has not yet been re-extracted during execution.
+
+## Required next outcomes
+
+1. Record complete foundation gate result; resolve failures before claiming baseline green.
+2. Confirm isolated local Supabase status, then run local data, Hub persistence and Auth/governance verification; do not use hosted credentials for tests.
+3. Incorporate the user's kickoff answers and create the authoritative requirement/capability/evidence/evaluation traceability matrix.
+4. Implement identity/evidence foundations and the continuous Orion Account Creation -> Search slice, followed by the rest of the roadmap.
+
+## Implementation progress (ongoing)
+
+- Real isolated data, Hub persistence and Supabase Auth/governance gates passed after starting the reduced local stack. Full-stack startup had exceeded host memory; optional Studio/analytics/edge/email services were excluded, without stopping unrelated containers.
+- Added content studio, drafts/review controls, safe instruction validation, two-person publication application and immutable activity-definition snapshots. Existing attempt displays use their captured instruction.
+- Added private TRAINER notes with immutable revisions, optimistic conflict checks, retry keys, two-year retention metadata and real later-attempt verification. RRHH reads; learner/admin access and RRHH writes are denied.
+- Completed the dedicated Orion Account ID Lab -> game account -> Backend pencil confirmation -> durable artifact -> exact-player search path. SQL tests reject forged completion, incorrect identifiers, missing kiosk and invalid artifact references; account creation retries return one result.
+- Added reset-password practice against the same player's account, with game-side action and separate Backend confirmation. Password literals remain only in the disposable simulator's existing credential state and transient requests, not learning evidence.
+- Added atomic immutable settlement snapshots, retained separately from disposable operations. New reports preserve the existing scorer's verdict; old reports remain explicitly labeled reconstructions. Step-level historical evidence is not manufactured.
+- Implemented controlled legacy simulator/trainer Auth cutover: server identity/CSRF, explicit owner links, raw-game route restrictions, protected realtime handshake and production-default authentication. Removed the browser-embedded trainer password. The real Auth gate now includes anonymous denial, role denial, CSRF denial, own-session access, foreign-session denial and server-derived session names.
+- Implemented PostgreSQL durable generation jobs via the existing REST boundary, with leases/renewal, fencing, stable delivery operation IDs, retry/dead states and deadline handling. This avoids a second database pool/service for the pilot. Existing timer mode remains explicitly available for compatibility verification; production uses durable generation. Need load/crash/recovery verification before release certification.
+- Added the explicit 15-position curriculum crosswalk in `TRAINING_HUB_CURRICULUM_TRACEABILITY_2026-11-02.md`; schema/evaluation runtime integration remains to be completed.
+
+Latest backend full suite: 205 passing before the policy/exception increment. New transactional workspace SQL gate passes (content/coaching/Orion continuity/reset/snapshots/job fencing/policy revision/exception retry and no repeated game action). Fresh migration replay through the policy-administration increment passed. Frontend lint/build passed; repeat after final changes. Real Auth/governance passed after cutover. The corrected full browser suite passed 41/41 (including one concurrent trainer test) in 54.8 seconds, after fixing exact-label selectors. The earlier failed full runs are superseded only for that tested source state. Ten concurrent local account-practice clients executed 50 commands with zero errors and p95 57 ms after fresh replay; this is a bounded REST/DB path, not full production load certification.
+
+Account policy administration now supports separate-admin review of a new identifier version. SQL verification proves future attempts use it while existing attempts retain the original formula. Exception practice uses the existing ALREADY_PROCESSED / PLAYER_IN_GAME / PENDING_RECONCILIATION settlement rules, records unsuccessful practice results, permits fresh-case retries before completion and never performs a second game movement during reconciliation.
+
+Concurrent external edits appeared in the trainer dashboard, its component/tests and screenshots. Preserve them. `CompletedSessionReport.jsx` includes both their refreshKey changes and this task's evidence wording, so any future staging must preserve ownership of both hunks. No hosted migration or deployment has been performed. Existing operational scripts/manifests remain unrelated and must not be committed as application changes.
+
+## Remaining work
+
+Complete editable policy administration, remaining operation/exception/mixed practice, executable four-evaluation runtime and curriculum gates, other game adapters, media/cohorts/exports, capacity/fault/accessibility checks and staged release. Keep actual release inputs/credentials private. Full permission is already granted; do not ask again for decisions already answered. Do not claim unlimited capacity or production readiness without measured evidence.

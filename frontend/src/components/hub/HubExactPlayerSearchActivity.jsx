@@ -56,6 +56,7 @@ export default function HubExactPlayerSearchActivity({ activity, disabled, onCom
     <div className="hub-search-practice" tabIndex={disabled ? -1 : 0} onKeyDown={observeShortcut}>
       <p className="hub-activity-intro">Focus this exercise and press <kbd>Ctrl</kbd>+<kbd>F</kbd>. Paste the copied Module 3 identifier with <kbd>Ctrl</kbd>+<kbd>V</kbd>.</p>
       <dl>
+        <div><dt>Module 3 identifier</dt><dd>{target.identifier}</dd></div>
         {target.game && <div><dt>Game</dt><dd>{target.game}</dd></div>}
         {target.license && <div><dt>License</dt><dd>{target.license}</dd></div>}
       </dl>

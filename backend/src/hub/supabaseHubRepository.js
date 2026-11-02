@@ -137,6 +137,8 @@ async function loadLearnerSnapshot(client, identity) {
 
   const courseIds = [...new Set(enrolments.map((row) => row.course_id))];
   const enrolmentIds = enrolments.map((row) => row.id);
+  const accountContexts = assertNoError(await client.from('hub_account_practice')
+    .select('id,enrolment_id,artifact_id,hub_attempt_artifacts(payload)').in('enrolment_id',enrolmentIds));
 
   const courses = assertNoError(
     await client
@@ -206,7 +208,7 @@ async function loadLearnerSnapshot(client, identity) {
     : assertNoError(
         await client
           .from('hub_activity_attempts')
-          .select('id, attempt_id, activity_id, status, completed_at')
+          .select('id, attempt_id, activity_id, status, completed_at, definition_snapshot')
           .in(
             'attempt_id',
             moduleAttempts.map((row) => row.id)
@@ -292,10 +294,16 @@ async function loadLearnerSnapshot(client, identity) {
                   return {
                     id: activity.id,
                     code: activity.stable_code,
-                    title: activity.title,
+                    title: activityAttempt?.definition_snapshot?.title ?? activity.title,
                     type: activity.activity_type,
                     position: activity.position,
-                    content: activity.content,
+                    content: activity.content?.executionKind === 'exact_player_search'
+                      ? { ...activity.content, target: (() => {
+                        const context = accountContexts.find(row=>row.enrolment_id===enrolment.id && row.artifact_id);
+                        return context ? { ...context.hub_attempt_artifacts.payload, sourceArtifactId:context.artifact_id } : null;
+                      })() }
+                      : activityAttempt?.definition_snapshot?.content ?? activity.content,
+                    contentSnapshot: activityAttempt?.definition_snapshot ? true : false,
                     publicationStatus: activity.publication_status,
                     provisional: activity.is_provisional,
                     scored: activity.is_scored,

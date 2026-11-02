@@ -8,11 +8,11 @@ import OrionStarsPanel from "./components/games/OrionStarsPanel";
 import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
 import VblinkPanel from "./components/games/VblinkPanel";
 import HubPage from "./pages/HubPage";
+import SimulatorIdentityBoundary from './components/hub/SimulatorIdentityBoundary';
 
 const SESSION_KEY = "casino_trainer_session";
 
-// 🔑 Set your custom developer password here:
-const DEV_TRAINER_PASSWORD = "superctrl2023";
+const AUTH_REQUIRED = import.meta.env.PROD || import.meta.env.VITE_TREZ_AUTH_REQUIRED === 'true';
 
 function getDocumentTitle(path) {
   if (/^\/games\/orion-stars\/[^/]+$/.test(path)) {
@@ -38,7 +38,7 @@ function getDocumentTitle(path) {
   return 'Trez Operator Simulator';
 }
 
-export default function App() {
+function SimulatorApp() {
   // ⚡ Keep track of the path in a state variable so React re-renders when it shifts
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const hubEnabled = import.meta.env.VITE_TREZ_HUB_ENABLED === 'true';
@@ -126,25 +126,6 @@ export default function App() {
   
   // 🔒 Secure the trainer view utilizing your protection layer
   if (isTrainer) {
-    // Read the current storage state directly
-    const hasToken = localStorage.getItem('token');
-    
-    // 🔐 INTERACTIVE PROMPT CHALLENGE WHEN VISITING THE /trainer LINK
-    if (!hasToken) {
-      const userInput = window.prompt("🔐 Enter Trainer Access Password:");
-      
-      if (userInput === DEV_TRAINER_PASSWORD) {
-        // Correct Password! Plant token badge to log them in for future visits
-        localStorage.setItem('token', 'allow_trainer_access');
-      } else {
-        // Wrong password or canceled! Boot them back to the landing screen safely
-        alert("❌ Unauthorized Access Denied.");
-        window.history.replaceState({}, '', '/');
-        setTimeout(() => setCurrentPath('/'), 0);
-        return <SessionStartPage onSessionCreated={handleSessionCreated} />;
-      }
-    }
-    
     return <TrainerDashboard />;
   }
 
@@ -153,4 +134,13 @@ export default function App() {
   }
 
   return <TraineeDashboard session={session} onSessionEnded={handleSessionEnded} />;
+}
+
+export default function App(){
+  const path=window.location.pathname;
+  if(AUTH_REQUIRED){
+    if(path==='/'||path==='/hub'||path.startsWith('/hub/'))return <HubPage/>;
+    return <SimulatorIdentityBoundary trainer={path==='/trainer'}><SimulatorApp/></SimulatorIdentityBoundary>;
+  }
+  return <SimulatorApp/>;
 }

@@ -17,6 +17,12 @@ const withHubCsrf = async () => {
   if (!hubCsrfToken) await getHubCsrf();
   return { headers: { 'x-trez-csrf': hubCsrfToken } };
 };
+api.interceptors.request.use(async request=>{
+  if((import.meta.env.PROD||import.meta.env.VITE_TREZ_AUTH_REQUIRED==='true')&&['post','put','patch','delete'].includes(request.method)&&!request.headers?.['x-trez-csrf']){
+    const config=await withHubCsrf();Object.assign(request.headers,config.headers);
+  }
+  return request;
+});
 
 export const loginHub = async (username, password) => {
   return api.post('/hub/auth/login', { username, password }, await withHubCsrf());
@@ -36,12 +42,29 @@ export const resetHubStaffPassword = async (identityId) =>
 export const logoutHub = async () => {
   const response = await api.post('/hub/auth/logout', {}, await withHubCsrf());
   hubCsrfToken = null;
+  localStorage.removeItem('casino_trainer_session');
+  localStorage.removeItem('token');
   return response;
 };
 
 export const getHubContext = async () => {
   return api.get('/hub/context');
 };
+
+export const getHubWorkspaceCatalog = () => api.get('/hub/workspace/catalog');
+export const getHubInstructionVersions = (id) => api.get(`/hub/workspace/activities/${id}/versions`);
+export const createHubInstruction = async (id,body) => api.post(`/hub/workspace/activities/${id}/versions`,body,await withHubCsrf());
+export const submitHubContentVersion = async (id) => api.post(`/hub/admin/content-versions/${id}/submit`,{},await withHubCsrf());
+export const reviewHubContentVersion = async (id,body) => api.post(`/hub/admin/content-versions/${id}/review`,body,await withHubCsrf());
+export const getHubCoachingNotes = (id,cursor) => api.get(`/hub/workspace/postulantes/${id}/notes`,{params:cursor?{cursor}:{}});
+export const getHubCoachingEvidence = (id) => api.get(`/hub/workspace/postulantes/${id}/evidence`);
+export const saveHubCoachingNote = async (id,body) => api.post(`/hub/workspace/postulantes/${id}/notes`,body,await withHubCsrf());
+export const commandHubAccountPractice = async (id,command,body) => api.post(`/hub/activities/${id}/account-practice/${command}`,body,await withHubCsrf());
+export const commandHubCredentialPractice = async (id,command,body) => api.post(`/hub/activities/${id}/credential-practice/${command}`,body,await withHubCsrf());
+export const commandHubExceptionPractice = async (id,command,body) => api.post(`/hub/activities/${id}/exception-practice/${command}`,body,await withHubCsrf());
+export const getHubAccountPolicies=()=>api.get('/hub/workspace/account-policies');
+export const proposeHubAccountPolicy=async(body)=>api.post('/hub/workspace/account-policies/proposals',body,await withHubCsrf());
+export const reviewHubAccountPolicy=async(id,body)=>api.post(`/hub/workspace/account-policies/proposals/${id}/review`,body,await withHubCsrf());
 
 export const getHubLearningPath = async () => {
   return api.get('/hub/learning-path');

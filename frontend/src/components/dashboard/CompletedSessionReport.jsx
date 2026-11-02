@@ -281,8 +281,8 @@ export default function CompletedSessionReport({ sessionId }) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {['Correct', 'Incorrect', 'Pending', 'Unverified'].map((result) => <StatCard key={result} title={result} value={operations.filter((op) => reviewResult(op) === result).length} />)}
     </div>
-    <p className="text-sm text-slate-400">Report accuracy: {Number(report.performance?.accuracy || 0).toFixed(1)}%. Accuracy is correct reconstructed results divided by processed operations, using the existing scoring formula. Evidence review counts may differ from the recorded result. Review completion is not recorded. Grading thresholds: Pending approval.</p>
-    <p className="text-sm text-amber-200">Checks are reconstructed from available evidence, including mutable account state. They can differ from the original stored result; they are not immutable grading snapshots.</p>
+    <p className="text-sm text-slate-400">Report accuracy: {Number(report.performance?.accuracy || 0).toFixed(1)}%. Accuracy uses processed operations. New operations retain the existing scorer's verdict at settlement; legacy checks use reconstructed evidence. Review completion is separate. Grading thresholds: Pending approval.</p>
+    <p className="text-sm text-amber-200">Legacy checks may depend on mutable account state and differ from the original result. New settlement snapshots preserve the recorded verdict and observed state; they do not reconstruct missing step-level evidence.</p>
     <p className="text-sm text-slate-400">Report loaded: {data.fetchedAt ? new Date(data.fetchedAt).toLocaleString() : 'Not recorded'} (browser time zone). <button className="underline" onClick={() => setRetry((n) => n + 1)}>Refresh report</button></p>
     <section aria-label="Operation review" className="rounded-xl border border-slate-700 p-4 space-y-4">
       <h3 className="text-lg font-semibold">Mistakes &amp; evidence</h3>
@@ -300,13 +300,14 @@ export default function CompletedSessionReport({ sessionId }) {
           <h4 className="font-semibold">{selected.type} · {reviewResult(selected)}</h4>
           <p className="text-sm text-slate-400">Requested: {selected.created_at ? new Date(selected.created_at).toLocaleString() : 'Not recorded'} · Handling: {duration(selected.handling_time_seconds)}</p>
           <p>Recorded terminal action: {sentResult(selected)} · Original stored result: {selected.original_is_correct === true ? 'Correct' : selected.original_is_correct === false ? 'Incorrect' : 'Not recorded'}</p>
+          <p>Evidence: {selected.evidence_status === 'captured_at_settlement' ? 'Immutable settlement snapshot' : 'Legacy reconstruction'}</p>
           {reviewResult(selected) === 'Unverified' && <p className="text-amber-200">Unable to verify from available evidence. Missing or ambiguous evidence is not a confirmed mistake.</p>}
           {!requirements(selected).length && <p>No structured checks recorded.</p>}
           {requirements(selected).map((check, index) => { const issue = explain(check); return <section key={index} className="rounded-lg border border-slate-700 p-3 space-y-2">
             <h5 className="font-semibold">{issue.title}</h5><p>{issue.explanation}</p><p className="text-sm text-slate-400">Expected procedure: {issue.instruction}</p><small>Source: report validation check “{check.label}” · {issue.code} v{issue.version}</small>
           </section>; })}
           <details><summary className="cursor-pointer">Linked trainee evidence timeline</summary><p className="text-sm text-slate-400 my-3">Only events explicitly linked by operation ID are included. Times use your browser time zone.</p>{selected.id ? <AuditLogPanel key={selected.id} sessionId={sessionId} operationId={selected.id} /> : <p>Operation ID not recorded; events cannot be linked.</p>}</details>
-          <p className="text-sm text-slate-500">Private notes are unavailable until the authenticated reviewer boundary is verified.</p>
+          <p className="text-sm text-slate-500"><a className="underline" href="/hub">Open private coaching in Training Hub</a>. Notes keep their own revision history and do not change the recorded score.</p>
         </article>}
       </div>
     </section>
