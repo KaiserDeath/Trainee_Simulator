@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   CheckCircle2,
   ChevronDown,
@@ -39,9 +39,12 @@ export default function TraineesDirectory({
   traineeSearch,
   setTraineeSearch,
   sessionStatus,
-  setSessionStatus
+  setSessionStatus,
+  sortOrder,
+  setSortOrder,
+  expandedNames,
+  setExpandedNames
 }) {
-  const [sortOrder, setSortOrder] = useState('recent');
   const traineeGroups =
     useMemo(
       () => groupSessionsByTrainee(filteredSessions).sort((a, b) => sortOrder === 'name'
@@ -49,8 +52,6 @@ export default function TraineesDirectory({
         : new Date(b.sessions[0]?.started_at || 0) - new Date(a.sessions[0]?.started_at || 0)),
       [filteredSessions, sortOrder]
     );
-  const [expandedNames, setExpandedNames] =
-    useState(() => new Set());
 
   const toggleExpanded = (traineeName) => {
     setExpandedNames((current) => {

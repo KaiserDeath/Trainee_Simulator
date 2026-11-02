@@ -7,7 +7,7 @@ import api, {
 } from '../api/client';
 import AuditLogPanel from '../components/audit/AuditLogPanel';
 import CompletedSessionReport from '../components/dashboard/CompletedSessionReport';
-import DashboardSidebar from '../components/dashboard/DashboardSidebar';
+import DashboardSidebar, { TrainerSettings } from '../components/dashboard/DashboardSidebar';
 import GlobalOperationStatistics from '../components/dashboard/GlobalOperationStatistics';
 import LiveSessionView from '../components/dashboard/LiveSessionView';
 import SessionStatisticsView from '../components/dashboard/SessionStatisticsView';
@@ -24,12 +24,17 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState('live'); // 'live', 'report', 'audit'
   const [traineeSearch, setTraineeSearch] = useState('');
   const [operationTimeStats, setOperationTimeStats] = useState(null);
+  const [statsError, setStatsError] = useState('');
+  const [statsRefreshing, setStatsRefreshing] = useState(false);
+  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(30);
   const [minOpm, setMinOpm] = useState(2);
   const [maxOpm, setMaxOpm] = useState(4);
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved', 'error'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessionStatus, setSessionStatus] = useState('');
+  const [sortOrder, setSortOrder] = useState('recent');
+  const [expandedNames, setExpandedNames] = useState(() => new Set());
 
   // Load settings from backend on mount
   useEffect(() => {
@@ -225,23 +230,6 @@ export default function DashboardPage() {
       .sort((a, b) => new Date(b.started_at || 0) - new Date(a.started_at || 0))
     : [];
 
-  const sidebarOperationRows =
-    operationTimeStats?.allOperations || [];
-  const sidebarTopOperation =
-    sidebarOperationRows.reduce(
-      (top, operation) =>
-        !top || operation.count > top.count
-          ? operation
-          : top,
-      null
-    );
-  const sidebarMaxAverage =
-    Math.max(
-      1,
-      ...sidebarOperationRows.map(operation =>
-        Number(operation.averageSeconds) || 0
-      )
-    );
   const activeSessionCount =
     sessions.filter(session =>
       session.status === 'active'
@@ -303,18 +291,23 @@ export default function DashboardPage() {
     let mounted = true;
 
     const fetchOperationStats = async () => {
+      if (mounted) setStatsRefreshing(true);
       try {
         const response =
           await getOperationTimeStats();
 
         if (mounted) {
           setOperationTimeStats(response.data);
+          setStatsError('');
         }
       } catch (err) {
+        if (mounted) setStatsError('Statistics could not be refreshed.');
         console.error(
           'Failed to fetch operation time stats',
           err
         );
+      } finally {
+        if (mounted) setStatsRefreshing(false);
       }
     };
 
@@ -328,51 +321,26 @@ export default function DashboardPage() {
       mounted = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [statsRefreshKey]);
 
   return (
     <div className="trainer-console" data-sidebar-open={sidebarOpen}>
       <header className="trainer-console-topbar">
         <div><strong>Trainer workspace</strong><span>Simulator controls · Sessions · Reports</span></div>
         <button type="button" className="trainer-menu-toggle" aria-expanded={sidebarOpen} aria-controls="trainer-sidebar" onClick={() => setSidebarOpen((open) => !open)}>{sidebarOpen ? 'Close controls' : 'Menu & controls'}</button>
-        <span className="trainer-console-context">{dashboardSection === 'statistics' ? 'Global statistics' : selectedSession ? 'Session review' : 'Session directory'}</span>
+        <span className="trainer-console-context">{dashboardSection === 'statistics' ? 'Statistics / All recorded sessions' : dashboardSection === 'settings' ? 'Settings / Simulator' : selectedSession ? 'Sessions / Report' : 'Sessions / Directory'}</span>
       </header>
-      <DashboardSidebar
-        activeSessionCount={activeSessionCount}
-        allSelected={allSelected}
-        dashboardSection={dashboardSection}
-        deleteSelectedSessions={deleteSelectedSessions}
-        filteredSessions={filteredSessions}
-        handleMaxOpmChange={handleMaxOpmChange}
-        handleMinOpmChange={handleMinOpmChange}
-        handleTimeoutChange={handleTimeoutChange}
-        loading={loading}
-        maxOpm={maxOpm}
-        minOpm={minOpm}
-        operationTimeStats={operationTimeStats}
-        saveStatus={saveStatus}
-        selectedSession={selectedSession}
-        selectedSessionIds={selectedSessionIds}
-        sessionTimeoutMinutes={sessionTimeoutMinutes}
-        sessions={sessions}
-        setDashboardSection={setDashboardSection}
-        setSelectedSession={setSelectedSession}
-        setTraineeSearch={setTraineeSearch}
-        sidebarMaxAverage={sidebarMaxAverage}
-        sidebarOperationRows={sidebarOperationRows}
-        sidebarTopOperation={sidebarTopOperation}
-        toggleSelectAll={toggleSelectAll}
-        toggleSessionSelection={toggleSessionSelection}
-        traineeSearch={traineeSearch}
-      />
+      <DashboardSidebar dashboardSection={dashboardSection} onNavigate={(section) => { setDashboardSection(section); setSidebarOpen(false); }} />
 
       {/* MAIN CONTENT */}
       <main className="trainer-console-main">
         
         {dashboardSection === 'statistics' ? (
           <div className="flex-1 overflow-y-auto p-8 relative z-10">
-            <GlobalOperationStatistics />
+            <GlobalOperationStatistics stats={operationTimeStats} error={statsError} refreshing={statsRefreshing} onRefresh={() => setStatsRefreshKey((key) => key + 1)} sessions={sessions} activeSessionCount={activeSessionCount} onSelectSession={(session) => { setSelectedSession(session); setViewMode('report'); setDashboardSection('trainees'); }} onShowSessions={() => { setSelectedSession(null); setDashboardSection('trainees'); }} />
           </div>
+        ) : dashboardSection === 'settings' ? (
+          <div className="flex-1 overflow-y-auto"><TrainerSettings handleMaxOpmChange={handleMaxOpmChange} handleMinOpmChange={handleMinOpmChange} handleTimeoutChange={handleTimeoutChange} maxOpm={maxOpm} minOpm={minOpm} saveStatus={saveStatus} sessionTimeoutMinutes={sessionTimeoutMinutes} /></div>
         ) : selectedSession ? (
           <div className="flex-1 overflow-y-auto p-8 relative z-10">
             <div className="mb-5 rounded border border-slate-700 bg-slate-900 p-4">
@@ -524,6 +492,10 @@ export default function DashboardPage() {
               setTraineeSearch={setTraineeSearch}
               sessionStatus={sessionStatus}
               setSessionStatus={setSessionStatus}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              expandedNames={expandedNames}
+              setExpandedNames={setExpandedNames}
             />
           </div>
         )}

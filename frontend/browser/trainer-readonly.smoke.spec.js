@@ -60,7 +60,7 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
 
   await page.goto('/trainer');
   await expect(
-    page.getByRole('heading', { name: 'Trainer Command' })
+    page.getByRole('heading', { name: 'Trez Trainer' })
   ).toBeVisible();
 
   await page.getByLabel('Find trainee or session').fill('no such trainee');
@@ -76,10 +76,12 @@ test('trainer report is read-only, provisional, and distinguishes audit failure'
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Menu & controls' }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByLabel('Min operations/min')).toBeVisible();
   await expect(page.getByLabel('Max operations/min')).toBeVisible();
   await page.screenshot({ path: '../outputs/trainer-console-controls-mobile.png', fullPage: true });
-  await page.getByRole('button', { name: 'Close controls' }).click();
+  await page.getByRole('button', { name: 'Menu & controls' }).click();
+  await page.getByRole('button', { name: 'Sessions & reports', exact: true }).click();
   await page.screenshot({ path: '../outputs/trainer-console-directory-mobile.png', fullPage: true });
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.getByRole('button', { name: 'Open', exact: true }).first().click();

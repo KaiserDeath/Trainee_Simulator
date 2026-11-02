@@ -1,261 +1,29 @@
-import {
-  Activity,
-  BarChart3,
-  CheckCircle2,
-  Clock3,
-  RadioTower,
-  SlidersHorizontal,
-  Users,
-  XCircle
-} from 'lucide-react';
+import { BarChart3, Users, Settings2 } from 'lucide-react';
 
-import {
-  CompactOperationBars,
-  MiniStat
-} from './DashboardShared';
-import { formatDurationValue } from './dashboardFormatters';
-
-export default function DashboardSidebar({
-  activeSessionCount,
-  allSelected,
-  dashboardSection,
-  deleteSelectedSessions,
-  filteredSessions,
-  handleMaxOpmChange,
-  handleMinOpmChange,
-  handleTimeoutChange,
-  loading,
-  maxOpm,
-  minOpm,
-  operationTimeStats,
-  saveStatus,
-  selectedSessionIds,
-  sessionTimeoutMinutes,
-  sessions,
-  setDashboardSection,
-  setTraineeSearch,
-  sidebarMaxAverage,
-  sidebarOperationRows,
-  sidebarTopOperation,
-  toggleSelectAll,
-  traineeSearch
-}) {
-  return (
-    <aside id="trainer-sidebar" aria-label="Trainer navigation and controls" className="flex h-full w-[22rem] shrink-0 flex-col border-r border-slate-800 bg-[#09111f] text-slate-200 shadow-2xl">
-      <div className="border-b border-slate-800/80 px-5 py-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
-            <RadioTower className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold tracking-tight text-white">
-              Trainer Command
-            </h1>
-            <p className="mt-0.5 text-xs font-medium uppercase tracking-wider text-slate-500">
-              Casino Simulator
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <SidebarMetric
-            label="Active"
-            value={activeSessionCount}
-            tone="emerald"
-          />
-          <SidebarMetric
-            label="Sessions"
-            value={sessions.length}
-            tone="cyan"
-          />
-        </div>
-      </div>
-
-      <div className="border-b border-slate-800/80 p-4">
-        <div className="grid gap-2">
-          <SidebarNavButton
-            active={dashboardSection === 'trainees'}
-            description={`${filteredSessions.length} visible`}
-            icon={Users}
-            label="Sessions & reports"
-            onClick={() => setDashboardSection('trainees')}
-          />
-          <SidebarNavButton
-            active={dashboardSection === 'statistics'}
-            description="Global timing"
-            icon={BarChart3}
-            label="Statistics"
-            onClick={() => setDashboardSection('statistics')}
-          />
-        </div>
-      </div>
-
-      {dashboardSection === 'trainees' ? (
-        <TraineeSidebarContent
-          allSelected={allSelected}
-          deleteSelectedSessions={deleteSelectedSessions}
-          filteredSessions={filteredSessions}
-          handleMaxOpmChange={handleMaxOpmChange}
-          handleMinOpmChange={handleMinOpmChange}
-          handleTimeoutChange={handleTimeoutChange}
-          loading={loading}
-          maxOpm={maxOpm}
-          minOpm={minOpm}
-          saveStatus={saveStatus}
-          selectedSessionIds={selectedSessionIds}
-          sessionTimeoutMinutes={sessionTimeoutMinutes}
-          setTraineeSearch={setTraineeSearch}
-          toggleSelectAll={toggleSelectAll}
-          traineeSearch={traineeSearch}
-        />
-      ) : (
-        <StatisticsSidebarContent
-          activeSessionCount={activeSessionCount}
-          operationTimeStats={operationTimeStats}
-          sidebarMaxAverage={sidebarMaxAverage}
-          sidebarOperationRows={sidebarOperationRows}
-          sidebarTopOperation={sidebarTopOperation}
-        />
-      )}
-    </aside>
-  );
+export default function DashboardSidebar({ dashboardSection, onNavigate }) {
+  return <aside id="trainer-sidebar" className="trainer-navigation" aria-label="Trainer navigation and controls">
+    <div className="trainer-brand"><span>T</span><div><h1>Trez Trainer</h1><small>Operator training</small></div></div>
+    <nav aria-label="Trainer sections">{[
+      ['trainees', 'Sessions & reports', Users],
+      ['statistics', 'Statistics', BarChart3],
+      ['settings', 'Settings', Settings2],
+    ].map(([id, label, Icon]) => <button type="button" key={id} aria-current={dashboardSection === id ? 'page' : undefined} onClick={() => onNavigate(id)}><Icon size={19} aria-hidden="true" /><span>{label}</span></button>)}</nav>
+    <div className="trainer-navigation-note">Training workspace<small>Session evidence and simulator controls</small></div>
+  </aside>;
 }
 
-function TraineeSidebarContent({ handleMaxOpmChange, handleMinOpmChange, handleTimeoutChange, maxOpm, minOpm, saveStatus, sessionTimeoutMinutes }) {
-  return <section className="trainer-sidebar-settings" aria-labelledby="trainer-settings-title">
-    <div className="trainer-settings-heading"><h2 id="trainer-settings-title">Simulator settings</h2><SaveStatus status={saveStatus} /></div>
-    <p>Global settings · Changes save automatically.</p>
-    <NumberField label="Session limit" min="1" suffix="min" value={sessionTimeoutMinutes} onChange={handleTimeoutChange} />
-    <div className="trainer-rate-fields">
-      <NumberField label="Min operations/min" min="0" value={minOpm} onChange={handleMinOpmChange} />
-      <NumberField label="Max operations/min" min="0" value={maxOpm} onChange={handleMaxOpmChange} />
-    </div>
-    <p>Rate includes credit movements and account requests. Updated rates apply on the next generation cycle.</p>
-    <div className="trainer-queue-note"><strong>20 pending operations</strong><span>Maximum per session. Generation resumes when requests are resolved.</span></div>
-  </section>;
-}
-
-function StatisticsSidebarContent({
-  activeSessionCount,
-  operationTimeStats,
-  sidebarMaxAverage,
-  sidebarOperationRows,
-  sidebarTopOperation
-}) {
-  return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
-      <div className="rounded-xl border border-slate-800 bg-slate-950/55 p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <Activity className="h-4 w-4 text-cyan-300" />
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Overview
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <MiniStat
-            glyph="clock"
-            label="Avg handling"
-            value={formatDurationValue(
-              operationTimeStats?.overall?.averageSeconds
-            )}
-            tone="cyan"
-          />
-          <MiniStat
-            glyph="pulse"
-            label="Timed ops"
-            value={operationTimeStats?.overall?.count || 0}
-            tone="slate"
-          />
-          <MiniStat
-            glyph="users"
-            label="Active"
-            value={activeSessionCount}
-            tone="emerald"
-          />
-          <MiniStat
-            glyph="layers"
-            label="Types"
-            value={sidebarOperationRows.length}
-            tone="violet"
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/55 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            Top volume
-          </span>
-          <span className="truncate text-xs font-semibold text-slate-300">
-            {sidebarTopOperation?.type || 'No data'}
-          </span>
-        </div>
-        <CompactOperationBars
-          rows={sidebarOperationRows}
-          maxAverage={sidebarMaxAverage}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SidebarMetric({
-  label,
-  value,
-  tone
-}) {
-  const toneClasses =
-    tone === 'emerald'
-      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-      : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300';
-
-  return (
-    <div className={`rounded-xl border px-3 py-2 ${toneClasses}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
-        {label}
-      </p>
-      <p className="mt-1 text-xl font-bold leading-none">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function SidebarNavButton({
-  active,
-  description,
-  icon: Icon,
-  label,
-  onClick
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? 'page' : undefined}
-      className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
-        active
-          ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200 shadow-[inset_3px_0_0_rgba(34,211,238,0.8)]'
-          : 'border-transparent bg-transparent text-slate-400 hover:border-slate-800 hover:bg-slate-900 hover:text-slate-200'
-      }`}
-    >
-      <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-        active
-          ? 'bg-cyan-400/15 text-cyan-200'
-          : 'bg-slate-900 text-slate-500'
-      }`}>
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-semibold">
-          {label}
-        </span>
-        <span className="block truncate text-xs text-slate-500">
-          {description}
-        </span>
-      </span>
-    </button>
-  );
+export function TrainerSettings({ handleMaxOpmChange, handleMinOpmChange, handleTimeoutChange, maxOpm, minOpm, saveStatus, sessionTimeoutMinutes }) {
+  return <div className="trainer-settings-page">
+    <header className="trainer-page-heading"><div><h2>Simulator settings</h2><p>Global defaults and operation generation rate.</p></div><div role="status"><SaveStatus status={saveStatus} /></div></header>
+    <section className="trainer-surface trainer-settings-form" aria-label="Simulator generation settings">
+      <h3>Session & workload</h3><p>Changes save automatically. Rate changes apply on the next generation cycle.</p>
+      <NumberField label="Session limit" min="1" suffix="min" value={sessionTimeoutMinutes} onChange={handleTimeoutChange} />
+      <div className="trainer-rate-fields"><NumberField label="Min operations/min" min="0" value={minOpm} onChange={handleMinOpmChange} /><NumberField label="Max operations/min" min="0" value={maxOpm} onChange={handleMaxOpmChange} /></div>
+      <p>The rate includes Add Credits, Withdraw Credits, Create Account, Reset Password, and Refresh Balance requests combined.</p>
+      <div className="trainer-queue-note"><strong>Queue capacity: 20 pending operations per session</strong><span>Generation pauses at capacity and resumes when operations are resolved. The rate is a generation target, subject to available balances and eligible accounts.</span></div>
+      <p>The session limit is the default for new sessions. Existing sessions retain their assigned duration.</p>
+    </section>
+  </div>;
 }
 
 function NumberField({
@@ -268,7 +36,7 @@ function NumberField({
   return (
     <label className="block">
       <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-        <SlidersHorizontal className="h-3 w-3" />
+
         {label}
       </span>
       <div className="flex items-center rounded-lg border border-slate-800 bg-slate-950/70 focus-within:border-cyan-500/50 focus-within:ring-2 focus-within:ring-cyan-500/10">
@@ -296,7 +64,7 @@ function SaveStatus({ status }) {
   if (status === 'saving') {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[10px] font-semibold text-cyan-300">
-        <Clock3 className="h-3 w-3 animate-pulse" />
+
         Syncing
       </span>
     );
@@ -305,7 +73,7 @@ function SaveStatus({ status }) {
   if (status === 'saved') {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold text-emerald-300">
-        <CheckCircle2 className="h-3 w-3" />
+
         Saved
       </span>
     );
@@ -314,7 +82,7 @@ function SaveStatus({ status }) {
   if (status === 'error') {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-300">
-        <XCircle className="h-3 w-3" />
+
         Failed
       </span>
     );

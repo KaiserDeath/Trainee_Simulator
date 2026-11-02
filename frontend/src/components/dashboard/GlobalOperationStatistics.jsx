@@ -1,49 +1,16 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-
-import { getOperationTimeStats } from '../../api/client';
-import {
-  ChartGlyph,
-  OperationStatsTable,
-  OperationVisualGrid,
-  StatCard
-} from './DashboardShared';
+import { useMemo, useState } from 'react';
+import { RefreshCw, Timer, Users, Activity } from 'lucide-react';
+import { OperationStatsTable } from './DashboardShared';
 import { formatDurationValue } from './dashboardFormatters';
 
-export default function GlobalOperationStatistics() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [expandedTrainees, setExpandedTrainees] = useState(() => new Set());
+const duration = (value, count = 1) => count > 0 && value !== null && value !== undefined && Number.isFinite(Number(value)) ? formatDurationValue(value) : '—';
+const date = (value) => value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString() : 'Not recorded';
 
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchStats = async () => {
-      try {
-        const response =
-          await getOperationTimeStats();
-
-        if (mounted) {
-          setStats(response.data);
-        }
-      } catch (err) {
-        console.error(
-          'Failed to fetch operation time stats',
-          err
-        );
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchStats();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+export default function GlobalOperationStatistics({ stats, error, refreshing, onRefresh, sessions = [], activeSessionCount = 0, onSelectSession, onShowSessions }) {
+  const [metric, setMetric] = useState('averageSeconds');
+  const [tab, setTab] = useState('operations');
+  const [personSearch, setPersonSearch] = useState('');
+  const [sort, setSort] = useState('name');
   const perPersonGroups = useMemo(() => {
     const groups = new Map();
 
@@ -125,6 +92,7 @@ export default function GlobalOperationStatistics() {
     return Array.from(groups.values()).map((group) => ({
       traineeName: group.traineeName,
       sessionCount: group.sessions.length,
+      sessions: [...group.sessions].sort((a, b) => new Date(b.startedAt || 0) - new Date(a.startedAt || 0)),
       overall: {
         count: group.count,
         averageSeconds:
@@ -152,236 +120,40 @@ export default function GlobalOperationStatistics() {
     }));
   }, [stats?.perPerson]);
 
-  if (loading) {
-    return (
-      <div className="mt-8 text-slate-500 animate-pulse">
-        Loading handling-time statistics...
-      </div>
-    );
-  }
 
-  if (!stats) {
-    return (
-      <div className="mt-8 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-300">
-        Failed to load operation statistics.
-      </div>
-    );
-  }
+  if (!stats) return <div className="trainer-data-state" role="status"><h2>Operation performance</h2><p>{error || 'Loading operation statistics…'}</p>{error && <button type="button" onClick={onRefresh} disabled={refreshing}>Try again</button>}</div>;
+  const rows = [...(stats.allOperations || [])].sort((a, b) => sort === 'value' ? (Number(b[metric]) || 0) - (Number(a[metric]) || 0) : a.type.localeCompare(b.type));
+  const max = Math.max(1, ...rows.map((row) => Number(row[metric]) || 0));
+  const ceiling = Math.max(metric === 'count' ? 5 : 1, Math.ceil(max / 5) * 5);
+  const recentSessions = [...sessions].sort((a, b) => new Date(b.started_at || 0) - new Date(a.started_at || 0)).slice(0, 5);
+  const visiblePeople = perPersonGroups.filter((group) => group.traineeName.toLowerCase().includes(personSearch.trim().toLowerCase()));
 
-  const allOperations =
-    stats.allOperations || [];
-
-  const maxAverageSeconds =
-    Math.max(
-      1,
-      ...allOperations.map(operation =>
-        Number(operation.averageSeconds) || 0
-      )
-    );
-  const topOperation =
-    allOperations.reduce(
-      (top, operation) =>
-        !top || operation.count > top.count
-          ? operation
-          : top,
-      null
-    );
-  const toggleTraineeExpanded = (traineeName) => {
-    setExpandedTrainees((current) => {
-      const next = new Set(current);
-      if (next.has(traineeName)) {
-        next.delete(traineeName);
-      } else {
-        next.add(traineeName);
-      }
-      return next;
-    });
-  };
-  return (
-    <div className="space-y-8 animate-fade-in-up">
-      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-300">
-                <ChartGlyph type="trend" />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-slate-500">
-                  Statistics
-                </p>
-                <h3 className="text-2xl font-bold text-white">
-                  Handling-time overview
-                </h3>
-              </div>
-            </div>
-            <p className="mt-4 max-w-2xl text-sm text-slate-400">
-              Visual comparison of speed, volume, and operation mix across completed trainee work.
-            </p>
-          </div>
-          <div className="border-t border-slate-800 bg-slate-950/40 p-6 lg:border-l lg:border-t-0">
-            <p className="text-xs uppercase tracking-wider text-slate-500">
-              Highest volume
-            </p>
-            <div className="mt-3 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xl font-semibold text-white">
-                  {topOperation?.type || 'No operations'}
-                </p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {topOperation?.count || 0} timed records
-                </p>
-              </div>
-              <div className="flex h-20 w-20 items-center justify-center rounded-full border border-emerald-500/20 bg-emerald-500/10 text-2xl font-black text-emerald-300">
-                {topOperation?.count || 0}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          glyph="pulse"
-          title="Timed Operations"
-          value={stats.overall?.count || 0}
-        />
-        <StatCard
-          glyph="clock"
-          title="Average Handling"
-          value={formatDurationValue(
-            stats.overall?.averageSeconds
-          )}
-        />
-        <StatCard
-          glyph="layers"
-          title="Operation Types"
-          value={allOperations.length}
-        />
-      </div>
-
-      <section className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold text-white">
-            Operation Visuals
-          </h3>
-          <p className="text-sm text-slate-500">
-            Average handling time by operation type, shown as visual bars.
-          </p>
-        </div>
-
-        <OperationVisualGrid
-          rows={allOperations}
-          maxAverageSeconds={maxAverageSeconds}
-        />
-      </section>
-
-      <section className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold text-white">
-            Per Person
-          </h3>
-          <p className="text-sm text-slate-500">
-            Average handling time by trainee and operation type.
-          </p>
-        </div>
-
-        {perPersonGroups.length === 0 ? (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 text-sm text-slate-500">
-            No per-person handling-time data recorded yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {perPersonGroups.map((group) => {
-              const isExpanded =
-                expandedTrainees.has(group.traineeName);
-
-              return (
-                <section
-                  key={group.traineeName}
-                  className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50"
-                >
-                  <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-xs uppercase tracking-wider text-slate-500">
-                        Trainee
-                      </p>
-                      <h4 className="mt-2 text-xl font-semibold text-white">
-                        {group.traineeName}
-                      </h4>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {group.sessionCount} session{group.sessionCount === 1 ? '' : 's'}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleTraineeExpanded(group.traineeName)
-                      }
-                      className="inline-flex items-center rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
-                    >
-                      {isExpanded
-                        ? 'Hide operation details'
-                        : 'Show operation details'}
-                    </button>
-                  </div>
-
-                  <div className="border-t border-slate-800/70 bg-slate-950/40 p-4">
-                    <p className="text-sm font-semibold text-white">
-                      All sessions average
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Average across all sessions for this trainee.
-                    </p>
-                    <div className="mt-4">
-                      <OperationStatsTable
-                        rows={[
-                          {
-                            type: 'All operations',
-                            ...group.overall
-                          }
-                        ]}
-                      />
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="border-t border-slate-800/70 bg-slate-900/60 p-4">
-                      <p className="text-sm font-semibold text-white">
-                        Operation detail
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Averages, fastest, and slowest times for each operation across all sessions.
-                      </p>
-                      <div className="mt-4">
-                        <OperationStatsTable
-                          rows={group.operations}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold text-white">
-            All Sessions
-          </h3>
-          <p className="text-sm text-slate-500">
-            Average handling time for each operation type across every session.
-          </p>
-        </div>
-
-        <OperationStatsTable
-          rows={allOperations}
-        />
-      </section>
+  return <div className="trainer-performance">
+    <header className="trainer-page-heading"><div><p className="trainer-breadcrumb">Statistics / All recorded sessions</p><h2>Operation performance</h2><p>Handling time and workload across trainee sessions.</p></div><button type="button" className="trainer-secondary-action" onClick={onRefresh} disabled={refreshing}><RefreshCw size={16} className={refreshing ? 'trainer-refreshing' : ''} aria-hidden="true" />{refreshing ? 'Refreshing…' : 'Refresh statistics'}</button></header>
+    <p className="trainer-data-scope">{stats.generatedAt ? 'Statistics updated ' + date(stats.generatedAt) : 'All available recorded data'} · Only operations with recorded handling time.</p>
+    {error && <p className="trainer-inline-error" role="status">{error} Showing the last successful statistics.</p>}
+    <div className="trainer-kpi-strip">
+      {[['Timed operations', (stats.overall?.count || 0).toLocaleString(), Timer], ['Average handling', duration(stats.overall?.averageSeconds, stats.overall?.count || 0), Activity], ['Active sessions', activeSessionCount, Users]].map(([label, value, Icon]) => <div key={label}><span className="trainer-kpi-icon"><Icon size={24} aria-hidden="true" /></span><div><span>{label}</span><strong>{value}</strong></div></div>)}
     </div>
-  );
+    <section className="trainer-surface" aria-label="Performance breakdown">
+      <div className="trainer-section-heading"><div className="trainer-view-switch" role="group" aria-label="Statistics breakdown"><button type="button" aria-pressed={tab === 'operations'} onClick={() => setTab('operations')}>Operation comparison</button><button type="button" aria-pressed={tab === 'people'} onClick={() => setTab('people')}>By trainee</button></div>
+      {tab === 'operations' && <div className="trainer-view-switch" role="group" aria-label="Comparison metric"><button type="button" aria-pressed={metric === 'averageSeconds'} onClick={() => setMetric('averageSeconds')}>Handling time</button><button type="button" aria-pressed={metric === 'count'} onClick={() => setMetric('count')}>Volume</button></div>}</div>
+      {tab === 'operations' ? <div className="trainer-comparison">
+        <div className="trainer-comparison-tools"><p>{metric === 'count' ? 'Timed record count' : 'Average handling time'} · Shared scale across all operations</p><label>Order operations<select aria-label="Order operations" value={sort} onChange={(event) => setSort(event.target.value)}><option value="name">Name A–Z</option><option value="value">Highest value</option></select></label></div>
+        {!rows.length ? <p className="trainer-empty-state">No timed operations recorded yet.</p> : <>
+          <div className="trainer-comparison-labels"><span>Operation</span><span>{metric === 'count' ? 'Timed records' : 'Average duration'}</span><span>Value</span><span>Records</span></div>
+          {rows.map((row) => <div className="trainer-comparison-row" key={row.type}><span className="trainer-operation-name">{row.type.replaceAll('_', ' ').toLowerCase()}</span><div className="trainer-comparison-track" role="img" aria-label={row.type + ': ' + (metric === 'count' ? row.count + ' timed records' : duration(row.averageSeconds, row.count))}><span style={{ width: Math.max(0, Math.min(100, (Number(row[metric]) || 0) / ceiling * 100)) + '%' }} /></div><strong>{metric === 'count' ? row.count : duration(row.averageSeconds, row.count)}</strong><span className="trainer-record-count">{row.count}</span></div>)}
+          <div className="trainer-comparison-axis" aria-hidden="true"><span></span><div>{[0, 1, 2, 3, 4, 5].map((tick) => <span key={tick}>{Number((ceiling * tick / 5).toFixed(1))}{metric === 'averageSeconds' ? 's' : ''}</span>)}</div><span></span><span></span></div>
+          <details className="trainer-timing-details"><summary>Detailed timings · average, fastest, slowest, and records</summary><OperationStatsTable rows={rows} /></details>
+        </>}
+      </div> : <div className="trainer-person-statistics"><label className="trainer-field">Find trainee timing<input type="search" value={personSearch} onChange={(event) => setPersonSearch(event.target.value)} placeholder="Entered trainee name" /></label><p className="trainer-data-scope">Grouped by entered name, not verified account identity. Averages are weighted by timed-operation count.</p>
+        {!visiblePeople.length && <p className="trainer-empty-state">No trainee timing histories match.</p>}
+        {visiblePeople.map((group) => <details className="trainer-person-timing" key={group.traineeName}><summary><span>{group.traineeName}</span><small>{group.sessionCount} sessions · {group.overall.count} timed records · {duration(group.overall.averageSeconds, group.overall.count)} average</small></summary><div className="trainer-person-detail"><OperationStatsTable rows={group.operations} /><h3>Session history</h3><div className="trainer-table-scroll"><table className="trainer-data-table"><thead><tr><th>Started</th><th>Timed records</th><th>Average</th><th>Session</th><th>Report</th></tr></thead><tbody>{group.sessions.map((session, index) => {
+          const target = sessions.find((item) => item.id === session.sessionId);
+          return <tr key={session.sessionId || index}><td>{date(session.startedAt)}</td><td>{session.overall?.count || 0}</td><td>{duration(session.overall?.averageSeconds, session.overall?.count || 0)}</td><td><code>{session.sessionId?.slice(0, 8) || 'Not linked'}</code></td><td>{target ? <button type="button" onClick={() => onSelectSession(target)}>View report</button> : 'Unavailable'}</td></tr>;
+        })}</tbody></table></div></div></details>)}
+      </div>}
+    </section>
+    <section className="trainer-surface" aria-labelledby="trainer-recent-title"><div className="trainer-section-heading"><div><h3 id="trainer-recent-title">Recent sessions</h3><p>Latest five sessions · all statuses</p></div><button type="button" className="trainer-text-action" onClick={onShowSessions}>All sessions →</button></div><div className="trainer-table-scroll"><table className="trainer-data-table"><thead><tr><th>Trainee</th><th>Started</th><th>Status</th><th>Session ID</th><th>Action</th></tr></thead><tbody>{recentSessions.map((session) => <tr key={session.id}><th scope="row">{session.trainee_name || 'Unknown trainee'}</th><td>{date(session.started_at)}</td><td><span className={'trainer-state-tag trainer-state-' + session.status}>{session.status}</span></td><td><code>{session.id.slice(0, 8)}</code></td><td><button type="button" onClick={() => onSelectSession(session)}>View report</button></td></tr>)}{!recentSessions.length && <tr><td colSpan="5">No sessions available.</td></tr>}</tbody></table></div></section>
+  </div>;
 }
