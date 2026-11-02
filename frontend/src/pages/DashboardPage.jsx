@@ -17,7 +17,9 @@ import '../styles/trainer-console.css';
 
 export default function DashboardPage() {
   const [sessions, setSessions] = useState([]);
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const selectedSession = sessions.find((session) => session.id === selectedSessionId) || null;
+  const setSelectedSession = (session) => setSelectedSessionId(session?.id || null);
   const [selectedSessionIds, setSelectedSessionIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [dashboardSection, setDashboardSection] = useState('trainees');
@@ -145,18 +147,13 @@ export default function DashboardPage() {
         return new Set(validIds);
       });
 
-      if (
-        selectedSession &&
-        !sessionList.some((s) => s.id === selectedSession.id)
-      ) {
-        setSelectedSession(null);
-      }
+      setSelectedSessionId((id) => sessionList.some((session) => session.id === id) ? id : null);
     } catch (err) {
       console.error('Failed to fetch sessions', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedSession]);
+  }, []);
 
   useEffect(() => {
     const handleSessionUpdated = (

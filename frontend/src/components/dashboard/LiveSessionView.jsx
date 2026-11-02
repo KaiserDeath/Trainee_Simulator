@@ -4,6 +4,7 @@ import api from '../../api/client';
 
 export default function LiveSessionView({ sessionId }) {
   const [operations, setOperations] = useState([]);
+  const [state, setState] = useState('loading');
 
   // âœ… MOVED OUTSIDE: Define getTypeStyles here, before the useEffect
   const getTypeStyles = (type) => {
@@ -28,9 +29,10 @@ export default function LiveSessionView({ sessionId }) {
     const fetchOps = async () => {
       try {
         const response = await api.get(`/operations/${sessionId}`);
-        if (mounted) setOperations(response.data);
+        if (mounted) { setOperations(response.data); setState('loaded'); }
       } catch (err) {
         console.error('Failed to fetch operations', err);
+        if (mounted) setState('failed');
       }
     };
 
@@ -49,10 +51,11 @@ export default function LiveSessionView({ sessionId }) {
         <h3 className="text-lg font-semibold text-slate-200">Live Operations Queue</h3>
       </div>
       
+      {state === 'failed' && <p role="status" className="text-amber-200">Queue unavailable. Previously loaded operations may be stale; retrying automatically.</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {operations.length === 0 ? (
           <div className="col-span-full py-12 text-center text-slate-500 bg-slate-900/30 border border-slate-800/50 rounded-2xl border-dashed">
-            No pending operations. The GameMaster is generating traffic...
+            {state === 'loading' ? 'Loading operations…' : state === 'failed' ? 'Unable to verify the queue.' : 'No operations returned. Generator health is not established by an empty queue.'}
           </div>
         ) : (
           operations.map((op) => {

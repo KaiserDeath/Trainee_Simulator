@@ -140,3 +140,9 @@
 .trainer-comparison-row { min-height:46px; }
 .trainer-comparison-tools { margin-bottom:12px; }
 @media(max-width:850px) { .trainer-directory > header { grid-template-columns:1fr; } .trainer-directory > header > div:last-child { flex-wrap:wrap; } }
+.trainer-review-grid { display:grid; grid-template-columns:minmax(220px,1fr) minmax(0,2fr); gap:24px; }
+.trainer-review-operation { display:grid; gap:6px; width:100%; text-align:left; padding:12px; border:1px solid #304457; border-radius:8px; background:#101e2d; transition:background .15s ease; font-size:13px; }
+.trainer-review-operation span { color:#a2b3c5; }
+.trainer-review-operation[aria-pressed="true"] { border-color:#70cee3; background:#20394b; }
+.trainer-review-operation:focus-visible { outline:2px solid #70cee3; outline-offset:3px; }
+@media(max-width:720px) { .trainer-review-grid { grid-template-columns:minmax(0,1fr); } }

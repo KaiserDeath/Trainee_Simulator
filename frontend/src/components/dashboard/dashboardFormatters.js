@@ -1,5 +1,5 @@
 export function formatDurationValue(seconds) {
-  const value = Number(seconds);
+  const value = seconds == null || seconds === '' ? NaN : Number(seconds);
 
   if (!Number.isFinite(value)) {
     return 'N/A';

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getSessionAuditLog } from '../../api/client';
 
-export default function AuditLogPanel({ sessionId }) {
+export default function AuditLogPanel({ sessionId, operationId }) {
   const [auditLog, setAuditLog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -70,7 +70,9 @@ export default function AuditLogPanel({ sessionId }) {
   };
 
   const formatTimestamp = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString('en-US', {
+    if (!timestamp || !Number.isFinite(new Date(timestamp).getTime())) return 'Not recorded';
+    return new Date(timestamp).toLocaleString('en-US', {
+      year: 'numeric', month: '2-digit', day: '2-digit', timeZoneName: 'short',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
@@ -78,7 +80,7 @@ export default function AuditLogPanel({ sessionId }) {
   };
 
   const formatDuration = (seconds) => {
-    const value = Number(seconds);
+    const value = seconds == null || seconds === '' ? NaN : Number(seconds);
 
     if (!Number.isFinite(value)) {
       return null;
@@ -95,6 +97,10 @@ export default function AuditLogPanel({ sessionId }) {
     return `${remainingSeconds}s`;
   };
 
+  const visibleLog = operationId
+    ? auditLog.filter((log) => (log.operation_id || parseDetails(log.details).operationId) === operationId)
+    : auditLog;
+
   if (loading && auditLog.length === 0) {
     return <div className="text-slate-400">Loading audit log...</div>;
   }
@@ -107,8 +113,8 @@ export default function AuditLogPanel({ sessionId }) {
     );
   }
 
-  if (auditLog.length === 0) {
-    return <div className="text-slate-400">No trainee actions recorded yet</div>;
+  if (visibleLog.length === 0) {
+    return <div className="text-slate-400">{error && <p role="status">{error} The last loaded entries may be stale.</p>}No explicitly linked trainee actions recorded</div>;
   }
 
   return (
@@ -128,7 +134,7 @@ export default function AuditLogPanel({ sessionId }) {
           </tr>
         </thead>
         <tbody>
-          {auditLog.map((log, idx) => {
+          {visibleLog.map((log, idx) => {
             const details = parseDetails(log.details);
             const handlingDuration = formatDuration(
               details.handlingSeconds

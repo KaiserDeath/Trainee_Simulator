@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+﻿
 
-import api from '../../api/client';
+import { useSessionReport } from '../../hooks/useSessionReport';
 import {
   ChartGlyph,
   StatCard
@@ -8,33 +8,7 @@ import {
 import { formatDurationValue } from './dashboardFormatters';
 
 export default function SessionStatisticsView({ sessionId }) {
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchReport = async () => {
-      try {
-        const response = await api.get(`/trainer/sessions/${sessionId}/report`);
-        if (mounted) {
-          setReport(response.data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch session statistics', err);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchReport();
-
-    return () => {
-      mounted = false;
-    };
-  }, [sessionId]);
+  const { report, loading } = useSessionReport(sessionId);
 
   if (loading) {
     return (
@@ -224,7 +198,7 @@ function averageOperationSeconds(
 ) {
   const values = operations
     .filter(op => op.status !== 'PENDING')  // âœ… exclude pending
-    .map(operation => Number(operation[fieldName]))
+    .map(operation => operation[fieldName] == null || operation[fieldName] === '' ? NaN : Number(operation[fieldName]))
     .filter(Number.isFinite);
 
   if (values.length === 0) {
@@ -256,7 +230,7 @@ function buildSessionOperationRows(operations) {
     const result =
       getSessionOperationResult(operation);
     const handlingSeconds =
-      Number(operation.handling_time_seconds);
+      operation.handling_time_seconds == null || operation.handling_time_seconds === '' ? NaN : Number(operation.handling_time_seconds);
 
     current.count += 1;
     current[result] += 1;

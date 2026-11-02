@@ -1,3 +1,4 @@
+import { readAllById } from '../domain/readAllById.js';
 import { supabase }
   from '../config/supabase.js';
 
@@ -495,6 +496,8 @@ export async function buildSessionReport(
   const scoredOperations =
     operationRows.map(operation => ({
       ...operation,
+      original_is_correct: operation.is_correct ?? null,
+      evidence_projection_version: 1,
       is_correct:
         getReportCorrectness(operation)
     }));
@@ -585,7 +588,7 @@ function durationMapToList(map) {
 }
 
 export async function buildOperationTimeStats() {
-  const { data, error } = await supabase
+  const data = await readAllById(() => supabase
     .from('sandbox_operations')
     .select(`
       id,
@@ -602,11 +605,7 @@ export async function buildOperationTimeStats() {
       'handling_time_seconds',
       'is',
       null
-    );
-
-  if (error) {
-    throw error;
-  }
+    ));
 
   const globalByType = new Map();
   const traineeBuckets = new Map();

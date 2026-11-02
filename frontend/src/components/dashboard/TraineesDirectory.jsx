@@ -179,7 +179,7 @@ function groupSessionsByTrainee(sessions) {
         sessions: [],
         active: 0,
         completed: 0,
-        submitted: 0
+        submitted: 0, unknown: 0
       };
 
     group.sessions.push(session);
@@ -187,8 +187,10 @@ function groupSessionsByTrainee(sessions) {
       group.active += 1;
     } else if (session.status === 'submitted') {
       group.submitted += 1;
-    } else {
+    } else if (session.status === 'completed') {
       group.completed += 1;
+    } else {
+      group.unknown += 1;
     }
 
     groups.set(traineeName, group);
