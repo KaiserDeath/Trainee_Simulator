@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { startSimulationWorker } from '../../src/engine/simulationWorker.js';
+import { notifySimulationWork } from '../../src/engine/simulationSignals.js';
 
 const flush = () => new Promise(setImmediate);
+test('Hub work signals wake the production scheduler and stop removes the listener',async()=>{
+  const f=fixture();await flush();
+  await f.timers.advance(31000);
+  const before=f.calls.length;
+  notifySimulationWork();await f.timers.advance(0);
+  assert.equal(f.calls.length,before+2);
+  f.worker.stop();notifySimulationWork();assert.equal(f.timers.tasks.size,0);
+});
 function clock() {
   let time = 0;
   let id = 0;

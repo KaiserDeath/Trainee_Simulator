@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { formatOperationTimeStats } from '../backend/src/domain/operationTimeStats.js';
 import { legacyOperationTimeStats } from '../backend/test/fixtures/legacyOperationTimeStats.js';
 
-const migration = readFileSync(new URL('../supabase/migrations/20261103193000_operation_time_statistics.sql', import.meta.url), 'utf8');
+const migration = readFileSync(new URL('../supabase/migrations/20261103193000_operation_time_statistics.sql', import.meta.url), 'utf8').replace('CREATE FUNCTION public.trainer_operation_time_stats()', 'CREATE OR REPLACE FUNCTION public.trainer_operation_time_stats()');
 const tests = readFileSync(new URL('../backend/test/integration/operationTimeStats.sql', import.meta.url), 'utf8');
 const manySessions = `DO $$ DECLARE v_session UUID;v_customer UUID;BEGIN
 FOR n IN 1..1001 LOOP

@@ -39,6 +39,7 @@ async function expectReadableWorkspace(page){
 for(const role of ['ADMIN','TRAINER'])test(`${role} workspace uses readable light surfaces and role-specific section navigation`,async({page})=>{
   await staff(page,role);
   await page.route('**/api/hub/admin/accounts',route=>json(route,{accounts:[{id:'staff',username:'Admin',displayName:'Admin account',roles:['ADMIN'],status:'active'}]}));
+  await page.route('**/api/hub/admin/profile',route=>json(route,{firstName:'Admin',surname:'Account',username:'Admin'}));
   await page.goto('/hub');
   await expect(page.getByRole('navigation',{name:'Hub tools',exact:true})).toBeVisible();
   const target=role==='ADMIN'?'People & access':'People, evaluations & reports';
