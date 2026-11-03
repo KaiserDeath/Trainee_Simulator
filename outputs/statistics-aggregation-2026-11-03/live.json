@@ -1,0 +1,32 @@
+{
+  "checkedAt": "2026-11-03T19:57:05.715Z",
+  "commit": "d8b7a47",
+  "deploymentChecks": [
+    {
+      "status": 200,
+      "source": "postgres-aggregate"
+    }
+  ],
+  "live": {
+    "status": 200,
+    "source": "postgres-aggregate",
+    "bytes": 549,
+    "fixtureOverall": {
+      "count": 3,
+      "averageSeconds": 10,
+      "minSeconds": 0,
+      "maxSeconds": 20
+    },
+    "browserRendered": true
+  },
+  "passed": true,
+  "cleanup": [
+    {
+      "session": true
+    },
+    {
+      "identity": true,
+      "auth": true
+    }
+  ]
+}

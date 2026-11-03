@@ -1,0 +1,49 @@
+{
+  "completedAt": "2026-11-02T17:15:24.215Z",
+  "manifestSha256": "92a0c2ba1fb0bed14dc17dcac79880e771df282f07bed0217dd7a31cbebbc454",
+  "deletedSessions": 54,
+  "expectedSessions": 54,
+  "remainingSelectedSessions": 0,
+  "remainingTotalSessions": 192,
+  "before": {
+    "related": {
+      "sandbox_operations": 849,
+      "sandbox_customers": 959,
+      "sandbox_game_accounts": 2127,
+      "sandbox_game_wallets": 162,
+      "sandbox_transaction_history": 11333,
+      "trainee_action_logs": 296
+    },
+    "hub": {
+      "hub_attempts": 0,
+      "hub_practice_contexts": 0,
+      "hub_assessment_attempts": 0,
+      "hub_practice_contexts.operation_id": 0,
+      "hub_assessment_operation_results.sandbox_operation_id": 0
+    }
+  },
+  "after": {
+    "related": {
+      "sandbox_operations": 0,
+      "sandbox_customers": 0,
+      "sandbox_game_accounts": 0,
+      "sandbox_game_wallets": 0,
+      "sandbox_transaction_history": 0,
+      "trainee_action_logs": 0
+    },
+    "hub": {
+      "hub_attempts": 0,
+      "hub_practice_contexts": 0,
+      "hub_assessment_attempts": 0,
+      "hub_practice_contexts.operation_id": 0,
+      "hub_assessment_operation_results.sandbox_operation_id": 0
+    }
+  },
+  "verified": true,
+  "additionalVerification": {
+    "remainingSelectedGameHistoryRows": 0,
+    "remainingMatchedNames": 0,
+    "remainingSessions": 192,
+    "remainingDistinctNames": 29
+  }
+}

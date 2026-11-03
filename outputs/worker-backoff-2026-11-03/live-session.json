@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-11-03T19:36:51.239Z",
+  "commit": "f781c59",
+  "startStatus": 200,
+  "generatedOperations": 1,
+  "firstGenerationObservedMs": 6419,
+  "sessionAfterDeadline": "completed",
+  "jobAfterDeadline": {
+    "status": "completed",
+    "sequence_number": 3,
+    "failures": 0
+  },
+  "passed": true,
+  "error": "Unexpected end of JSON input",
+  "cleanup": [
+    {
+      "session": true
+    },
+    {
+      "identity": true,
+      "auth": true
+    }
+  ],
+  "harnessNote": "All session checks passed. The harness attempted JSON parsing on the successful empty logout response after verification; cleanup still completed."
+}

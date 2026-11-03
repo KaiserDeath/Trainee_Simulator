@@ -1,0 +1,94 @@
+{
+  "checkedAt": "2026-11-02T16:18:57.920Z",
+  "access": "SELECT only; aggregate output, no personal identifiers or secrets retained",
+  "coverage": [
+    {
+      "table": "trainee_sessions",
+      "exactCount": 246,
+      "defaultReturnedRows": 246,
+      "truncated": false
+    },
+    {
+      "table": "sandbox_operations",
+      "exactCount": 5992,
+      "defaultReturnedRows": 1000,
+      "truncated": true
+    },
+    {
+      "table": "trainee_action_logs",
+      "exactCount": 7043,
+      "defaultReturnedRows": 1000,
+      "truncated": true
+    }
+  ],
+  "evidence": {
+    "rowsRead": 5992,
+    "statuses": {
+      "PENDING": 2818,
+      "APPROVED": 3115,
+      "CANCELLED": 59
+    },
+    "types": {
+      "REFRESH BALANCE": 1208,
+      "WITHDRAW CREDITS": 1171,
+      "CREATE ACCOUNT": 1186,
+      "RESET PASSWORD": 1244,
+      "ADD CREDITS": 1183
+    },
+    "missingHandling": 2966,
+    "zeroHandling": 0,
+    "storedOutcomeMissing": 2818,
+    "complete": true
+  },
+  "limitation": "Nontransactional live reads; concurrent changes may affect totals. No report drift or persistence assertion.",
+  "statisticsVerification": {
+    "checkedAt": "2026-11-02T16:20:33.998Z",
+    "exactTimedRows": 3026,
+    "paginatedStatisticsRows": 3026,
+    "matched": true,
+    "overall": {
+      "count": 3026,
+      "averageSeconds": 32.39,
+      "minSeconds": 1.75,
+      "maxSeconds": 1385.79
+    },
+    "allOperations": [
+      {
+        "type": "ADD CREDITS",
+        "count": 658,
+        "averageSeconds": 36.48,
+        "minSeconds": 3.06,
+        "maxSeconds": 495.59
+      },
+      {
+        "type": "CREATE ACCOUNT",
+        "count": 419,
+        "averageSeconds": 42.28,
+        "minSeconds": 4.18,
+        "maxSeconds": 1385.79
+      },
+      {
+        "type": "REFRESH BALANCE",
+        "count": 684,
+        "averageSeconds": 23.53,
+        "minSeconds": 3.41,
+        "maxSeconds": 575.48
+      },
+      {
+        "type": "RESET PASSWORD",
+        "count": 665,
+        "averageSeconds": 29.71,
+        "minSeconds": 1.75,
+        "maxSeconds": 623.17
+      },
+      {
+        "type": "WITHDRAW CREDITS",
+        "count": 600,
+        "averageSeconds": 34.06,
+        "minSeconds": 9.65,
+        "maxSeconds": 524.83
+      }
+    ],
+    "scope": "Locally executed patched statistics builder against hosted SELECT queries; no deployment or mutation. Per-person values omitted."
+  }
+}

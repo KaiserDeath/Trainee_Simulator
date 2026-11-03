@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-03T19:34:26.741Z",
+  "rows": [
+    {
+      "function": "claim",
+      "calls": 5871
+    }
+  ],
+  "elapsedSeconds": 54.618,
+  "additionalClaims": 17
+}

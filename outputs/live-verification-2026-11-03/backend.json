@@ -1,0 +1,79 @@
+{
+  "checkedAt": "2026-11-03T18:03:21.971Z",
+  "backend": "https://trainee-simulator-8els.onrender.com",
+  "checks": [
+    {
+      "name": "trainer server login",
+      "login": 200,
+      "context": 200,
+      "roles": [
+        "TRAINER"
+      ]
+    },
+    {
+      "name": "postulante server login",
+      "login": 200,
+      "context": 200,
+      "roles": [
+        "POSTULANTE"
+      ]
+    },
+    {
+      "name": "learner trainer-directory denial",
+      "status": 403
+    },
+    {
+      "name": "start live learner session",
+      "status": 200,
+      "created": true
+    },
+    {
+      "name": "new database persistence",
+      "status": "ok",
+      "serverDerivedName": true
+    },
+    {
+      "name": "operations immediately",
+      "count": 0
+    },
+    {
+      "name": "trainer directory",
+      "status": 200,
+      "containsSession": true,
+      "bytes": 470
+    },
+    {
+      "name": "worker generation after 35 seconds",
+      "count": 3,
+      "job": {
+        "status": "ready",
+        "sequence_number": 3,
+        "failures": 0
+      }
+    },
+    {
+      "name": "stop live test session",
+      "status": 200,
+      "sessionStatus": "completed"
+    },
+    {
+      "name": "trainer report",
+      "status": 200,
+      "bytes": 7021
+    }
+  ],
+  "cleanup": [
+    {
+      "resource": "test session",
+      "ok": true
+    },
+    {
+      "resource": "test trainer",
+      "ok": true
+    },
+    {
+      "resource": "test postulante",
+      "ok": true
+    }
+  ]
+}
