@@ -113,3 +113,16 @@ test('ADMIN attaches a published media version to a lesson draft',async({page})=
   await page.getByRole('textbox',{name:'Reason for change',exact:true}).fill('Attach the approved reference guide');await page.getByRole('button',{name:'Create new draft',exact:true}).click();
   await expect(page.getByText('Draft created. Submit it for review.')).toBeVisible();expect(draft.instruction.mediaAssetIds).toEqual([assetId]);
 });
+
+test('reports and audit policies load on demand and CSV exports the applied report filters',async({page})=>{
+  await staff(page,'TRAINER');let reportCalls=0;let policyCalls=0;let csvQuery;
+  await page.route('**/api/hub/assessment/report*',route=>{
+    const url=new URL(route.request().url());
+    if(url.pathname.endsWith('.csv')){csvQuery=url.searchParams;return route.fulfill({status:200,contentType:'text/csv',body:'Learner,Score\r\nFixture,100\r\n'});}
+    reportCalls++;return json(route,{attempts:[],statistics:{attempts:0},filters:{status:'passed'}});
+  });
+  await page.route('**/api/hub/assessment/evaluations',route=>{policyCalls++;return json(route,{evaluations:[],gameFamilies:[],attemptSets:[],attempts:[],itemResults:[],reopenEvents:[]});});
+  await page.goto('/hub');await expect(page.getByRole('heading',{name:'Trainer workspace',exact:true})).toBeVisible();expect(reportCalls).toBe(0);expect(policyCalls).toBe(0);
+  await page.getByRole('button',{name:'Reports Results & performance',exact:true}).click();await expect(page.getByRole('button',{name:'Export filtered report CSV',exact:true})).toBeEnabled();expect(reportCalls).toBe(1);expect(policyCalls).toBe(0);
+  const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Export filtered report CSV',exact:true}).click();expect((await downloaded).suggestedFilename()).toBe('training-assessment-report.csv');expect(csvQuery.get('status')).toBe('passed');
+});

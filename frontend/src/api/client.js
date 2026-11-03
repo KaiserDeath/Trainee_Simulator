@@ -140,7 +140,13 @@ export const getHubAssignableCourses = async () => api.get('/hub/staff/courses')
 export const assignHubCourse = async (identityId, courseId) => api.post(`/hub/trainer/postulantes/${identityId}/enrolments`, { courseId }, await withHubCsrf());
 export const getHubAssessmentSettings = async () => api.get('/hub/assessment/settings');
 export const updateHubAssessmentSettings = async (payload) => api.put('/hub/assessment/settings', payload, await withHubCsrf());
-export const getHubAssessmentReport = async (params = {}) => api.get('/hub/assessment/report', { params });
+const assessmentReportParams=params=>{
+  const result={...params};
+  for(const key of ['from','to'])if(/^\d{4}-\d{2}-\d{2}$/.test(result[key]||''))result[key]=new Date(`${result[key]}T${key==='to'?'23:59:59.999':'00:00:00.000'}`).toISOString();
+  return result;
+};
+export const getHubAssessmentReport = async (params = {}) => api.get('/hub/assessment/report', { params:assessmentReportParams(params) });
+export const getHubAssessmentCsv=async(params={})=>api.get('/hub/assessment/report.csv',{params:assessmentReportParams(params),responseType:'blob'});
 export const getHubScoredEvaluationPolicies = async () => api.get('/hub/assessment/evaluations');
 export const publishHubEvaluationPolicy=async(id,payload)=>api.post(`/hub/assessment/evaluations/${id}/publish-version`,payload,await withHubCsrf());
 export const getHubTheoryQuestions=async()=>api.get('/hub/assessment/questions');

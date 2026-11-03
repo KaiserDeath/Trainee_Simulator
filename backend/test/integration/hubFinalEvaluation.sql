@@ -1,9 +1,11 @@
 BEGIN;
 DO $$
-DECLARE course UUID:=gen_random_uuid();module UUID:=gen_random_uuid();learner UUID;enrolment UUID;attempt UUID;expired UUID;attempt_set UUID;
+DECLARE course UUID:=gen_random_uuid();module UUID:=gen_random_uuid();learner UUID;enrolment UUID;attempt UUID;expired UUID;attempt_set UUID;trainer UUID:=gen_random_uuid();report JSONB;
   kind TEXT;subject TEXT;view JSONB;input JSONB;result JSONB;replay JSONB;history JSONB;action TEXT;run INTEGER;step INTEGER;count_operations INTEGER;decision TEXT;
   types TEXT[]:=ARRAY['CREATE ACCOUNT','REFRESH BALANCE','ADD CREDITS','WITHDRAW CREDITS','RESET PASSWORD'];
 BEGIN
+  INSERT INTO public.hub_identities(id,external_subject_reference) VALUES(trainer,'final-report-trainer');
+  INSERT INTO public.hub_role_assignments(identity_id,role_id) SELECT trainer,id FROM public.hub_roles WHERE code='trainer';
   INSERT INTO public.hub_courses(id,stable_code,title) VALUES(course,'final-runtime-fixture','Final runtime');
   INSERT INTO public.hub_modules(id,course_id,stable_code,position,title) VALUES(module,course,'final-runtime-fixture',1,'Final prerequisite');
   UPDATE public.hub_scored_evaluations SET publication_status='published',is_provisional=FALSE,prerequisite_module_ids=ARRAY[module],prerequisite_evaluation_ids='{}',theory_item_codes=ARRAY['verification-first'] WHERE stable_code='final-pretraining-readiness';
@@ -59,5 +61,13 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'ATTEMPT_EXPIRED' THEN RAISE;END IF;END;
   PERFORM public.hub_expire_scored_evaluation_attempts();
   IF NOT EXISTS(SELECT 1 FROM public.hub_scored_evaluation_attempts WHERE id=expired AND score=0 AND completion_reason='timed_out') THEN RAISE EXCEPTION 'expired final not recorded';END IF;
+  report:=public.hub_assessment_report_rows('final-report-trainer');
+  IF (SELECT count(*) FROM jsonb_array_elements(report->'attempts') row WHERE row->>'evaluationId'='10000000-0000-4000-8000-000000000404')<>9 THEN RAISE EXCEPTION 'governed final results missing from reporting';END IF;
+  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(report->'attempts') row WHERE row->>'id'=attempt::text AND row->>'source'='governed_evaluation' AND jsonb_array_length(row->'operationResults')>0) THEN RAISE EXCEPTION 'report omitted immutable operation snapshots';END IF;
+  IF report::text LIKE '%final-runtime-secret%' OR report::text LIKE '%correctOption%' THEN RAISE EXCEPTION 'report leaked passwords or theory answer keys';END IF;
+  BEGIN
+    PERFORM public.hub_assessment_report_rows(subject);
+    RAISE EXCEPTION 'learner accessed staff report';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'HUB_ACCESS_DENIED' THEN RAISE;END IF;END;
 END; $$;
 ROLLBACK;

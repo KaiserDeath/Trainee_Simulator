@@ -3,7 +3,7 @@ import HubReportBreakdown from './HubReportBreakdown';
 import HubEvaluationPolicyEditor from './HubEvaluationPolicyEditor';
 import HubQuestionBank from './HubQuestionBank';
 import HubFormalEvidence from './HubFormalEvidence';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef,useState } from 'react';
 
 import {
   assignHubCourse,
@@ -11,6 +11,7 @@ import {
   deactivateHubPostulante,
   getHubAssignableCourses,
   getHubAssessmentReport,
+  getHubAssessmentCsv,
   getHubAssessmentSettings,
   getHubPostulanteAccounts,
   getHubScoredEvaluationPolicies,
@@ -37,32 +38,39 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
   const [workspace, setWorkspace] = useState('people');
   const [accountSearch, setAccountSearch] = useState('');
   const [accountStatus, setAccountStatus] = useState('active');
+  const workspaceRequest=useRef(0);
 
   const load = useCallback(async () => {
     const [accountResponse, courseResponse, settingsResponse, reportResponse, policyResponse] = await Promise.all([
-      getHubPostulanteAccounts(), getHubAssignableCourses(), getHubAssessmentSettings(), getHubAssessmentReport(filters), getHubScoredEvaluationPolicies(),
+      getHubPostulanteAccounts(), getHubAssignableCourses(), getHubAssessmentSettings(), workspace==='reports'?getHubAssessmentReport(filters):null, workspace==='evaluations'?getHubScoredEvaluationPolicies():null,
     ]);
     setAccounts(accountResponse.data.postulantes || []);
     setCourses(courseResponse.data.courses || []);
     setSettings(settingsResponse.data.settings);
-    setReport(reportResponse.data);
-    setEvaluationPolicies(policyResponse.data);
-  }, [filters]);
+    if(reportResponse)setReport(reportResponse.data);
+    if(policyResponse)setEvaluationPolicies(policyResponse.data);
+  }, [filters,workspace]);
 
   useEffect(() => {
     let active = true;
-    Promise.all([getHubPostulanteAccounts(), getHubAssignableCourses(), getHubAssessmentSettings(), getHubAssessmentReport(), getHubScoredEvaluationPolicies()])
-      .then(([accountResponse, courseResponse, settingsResponse, reportResponse, policyResponse]) => {
+    Promise.all([getHubPostulanteAccounts(), getHubAssignableCourses(), getHubAssessmentSettings()])
+      .then(([accountResponse, courseResponse, settingsResponse]) => {
         if (!active) return;
         setAccounts(accountResponse.data.postulantes || []);
         setCourses(courseResponse.data.courses || []);
         setSettings(settingsResponse.data.settings);
-        setReport(reportResponse.data);
-        setEvaluationPolicies(policyResponse.data);
       })
       .catch(() => { if (active) setNotice('Assessment administration could not be loaded.'); });
     return () => { active = false; };
   }, []);
+  const openWorkspace=async(id)=>{
+    const request=++workspaceRequest.current;setWorkspace(id);setNotice('');
+    if(id==='people'){setBusy(false);return;}setBusy(true);
+    try{
+      if(id==='reports'){const response=await getHubAssessmentReport(filters);if(request===workspaceRequest.current)setReport(response.data);}
+      else{const response=await getHubScoredEvaluationPolicies();if(request===workspaceRequest.current)setEvaluationPolicies(response.data);}
+    }catch(error){if(request===workspaceRequest.current)setNotice(error?.response?.data?.error?.message||'This workspace could not be loaded.');}finally{if(request===workspaceRequest.current)setBusy(false);}
+  };
 
   const create = async (event) => {
     event.preventDefault(); setBusy(true); setNotice('');
@@ -169,6 +177,11 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
     finally { setBusy(false); }
   };
   const applyFilters = async (event) => { event.preventDefault(); await fetchReport(filters); };
+  const exportCsv=async()=>{
+    setBusy(true);setNotice('');try{
+      const response=await getHubAssessmentCsv(report.filters||filters);const url=URL.createObjectURL(response.data);const link=document.createElement('a');link.href=url;link.download='training-assessment-report.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch{setNotice('The filtered report could not be exported. Please retry.');}finally{setBusy(false);}
+  };
   const visibleAccounts = accounts.filter((account) =>
     (!accountStatus || account.status === accountStatus) &&
     `${account.displayName} ${account.username}`.toLowerCase().includes(accountSearch.trim().toLowerCase())
@@ -194,7 +207,7 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
         ['people', 'Postulantes', 'Accounts & course assignments'],
         ['evaluations', 'Evaluations', 'Rules & attempt reopening'],
         ['reports', 'Reports', 'Results & performance'],
-      ].map(([id, label, description]) => <button type="button" key={id} aria-pressed={workspace === id} aria-controls={`hub-workspace-${id}`} onClick={() => setWorkspace(id)}><strong>{label}</strong><span>{description}</span></button>)}
+      ].map(([id, label, description]) => <button type="button" key={id} aria-pressed={workspace === id} aria-controls={`hub-workspace-${id}`} onClick={() => openWorkspace(id)}><strong>{label}</strong><span>{description}</span></button>)}
     </nav>
     {notice && <p className="hub-page-notice" role="status">{notice}</p>}
     <div id="hub-workspace-people" hidden={workspace !== 'people'}>
@@ -265,6 +278,9 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
     </div>
     <div id="hub-workspace-reports" hidden={workspace !== 'reports'}>
     <section className="hub-admin-accounts" aria-labelledby="assessment-report-title"><p className="hub-eyebrow">Reporting</p><h2 id="assessment-report-title">Assessment attempts and statistics</h2>
+      <p className="hub-readonly-note">Legacy and governed assessments share this report. A scored pass and an official submission are shown separately. Daily summary buckets use UTC; displayed timestamps and date filters use your browser time zone.</p>
+      <button type="button" disabled={busy} onClick={exportCsv}>Export filtered report CSV</button>
+      {report.truncated&&<p role="status">Showing the 500 most recent attempts in this learner/date window. Narrow the date range to review older results.</p>}
       <form className="hub-assessment-filters" onSubmit={applyFilters}>
         <label>Postulante<select value={filters.postulanteId} onChange={updateFilter('postulanteId')}><option value="">All</option>{accounts.map((account) => <option value={account.id} key={account.id}>{account.displayName}</option>)}</select></label>
         <label>From<input type="date" value={filters.from} onChange={updateFilter('from')} /></label><label>To<input type="date" value={filters.to} onChange={updateFilter('to')} /></label>

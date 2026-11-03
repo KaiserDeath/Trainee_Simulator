@@ -14,6 +14,7 @@ import { createHubService } from '../hub/hubService.js';
 import { createHubFocusedPracticeService } from '../hub/hubFocusedPracticeService.js';
 import { createHubWorkspaceRouter } from './hubWorkspaceRoutes.js';
 import {createHubMediaRouter} from './hubMediaRoutes.js';
+import {assessmentReportCsv} from '../hub/hubAssessmentCsv.js';
 
 function asyncRoute(handler) {
   return async (req, res) => {
@@ -540,8 +541,12 @@ export function createHubRouter({
   router.get(
     '/assessment/report',
     requireHubRole(HUB_ROLES.TRAINER, HUB_ROLES.RRHH),
-    asyncRoute(async (req, res) => res.json(await assessmentService.report(req.query)))
+    asyncRoute(async (req, res) => res.json(await assessmentService.report(req.query,req.hubIdentity)))
   );
+  router.get('/assessment/report.csv',requireHubRole(HUB_ROLES.TRAINER,HUB_ROLES.RRHH),asyncRoute(async(req,res)=>{
+    const report=await assessmentService.report(req.query,req.hubIdentity);
+    res.set('Cache-Control','no-store');res.set('Content-Disposition','attachment; filename="training-assessment-report.csv"');res.type('text/csv').send(assessmentReportCsv(report));
+  }));
 
   router.get(
     '/scored-evaluations',

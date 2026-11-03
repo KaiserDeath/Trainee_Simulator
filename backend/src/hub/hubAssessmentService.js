@@ -81,19 +81,24 @@ function durationMinutes(attempt) {
   if (!attempt.completed_at) return null;
   return Math.max(0, (new Date(attempt.completed_at).getTime() - new Date(attempt.started_at).getTime()) / 60000);
 }
+function hasScore(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));}
 
 function summarize(attempts, readiness) {
   const completed = attempts.filter((attempt) => attempt.status !== 'in_progress');
   const passed = completed.filter((attempt) => attempt.status === 'passed' && Number(attempt.score) === 100);
-  const scores = completed.map((attempt) => Number(attempt.score)).filter(Number.isFinite);
+  const scores = completed.filter(attempt=>hasScore(attempt.score)).map((attempt) => Number(attempt.score));
   const durations = completed.map(durationMinutes).filter(Number.isFinite);
   const byIdentity = new Map();
+  const byEvaluation = new Map();
   for (const attempt of [...attempts].sort((a, b) => a.attempt_number - b.attempt_number)) {
     if (!byIdentity.has(attempt.identity_id)) byIdentity.set(attempt.identity_id, []);
     byIdentity.get(attempt.identity_id).push(attempt);
+    const key=`${attempt.identity_id}:${attempt.evaluationId||'legacy'}`;
+    if(!byEvaluation.has(key))byEvaluation.set(key,[]);
+    byEvaluation.get(key).push(attempt);
   }
-  const passedGroups = [...byIdentity.values()].filter((items) => items.some((attempt) => attempt.status === 'passed'));
-  const firstAttemptPasses = [...byIdentity.values()].filter((items) => items[0]?.status === 'passed').length;
+  const passedGroups = [...byEvaluation.values()].filter((items) => items.some((attempt) => attempt.status === 'passed'));
+  const firstAttemptPasses = [...byEvaluation.values()].filter((items) => items[0]?.status === 'passed').length;
   const attemptsToPass = passedGroups.map((items) => items.findIndex((attempt) => attempt.status === 'passed') + 1);
   const results = attempts.flatMap((attempt) => attempt.operationResults || []);
   const correct = results.filter((result) => result.is_correct === true).length;
@@ -110,7 +115,7 @@ function summarize(attempts, readiness) {
     const item = daily.get(date) || { date, attempts: 0, passed: 0, scoreTotal: 0, scored: 0 };
     item.attempts += 1;
     if (attempt.status === 'passed') item.passed += 1;
-    if (Number.isFinite(Number(attempt.score))) {
+    if (hasScore(attempt.score)) {
       item.scoreTotal += Number(attempt.score);
       item.scored += 1;
     }
@@ -122,11 +127,11 @@ function summarize(attempts, readiness) {
     completedAttempts: completed.length,
     passedAttempts: passed.length,
     passRate: completed.length ? Math.round(passed.length / completed.length * 100) : 0,
-    firstAttemptPassRate: byIdentity.size ? Math.round(firstAttemptPasses / byIdentity.size * 100) : 0,
+    firstAttemptPassRate: byEvaluation.size ? Math.round(firstAttemptPasses / byEvaluation.size * 100) : 0,
     averageAttemptsToPass: attemptsToPass.length ? Number((attemptsToPass.reduce((sum, value) => sum + value, 0) / attemptsToPass.length).toFixed(2)) : null,
     averageScore: scores.length ? Number((scores.reduce((sum, value) => sum + value, 0) / scores.length).toFixed(2)) : null,
     bestScore: scores.length ? Math.max(...scores) : null,
-    latestScore: latestCompleted && Number.isFinite(Number(latestCompleted.score)) ? Number(latestCompleted.score) : null,
+    latestScore: latestCompleted && hasScore(latestCompleted.score) ? Number(latestCompleted.score) : null,
     averageDurationMinutes: durations.length ? Number((durations.reduce((sum, value) => sum + value, 0) / durations.length).toFixed(2)) : null,
     timedOut: attempts.filter((attempt) => attempt.status === 'timed_out').length,
     abandoned: attempts.filter((attempt) => attempt.status === 'abandoned').length,
@@ -394,20 +399,22 @@ export function createHubAssessmentService({ client }) {
       return result.data;
     },
 
-    async report(query = {}) {
-      const expired = await client.rpc('hub_expire_assessment_attempts');
-      if (expired.error) throw persistenceError();
-      const result = await client.from('hub_assessment_attempts')
-        .select('*, postulante:hub_identities!hub_assessment_attempts_identity_id_fkey(id, username, display_name), operationResults:hub_assessment_operation_results(*)')
-        .order('started_at', { ascending: false }).limit(500);
-      if (result.error) throw persistenceError();
+    async report(query = {},identity) {
+      const parseDate=(value,end=false)=>{
+        if(!value)return null;const normalized=/^\d{4}-\d{2}-\d{2}$/.test(value)?`${value}T${end?'23:59:59.999':'00:00:00.000'}Z`:value;
+        const timestamp=new Date(normalized);if(!Number.isFinite(timestamp.getTime())||/^\d{4}-\d{2}-\d{2}$/.test(value)&&timestamp.toISOString().slice(0,10)!==value)throw new HubError(400,'HUB_VALIDATION_ERROR','Use valid report dates.');return timestamp.toISOString();
+      };
+      const dateFrom=parseDate(query.from);const dateTo=parseDate(query.to,true);
+      if(dateFrom&&dateTo&&dateFrom>dateTo)throw new HubError(400,'HUB_VALIDATION_ERROR','The report start must precede its end.');
+      const result=await client.rpc('hub_assessment_report_rows',{p_external_subject:identity.subjectId,p_learner_id:query.postulanteId?requireUuid(query.postulanteId,'postulanteId'):null,p_from:dateFrom,p_to:dateTo});
+      if(result.error)throw persistenceError();
       const scoreMin = numberFilter(query.scoreMin);
       const scoreMax = numberFilter(query.scoreMax);
       const durationMin = numberFilter(query.durationMin);
       const durationMax = numberFilter(query.durationMax);
-      const from = query.from ? new Date(query.from).getTime() : null;
-      const to = query.to ? new Date(query.to).getTime() : null;
-      const attempts = (result.data || []).filter((attempt) => {
+      const from = dateFrom ? new Date(dateFrom).getTime() : null;
+      const to = dateTo ? new Date(dateTo).getTime() : null;
+      const attempts = (result.data.attempts || []).filter((attempt) => {
         const score = Number(attempt.score);
         const duration = durationMinutes(attempt);
         const operationResults = attempt.operationResults || [];
@@ -417,8 +424,8 @@ export function createHubAssessmentService({ client }) {
         if (query.result === 'unsuccessful' && !['unsuccessful', 'timed_out', 'abandoned'].includes(attempt.status)) return false;
         if (Number.isFinite(from) && new Date(attempt.started_at).getTime() < from) return false;
         if (Number.isFinite(to) && new Date(attempt.started_at).getTime() > to) return false;
-        if (scoreMin !== null && (!Number.isFinite(score) || score < scoreMin)) return false;
-        if (scoreMax !== null && (!Number.isFinite(score) || score > scoreMax)) return false;
+        if (scoreMin !== null && (!hasScore(attempt.score) || score < scoreMin)) return false;
+        if (scoreMax !== null && (!hasScore(attempt.score) || score > scoreMax)) return false;
         if (durationMin !== null && (!Number.isFinite(duration) || duration < durationMin)) return false;
         if (durationMax !== null && (!Number.isFinite(duration) || duration > durationMax)) return false;
         if (query.operationType && !operationResults.some((row) => row.operation_type === query.operationType)) return false;
@@ -431,7 +438,8 @@ export function createHubAssessmentService({ client }) {
       const readiness = await client.rpc('hub_readiness_summary');
       if (readiness.error) throw persistenceError();
       const ready = Number(readiness.data?.readyPostulantes || 0);
-      return { attempts, statistics: summarize(attempts, ready), filters: query };
+      return { attempts, statistics: summarize(attempts, ready), filters: query,truncated:Boolean(result.data.truncated),scope:result.data.scope };
     },
   });
 }
+export {summarize as summarizeAssessmentAttempts};
