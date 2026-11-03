@@ -69,6 +69,8 @@ statistics change. The statistics route now calls the service-role-only
 `trainer_operation_time_stats` RPC once. PostgreSQL returns counts, sums and
 extrema by operation and session instead of individual operation rows. The
 backend preserves the existing response shape, sorting and JavaScript rounding.
+Successful responses include `X-Trez-Statistics-Source: postgres-aggregate` for
+deployment verification and `Cache-Control: private, no-store` for report privacy.
 Missing RPCs or query failures fail the request; there is no expensive fallback
 to downloading historical rows. Trainer refresh stays manual.
 
