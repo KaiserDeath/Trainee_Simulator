@@ -22,6 +22,59 @@ async function staff(page,role){
   });
 }
 
+async function expectReadableWorkspace(page){
+  const failures=await page.evaluate(()=>{
+    const rgb=value=>(value.match(/[\d.]+/g)||[]).map(Number);
+    const luminance=channels=>channels.slice(0,3).map(c=>{const s=c/255;return s<=.04045?s/12.92:((s+.055)/1.055)**2.4;}).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
+    return [...document.querySelectorAll('.hub-main h2,.hub-main h3,.hub-main label,.hub-main input,.hub-main select,.hub-trainer-table th,.hub-trainer-table td,.hub-workspace-panel p,.hub-prose,.hub-sidebar a')].filter(el=>el.getClientRects().length&&!el.disabled).flatMap(el=>{
+      const foreground=rgb(getComputedStyle(el).color);let node=el;let background=[255,255,255];
+      while(node){const channels=rgb(getComputedStyle(node).backgroundColor);if(channels.length===3||channels[3]===1){background=channels;break;}node=node.parentElement;}
+      const a=luminance(foreground),b=luminance(background),ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+      return ratio<4.5?[{text:(el.textContent||el.value||el.tagName).slice(0,50),ratio:ratio.toFixed(2)}]:[];
+    });
+  });
+  expect(failures,'Workspace text must maintain at least 4.5:1 contrast').toEqual([]);
+}
+
+for(const role of ['ADMIN','TRAINER'])test(`${role} workspace uses readable light surfaces and role-specific section navigation`,async({page})=>{
+  await staff(page,role);
+  await page.route('**/api/hub/admin/accounts',route=>json(route,{accounts:[{id:'staff',username:'Admin',displayName:'Admin account',roles:['ADMIN'],status:'active'}]}));
+  await page.goto('/hub');
+  await expect(page.getByRole('navigation',{name:'Hub tools',exact:true})).toBeVisible();
+  const target=role==='ADMIN'?'People & access':'People, evaluations & reports';
+  await page.getByRole('link',{name:target,exact:true}).click();
+  await expect(page.getByRole('link',{name:target,exact:true})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('button',{name:'Open content catalog',exact:true})).toBeHidden();
+  await expectReadableWorkspace(page);
+  await page.screenshot({path:`../outputs/hub-light-${role.toLowerCase()}-desktop.png`,fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  await expectReadableWorkspace(page);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:`../outputs/hub-light-${role.toLowerCase()}-mobile.png`,fullPage:true});
+  await page.getByRole('link',{name:'Training content',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Open content catalog',exact:true})).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('link',{name:'Training content',exact:true})).toHaveAttribute('aria-current','page');
+  await page.goBack();
+  await expect(page.getByRole('link',{name:target,exact:true})).toHaveAttribute('aria-current','page');
+  const skip=page.getByRole('link',{name:'Skip to workspace',exact:true});
+  await skip.focus();await skip.press('Enter');
+  await expect(page.getByRole('link',{name:target,exact:true})).toHaveAttribute('aria-current','page');
+});
+
+test('learner lessons use readable surfaces on desktop and mobile',async({page})=>{
+  await staff(page,'POSTULANTE');
+  await page.route('**/api/hub/learning-path',route=>json(route,{enrolments:[{id:'enrolment',status:'assigned',course:{title:'Operator foundations',description:'Learn, practise and prepare for your evaluation.'},modules:[{id:'module',title:'Understanding the work',position:1,status:'in_progress',available:true,activities:[{id:activityId,type:'article',title:'Verification comes first',status:'not_started',content:{paragraphs:['Confirm the exact customer and account before changing a balance.']}}]}]}]}));
+  await page.goto('/hub');
+  await expect(page.getByRole('heading',{name:'Verification comes first'})).toBeVisible();
+  await expectReadableWorkspace(page);
+  await page.screenshot({path:'../outputs/hub-light-learner-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  await expectReadableWorkspace(page);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:'../outputs/hub-light-learner-mobile.png',fullPage:true});
+});
+
 test('TRAINER creates a cohort and safely revises its date after reload',async({page})=>{
   await staff(page,'TRAINER');let cohorts=[];const submissions=[];
   const courseId='10000000-0000-4000-8000-000000000002';
@@ -36,7 +89,7 @@ test('TRAINER creates a cohort and safely revises its date after reload',async({
   });
   await page.goto('/hub');
   expect(submissions).toHaveLength(0);
-  await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
+  await page.getByRole('link',{name:'Cohorts & dates',exact:true}).click();await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
   await page.getByLabel('Cohort name', {exact:true}).fill('November operators');
   await page.getByRole('combobox',{name:'Cohort course',exact:true}).selectOption(courseId);
   await page.getByLabel('Target date',{exact:true}).fill('2026-11-30');
@@ -75,7 +128,7 @@ test('ADMIN edits an instruction draft and submits it through the publication wo
     return json(route,{versions});
   });
   await page.route('**/api/hub/admin/content-versions/version-fixture/submit',route=>{versions[0].status='pending_review';return json(route,{contentVersion:versions[0]});});
-  await page.goto('/hub');await page.getByRole('button',{name:'Open content catalog'}).click();
+  await page.goto('/hub');await page.getByRole('link',{name:'Training content',exact:true}).click();await page.getByRole('button',{name:'Open content catalog'}).click();
   await page.getByRole('combobox',{name:'Activity',exact:true}).selectOption(activityId);
   await page.getByLabel('Lesson title').fill('Revised lesson');await page.getByLabel('Lesson text').fill('First paragraph\n\nSecond paragraph');
   await page.getByLabel('Reason for change').fill('Clarify operational verification');
@@ -94,10 +147,10 @@ test('TRAINER saves a private note, reloads it, and starts a versioned revision'
       submitted=route.request().postDataJSON();notes=[{id:'note-fixture',attempt_id:null,retention_until:'2028-11-02T12:00:00Z',revisions:[{id:'revision-fixture',revision:1,status:submitted.status,body:submitted.body,created_at:'2026-11-02T12:00:00Z'}]}];return json(route,{note:notes[0]});
     }return json(route,{notes,nextCursor:null});
   });
-  await page.goto('/hub');await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
+  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
   await page.getByRole('textbox',{name:'Coaching note',exact:true}).fill('Review the game history before acting.');await page.getByRole('button',{name:'Save private note'}).click();
   await expect(page.getByText('Private note saved.')).toBeVisible();expect(submitted.expectedRevision).toBe(0);expect(submitted.idempotencyKey).toBeTruthy();
-  await page.reload();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
+  await page.reload();await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
   await expect(page.getByText('Review the game history before acting.').first()).toBeVisible();await page.getByRole('button',{name:'Add revision'}).click();await expect(page.getByRole('textbox',{name:'Coaching note',exact:true})).toHaveValue('Review the game history before acting.');
 });
 
@@ -138,7 +191,7 @@ test('ADMIN uploads a private training asset and cannot approve their own upload
   await page.route('**/api/hub/media/uploads',route=>{registration=route.request().postDataJSON();return json(route,{asset:{id:assetId},uploadUrl:`${new URL(route.request().url()).origin}/fixture-media-upload`});});
   await page.route('**/fixture-media-upload',route=>{uploaded=route.request().method()==='PUT';return json(route,{Key:'private-fixture'});});
   await page.route(`**/api/hub/media/${assetId}/complete`,route=>{assets=[{id:assetId,title:'Account verification guide',version:1,status:'pending_review',file_name:'sample.png',expected_size:13,source_reference:'Approved operator training guide',canReview:false}];return json(route,{asset:assets[0]});});
-  await page.goto('/hub');await page.getByRole('button',{name:'Open media library',exact:true}).click();
+  await page.goto('/hub');await page.getByRole('link',{name:'Media library',exact:true}).click();await page.getByRole('button',{name:'Open media library',exact:true}).click();
   await page.getByRole('textbox',{name:'Resource code',exact:true}).fill('account-verification');await page.getByRole('textbox',{name:'Asset title',exact:true}).fill('Account verification guide');
   await page.getByLabel('Training file (25 MB maximum)',{exact:true}).setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from('fixture-image')});
   await page.getByRole('textbox',{name:'Alternative text for images',exact:true}).fill('A training diagram of account verification');await page.getByRole('textbox',{name:'Source and approval reference',exact:true}).fill('Approved operator training guide');
@@ -153,7 +206,7 @@ test('ADMIN attaches a published media version to a lesson draft',async({page})=
   await page.route('**/api/hub/workspace/catalog',route=>json(route,{courses:[],modules:[{id:'module',title:'Foundations'}],activities:[{id:activityId,module_id:'module',title:'Media lesson',activity_type:'article',content:{summary:'Lesson'}}]}));
   await page.route(`**/api/hub/workspace/activities/${activityId}/versions`,route=>{if(route.request().method()==='POST'){draft=route.request().postDataJSON();return json(route,{contentVersion:{id:'media-version',status:'draft'}});}return json(route,{versions:[]});});
   await page.route('**/api/hub/media',route=>json(route,{assets:[{id:assetId,title:'Approved guide',version:2,status:'published'}]}));
-  await page.goto('/hub');await page.getByRole('button',{name:'Open content catalog',exact:true}).click();await page.getByRole('combobox',{name:'Activity',exact:true}).selectOption(activityId);
+  await page.goto('/hub');await page.getByRole('link',{name:'Training content',exact:true}).click();await page.getByRole('button',{name:'Open content catalog',exact:true}).click();await page.getByRole('combobox',{name:'Activity',exact:true}).selectOption(activityId);
   await page.getByRole('button',{name:'Choose published training assets',exact:true}).click();await page.getByRole('checkbox',{name:'Approved guide · v2',exact:true}).check();
   await page.getByRole('textbox',{name:'Reason for change',exact:true}).fill('Attach the approved reference guide');await page.getByRole('button',{name:'Create new draft',exact:true}).click();
   await expect(page.getByText('Draft created. Submit it for review.')).toBeVisible();expect(draft.instruction.mediaAssetIds).toEqual([assetId]);

@@ -29,6 +29,7 @@ import HubPolicyStudio from '../components/hub/HubPolicyStudio';
 import HubMediaLibrary from '../components/hub/HubMediaLibrary';
 import HubCohorts from '../components/hub/HubCohorts';
 import '../styles/hub.css';
+import '../styles/hub-theme.css';
 
 const TRAINER_ROLE = 'TRAINER';
 const POSTULANTE_ROLE = 'POSTULANTE';
@@ -164,6 +165,8 @@ const identityRoles = (identity) => {
 
 export default function HubPage() {
   const [context, setContext] = useState(null);
+  const [staffSection,setStaffSection]=useState(()=>window.location.hash.replace('#hub-',''));
+  useEffect(()=>{const change=()=>{if(window.location.hash!=='#hub-main-content')setStaffSection(window.location.hash.replace('#hub-',''));};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change);},[]);
   const [path, setPath] = useState(null);
   const [assessmentOpen,setAssessmentOpen]=useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState(null);
@@ -530,7 +533,7 @@ export default function HubPage() {
 
   if (loading) {
     return (
-      <main className="hub-state-page">
+      <main className="hub-state-page hub-light-theme">
         <div className="hub-state-card" role="status">
           <span className="hub-loader" aria-hidden="true" />
           <h1>Loading assigned training</h1>
@@ -542,7 +545,7 @@ export default function HubPage() {
 
   if (error) {
     return (
-      <main className="hub-state-page">
+      <main className="hub-state-page hub-light-theme">
         <div className="hub-state-card">
           <span className="hub-brand-mark" aria-hidden="true">T</span>
           <p className="hub-eyebrow">Trez Training Hub</p>
@@ -597,9 +600,17 @@ export default function HubPage() {
     return role;
   });
   const course = path?.course || {};
+  const availableSections=isAdministrator?['people','policies','curriculum','media','profile']:isTrainer?['curriculum','media','coaching','groups','progress','management','profile']:['coaching','groups','management','auditor-title','profile'];
+  const activeSection=availableSections.includes(staffSection)?staffSection:(isAdministrator?'people':'management');
+  function chooseSection(event,section){
+    event.preventDefault();setStaffSection(section);window.history.pushState(null,'',`#hub-${section}`);
+    window.scrollTo(0,0);
+    requestAnimationFrame(()=>{const heading=document.getElementById(`hub-${section}`)?.querySelector('h2');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}});
+  }
 
   return (
-    <div className={`hub-app-shell${isTrainer ? ' hub-staff-console' : ''}`} lang={staffLanguage}>
+    <div className={`hub-app-shell hub-light-theme${isTrainer ? ' hub-staff-console' : ''}`} lang={staffLanguage}>
+      <a className="hub-skip-link" href="#hub-main-content">Skip to workspace</a>
       <header className="hub-topbar">
         <a className="hub-brand" href="/hub" aria-label="Trez Training Hub home">
           <span className="hub-brand-mark" aria-hidden="true">T</span>
@@ -632,7 +643,25 @@ export default function HubPage() {
         </div>
       </header>
 
-      <main className="hub-main">
+      <div className={(isAdministrator||canManagePostulantes)?'hub-workspace-layout':'hub-learner-workspace'}>
+      {(isAdministrator||canManagePostulantes)&&<aside className="hub-sidebar" aria-label="Workspace navigation">
+        <p className="hub-sidebar-label">{staffLanguage==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</p>
+        <nav aria-label="Hub tools">
+          {isAdministrator&&<a href="#hub-people" aria-current={activeSection==='people'?'page':undefined} onClick={event=>chooseSection(event,'people')}>{staffLanguage==='es'?'Personas y acceso':'People & access'}</a>}
+          {isAdministrator&&<a href="#hub-policies" aria-current={activeSection==='policies'?'page':undefined} onClick={event=>chooseSection(event,'policies')}>{staffLanguage==='es'?'Reglas de cuentas':'Account policies'}</a>}
+          {(isAdministrator||isTrainer)&&<a href="#hub-curriculum" aria-current={activeSection==='curriculum'?'page':undefined} onClick={event=>chooseSection(event,'curriculum')}>{staffLanguage==='es'?'Contenido de formación':'Training content'}</a>}
+          {(isAdministrator||isTrainer)&&<a href="#hub-media" aria-current={activeSection==='media'?'page':undefined} onClick={event=>chooseSection(event,'media')}>{staffLanguage==='es'?'Biblioteca de recursos':'Media library'}</a>}
+          {canManagePostulantes&&<a href="#hub-coaching" aria-current={activeSection==='coaching'?'page':undefined} onClick={event=>chooseSection(event,'coaching')}>{staffLanguage==='es'?'Seguimiento y notas':'Coaching'}</a>}
+          {canManagePostulantes&&<a href="#hub-groups" aria-current={activeSection==='groups'?'page':undefined} onClick={event=>chooseSection(event,'groups')}>{staffLanguage==='es'?'Grupos y fechas':'Cohorts & dates'}</a>}
+          {isTrainer&&<a href="#hub-progress" aria-current={activeSection==='progress'?'page':undefined} onClick={event=>chooseSection(event,'progress')}>{staffLanguage==='es'?'Progreso de participantes':'Learner progress'}</a>}
+          {canManagePostulantes&&<a href="#hub-management" aria-current={activeSection==='management'?'page':undefined} onClick={event=>chooseSection(event,'management')}>{staffLanguage==='es'?'Evaluaciones y reportes':'People, evaluations & reports'}</a>}
+          {isAuditor&&<a href="#hub-auditor-title" aria-current={activeSection==='auditor-title'?'page':undefined} onClick={event=>chooseSection(event,'auditor-title')}>{staffLanguage==='es'?'Auditoría de RRHH':'RRHH audit'}</a>}
+          <a href="#hub-profile" aria-current={activeSection==='profile'?'page':undefined} onClick={event=>chooseSection(event,'profile')}>{staffLanguage==='es'?'Contraseña y seguridad':'Password & security'}</a>
+        </nav>
+        <p className="hub-sidebar-help">{staffLanguage==='es'?'Selecciona una sección para acceder a tus herramientas.':'Choose a section to focus on the tools you need.'}</p>
+      </aside>}
+      <main className="hub-main" id="hub-main-content">
+        {(isAdministrator||canManagePostulantes)&&<div className="hub-workspace-intro"><p className="hub-eyebrow">{staffLanguage==='es'?'FORMACIÓN DE OPERADORES':'OPERATOR TRAINING'}</p><h1>{isAdministrator?(staffLanguage==='es'?'Administración del Hub':'Hub administration'):(staffLanguage==='es'?'Tu espacio de formación':'Your training workspace')}</h1><p>{isAdministrator?(staffLanguage==='es'?'Gestiona el acceso, las reglas y el contenido de formación.':'Manage staff access, account policies and training content.'):(staffLanguage==='es'?'Organiza participantes, revisa evidencias y acompaña su progreso.':'Organize learners, review evidence and support their progress.')}</p></div>}
         {!assessmentOpen&&!isTrainer && !isAuditor && !isAdministrator && <section className="hub-course-hero" aria-labelledby="hub-course-title">
           <div>
             <p className="hub-eyebrow">Assigned course</p>
@@ -649,15 +678,15 @@ export default function HubPage() {
         {!assessmentOpen&&roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">Open free operator simulator</a></p>}
         {isTrainer && <p><a className="hub-secondary-link" href="/trainer">Open simulator session reports</a></p>}
 
-        {isAdministrator && <HubAdminAccounts />}
-        {isAdministrator && <HubPolicyStudio locale={staffLanguage} />}
-        {(isAdministrator || isTrainer) && <HubContentStudio canEdit={isAdministrator} locale={staffLanguage} />}
-        {(isAdministrator||isTrainer)&&<HubMediaLibrary canEdit={isAdministrator}/>}
-        {canManagePostulantes && <HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} />}
-        {!assessmentOpen&&(canManagePostulantes||roles.includes(POSTULANTE_ROLE))&&<HubCohorts canManage={canManagePostulantes}/>}
+        {isAdministrator && <div id="hub-people" hidden={activeSection!=='people'} className="hub-section-anchor"><HubAdminAccounts /></div>}
+        {isAdministrator && <div id="hub-policies" hidden={activeSection!=='policies'} className="hub-section-anchor"><HubPolicyStudio locale={staffLanguage} /></div>}
+        {(isAdministrator || isTrainer) && <div id="hub-curriculum" hidden={activeSection!=='curriculum'} className="hub-section-anchor"><HubContentStudio canEdit={isAdministrator} locale={staffLanguage} /></div>}
+        {(isAdministrator||isTrainer)&&<div id="hub-media" hidden={activeSection!=='media'} className="hub-section-anchor"><HubMediaLibrary canEdit={isAdministrator}/></div>}
+        {canManagePostulantes && <div id="hub-coaching" hidden={activeSection!=='coaching'} className="hub-section-anchor"><HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} /></div>}
+        {!assessmentOpen&&(canManagePostulantes||roles.includes(POSTULANTE_ROLE))&&<div id="hub-groups" hidden={canManagePostulantes&&activeSection!=='groups'} className="hub-section-anchor"><HubCohorts canManage={canManagePostulantes}/></div>}
 
         {isTrainer && (
-          <section className="hub-trainer-section" aria-labelledby="hub-trainer-title">
+          <section id="hub-progress" hidden={activeSection!=='progress'} className="hub-trainer-section hub-section-anchor" aria-labelledby="hub-trainer-title">
             <p className="hub-eyebrow">{staffCopy.trainerView}</p>
             <h2 id="hub-trainer-title">{staffCopy.progressTitle}</h2>
             {trainerUnavailable ? (
@@ -672,10 +701,10 @@ export default function HubPage() {
           </section>
         )}
 
-        {canManagePostulantes && <HubAssessmentManagement canEditEvaluations={isTrainer} />}
+        {canManagePostulantes && <div id="hub-management" hidden={activeSection!=='management'} className="hub-section-anchor"><HubAssessmentManagement canEditEvaluations={isTrainer} /></div>}
 
         {isAuditor && (
-          <section className="hub-trainer-section" aria-labelledby="hub-auditor-title">
+          <section hidden={activeSection!=='auditor-title'} className="hub-trainer-section" aria-labelledby="hub-auditor-title">
             <p className="hub-eyebrow">{staffCopy.auditorView}</p>
             <h2 id="hub-auditor-title">RRHH reporting</h2>
             <HubAuditorOverview
@@ -720,9 +749,9 @@ export default function HubPage() {
           </>
         )}
 
-        {(isTrainer || isAuditor || isAdministrator) && <HubPasswordPanel />}
+        {(isTrainer || isAuditor || isAdministrator) && <div id="hub-profile" hidden={activeSection!=='profile'} className="hub-section-anchor"><HubPasswordPanel /></div>}
       </main>
-
+      </div>
       <footer className="hub-footer">
         <span>{staffCopy.footerStatus}</span>
         <a href="/">{staffCopy.simulatorLink}</a>

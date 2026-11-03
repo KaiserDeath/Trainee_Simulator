@@ -703,6 +703,7 @@ test('trainer can switch the progress view to Spanish', async ({ page }) => {
 
   await page.goto('/hub');
 
+  await page.getByRole('link',{name:'Learner progress',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'All Postulante progress' })).toBeVisible();
   await expect(page.getByText('Trainer view')).toBeVisible();
   await page.getByRole('button', { name: 'Español' }).click();
@@ -718,6 +719,7 @@ test('trainer searches learner progress without changing course totals', async (
     { id: 'ana', displayName: 'Ana Torres', username: 'Atorres', enrolments: [] },
   ] } }));
   await page.goto('/hub');
+  await page.getByRole('link',{name:'Learner progress',exact:true}).click();
   const progress = page.getByRole('region', { name: 'All Postulante progress' });
   await expect(progress.getByText('1 / 2', { exact: true })).toBeVisible();
   await page.getByLabel('Search learner progress').fill('atorres');
@@ -1001,7 +1003,7 @@ test('RRHH reads Hub completion and sanitized legacy failure reports without mut
     }),
   }));
 
-  await page.goto('/hub');
+  await page.goto('/hub#hub-auditor-title');
 
   await expect(page.getByRole('heading', { name: 'RRHH reporting' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Hub module completion' })).toBeVisible();

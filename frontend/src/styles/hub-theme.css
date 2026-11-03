@@ -1,0 +1,129 @@
+/* Shared Hub workspace palette. Keep simulator/game surfaces in their own styles. */
+.hub-light-theme {
+  --hub-ink: #172b3a;
+  --hub-muted: #526575;
+  --hub-accent: #0b7169;
+  --hub-border: #cbd5df;
+  --hub-surface: #ffffff;
+  --hub-soft: #f2f6f8;
+  --console-border: #cbd5df;
+  --console-muted: #526575;
+  color: var(--hub-ink);
+  background: #f4f6f9;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  color-scheme: light;
+}
+:root:has(.hub-light-theme) { color-scheme: light; }
+.hub-light-theme.hub-app-shell, .hub-light-theme.hub-state-page { color: var(--hub-ink); background: #f4f6f9; }
+.hub-light-theme .hub-topbar { background: #fff; border-color: var(--hub-border); backdrop-filter: none; padding: 14px 28px; gap: 20px; }
+.hub-light-theme .hub-brand { color: var(--hub-ink); }
+.hub-light-theme .hub-brand-mark { background: var(--hub-accent); color: #fff; border: 0; box-shadow: none; border-radius: 10px; }
+.hub-light-theme .hub-brand small, .hub-light-theme .hub-identity small { color: var(--hub-muted); }
+.hub-light-theme .hub-language-switch { background: var(--hub-soft); border-color: var(--hub-border); }
+.hub-light-theme .hub-language-switch button { color: var(--hub-muted); }
+.hub-light-theme .hub-language-switch button[aria-pressed="true"] { color: #fff; background: var(--hub-accent); }
+.hub-light-theme .hub-identity button { color: var(--hub-accent); min-height: 32px; }
+.hub-light-theme .hub-workspace-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); max-width: 1600px; margin: auto; }
+.hub-light-theme .hub-sidebar { position: sticky; top: 110px; align-self: start; padding: 28px 16px; }
+.hub-light-theme .hub-sidebar-label { margin: 0 12px 14px; font-size: .7rem; font-weight: 750; letter-spacing: .12em; color: var(--hub-muted); }
+.hub-light-theme .hub-sidebar nav { display: grid; gap: 5px; }
+.hub-light-theme .hub-sidebar a { display: block; padding: 11px 12px; border-radius: 8px; text-decoration: none; color: #334b5b; font-size: .86rem; font-weight: 600; }
+.hub-light-theme .hub-sidebar a:hover, .hub-light-theme .hub-sidebar a:focus-visible { background: #e0efec; color: #075e57; }
+.hub-light-theme .hub-sidebar-help { padding: 14px 12px; border-top: 1px solid var(--hub-border); margin-top: 22px; color: var(--hub-muted); font-size: .78rem; }
+.hub-light-theme .hub-workspace-layout > .hub-main { width: 100%; min-width: 0; padding: 32px 32px 64px 12px; }
+.hub-light-theme .hub-workspace-intro { margin-bottom: 28px; }
+.hub-light-theme .hub-workspace-intro h1 { margin: 5px 0 8px; font-size: clamp(1.7rem, 3vw, 2.25rem); letter-spacing: -.035em; line-height: 1.2; }
+.hub-light-theme .hub-workspace-intro p { margin: 0; color: var(--hub-muted); }
+.hub-light-theme .hub-section-anchor { scroll-margin-top: 125px; min-width: 0; }
+.hub-light-theme .hub-section-anchor:target > :first-child { border-color: var(--hub-accent); }
+.hub-light-theme .hub-skip-link { position: fixed; left: 20px; top: -100px; z-index: 30; padding: 12px 18px; background: #fff; color: #075e57; border: 2px solid var(--hub-accent); border-radius: 6px; }
+.hub-light-theme .hub-skip-link:focus { top: 12px; }
+.hub-light-theme :is(.hub-workspace-panel,.hub-admin-accounts,.hub-password-panel,.hub-module-nav,.hub-module-detail,.hub-trainer-section,.hub-state-card,.hub-evaluation-policy-card,.hub-person-history,.hub-audit-card,.hub-audit-report,.hub-audit-legacy,.hub-activity-card) {
+  background: var(--hub-surface); color: var(--hub-ink); border-color: var(--hub-border); border-radius: 12px; box-shadow: 0 2px 4px #172b3a04;
+}
+.hub-light-theme :is(.hub-workspace-panel,.hub-admin-accounts,.hub-password-panel,.hub-trainer-section) { padding: clamp(20px, 2.4vw, 30px); margin: 0 0 24px; }
+.hub-light-theme.hub-app-shell :is(h1,h2,h3,h4), .hub-light-theme.hub-state-page :is(h1,h2,h3) { color: var(--hub-ink); font-family: inherit; letter-spacing: -.025em; line-height: 1.3; }
+.hub-light-theme.hub-app-shell h2 { font-size: 1.25rem; font-weight: 700; margin: 0 0 14px; }
+.hub-light-theme.hub-app-shell h3 { font-size: 1.05rem; font-weight: 650; }
+.hub-light-theme .hub-eyebrow { color: var(--hub-accent); font-size: .7rem; font-weight: 750; letter-spacing: .1em; margin-bottom: 8px; }
+.hub-light-theme :is(.hub-readonly-note,.hub-empty-state,.hub-saving,.hub-state-card > p,.hub-module-summary,.hub-activity-summary,.hub-activity-intro,.hub-prose,.hub-course-hero p,.hub-workspace-header p,.hub-workspace-summary span,.hub-progress-summary span,.hub-module-nav small,.hub-prerequisite-empty,.hub-prerequisites li,.hub-history-meta,.hub-history-overview,.hub-person-history summary small,.hub-report-breakdowns p) { color: var(--hub-muted); }
+.hub-light-theme :is(.hub-workspace-panel dt,.hub-rule-lab dt,.hub-search-practice dt,.hub-history-fields dt,.hub-module-metadata h3,.hub-progress-label,.hub-progress-label span:first-child) { color: var(--hub-muted); }
+.hub-light-theme :is(.hub-workspace-panel,.hub-account-form,.hub-assessment-admin,.hub-password-panel,.hub-auth-form,.hub-rule-lab,.hub-search-practice,.hub-progress-search,.hub-directory-toolbar) label { color: #334b5b; font-size: .88rem; font-weight: 600; }
+.hub-light-theme :is(.hub-account-form,.hub-workspace-panel,.hub-password-panel,.hub-auth-form,.hub-assessment-admin,.hub-rule-lab,.hub-search-practice,.hub-directory-toolbar,.hub-progress-search) :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea) {
+  background: #fff; color: var(--hub-ink); border: 1px solid #889baa; border-radius: 7px; padding: 11px 12px; min-height: 44px; font: inherit; width: 100%; min-width: 0;
+}
+.hub-light-theme input::placeholder, .hub-light-theme textarea::placeholder { color: #607383; opacity: 1; }
+.hub-light-theme :is(input,select,textarea):disabled { color: #526575; background: #edf1f5; opacity: 1; cursor: not-allowed; }
+.hub-light-theme input[readonly] { background: #f2f6f8; }
+.hub-light-theme :is(input[type="checkbox"],input[type="radio"],progress) { accent-color: var(--hub-accent); }
+.hub-light-theme .hub-account-form { gap: 18px; }
+.hub-light-theme .hub-assessment-admin .hub-account-form { background: var(--hub-soft); border-color: var(--hub-border); border-radius: 8px; padding: 20px; }
+.hub-light-theme :is(.hub-primary-button,.hub-secondary-link) { background: var(--hub-accent); border: 1px solid var(--hub-accent); color: #fff; border-radius: 7px; padding: 11px 18px; font-weight: 650; min-height: 44px; box-shadow: none; }
+.hub-light-theme :is(.hub-primary-button,.hub-secondary-link):hover { background: #085c55; color: #fff; }
+.hub-light-theme :is(.hub-workspace-panel button,.hub-secondary-button,.hub-assessment-admin td button,.hub-admin-accounts td button) { background: #fff; color: #0b615b; border: 1px solid #839eaa; border-radius: 7px; min-height: 40px; padding: 8px 12px; font: inherit; cursor: pointer; }
+.hub-light-theme :is(.hub-workspace-panel button,.hub-secondary-button,.hub-assessment-admin td button,.hub-admin-accounts td button):hover { background: #e8f3f0; }
+.hub-light-theme :is(button:disabled,.hub-primary-button:disabled) { color: #526575; background: #e4eaf0; border-color: #b6c3ce; opacity: 1; cursor: not-allowed; }
+.hub-light-theme :focus-visible { outline: 3px solid #0b7169; outline-offset: 3px; }
+.hub-light-theme :is(.hub-workspace-panel,.hub-assessment-admin) :focus-visible { outline: 3px solid #0b7169; outline-offset: 3px; }
+.hub-light-theme .hub-trainer-table { color: var(--hub-ink); font-size: .88rem; }
+.hub-light-theme .hub-trainer-table caption { color: var(--hub-muted); }
+.hub-light-theme .hub-trainer-table thead th { color: #41596a; background: var(--hub-soft); font-size: .7rem; letter-spacing: .065em; font-weight: 750; padding: 14px 12px; }
+.hub-light-theme .hub-trainer-table :is(th,td) { border-color: #dce3e9; padding: 14px 12px; }
+.hub-light-theme .hub-trainer-table tbody tr:hover { background: #f7fafb; }
+.hub-light-theme :is(.hub-workspace-header,.hub-workspace-summary,.hub-progress-summary,.hub-directory-toolbar,.hub-person-history,.hub-history-results > li,.hub-report-breakdowns > details,.hub-version-list > li,.hub-media-item,.hub-workspace-panel fieldset) { border-color: var(--hub-border); }
+.hub-light-theme :is(.hub-workspace-summary strong,.hub-progress-summary strong,.hub-assessment-stats strong,.hub-history-fields dd,.hub-history-results,.hub-history-results ul) { color: var(--hub-ink); }
+.hub-light-theme :is(.hub-progress-summary > div,.hub-assessment-stats > div,.hub-evaluation-policy-card,.hub-module-metadata,.hub-person-history > summary,.hub-history-results > li,.hub-course-hero) { background: var(--hub-soft); color: var(--hub-ink); border-color: var(--hub-border); box-shadow: none; }
+.hub-light-theme .hub-person-history[open] > summary { background: #eaf1f5; border-color: var(--hub-border); }
+.hub-light-theme .hub-workspace-nav { gap: 8px; border-color: var(--hub-border); }
+.hub-light-theme .hub-workspace-nav button { background: #fff; color: var(--hub-ink); border: 1px solid var(--hub-border); border-radius: 8px; box-shadow: none; }
+.hub-light-theme .hub-workspace-nav button span { color: var(--hub-muted); }
+.hub-light-theme .hub-workspace-nav button[aria-pressed="true"] { background: #e2f1ed; color: #075e57; border-color: #0b7169; box-shadow: inset 0 -2px #0b7169; }
+.hub-light-theme .hub-workspace-nav button:hover { background: #edf5f3; }
+.hub-light-theme .hub-status-pill, .hub-light-theme .hub-status { background: #edf1f5; color: #41596a; border-color: #adbbc6; }
+.hub-light-theme :is(.hub-status-completed,.hub-status.is-complete) { background: #e1f3e9; color: #16613c; border-color: #8abfa4; }
+.hub-light-theme .hub-status-in_progress { background: #e5f0fc; color: #235780; border-color: #95b9d6; }
+.hub-light-theme .hub-module-nav button { color: var(--hub-ink); }
+.hub-light-theme .hub-module-nav button:is(:hover,:focus-visible,.is-active) { background: #e4f2ed; color: #075e57; border-color: #74aaa0; }
+.hub-light-theme .hub-module-number { color: #0b615b; border-color: #91b5af; }
+.hub-light-theme :is(.hub-progress-track,.hub-progress-cell progress::-webkit-progress-bar) { background: #dce5eb; }
+.hub-light-theme .hub-progress-track > span { background: var(--hub-accent); }
+.hub-light-theme .hub-progress-cell progress::-webkit-progress-value { background: var(--hub-accent); }
+.hub-light-theme .hub-progress-cell progress::-moz-progress-bar { background: var(--hub-accent); }
+.hub-light-theme :is(.hub-provisional,.hub-inline-notice,.hub-page-notice,.hub-policy-block,.hub-content-classification,.hub-course-classification) { background: #fff5dc; color: #704a09; border: 1px solid #cbb16e; }
+.hub-light-theme .hub-prose h4, .hub-light-theme .hub-checklist label, .hub-light-theme .hub-acknowledgement { color: var(--hub-ink); }
+.hub-light-theme :is(.hub-attention,.hub-error,[role="alert"]) { color: #9b2525; }
+.hub-light-theme :is(.hub-media-item a,.hub-advanced-filters summary,.hub-attempt-evidence > summary,.hub-report-breakdowns summary,.hub-evaluation-policy-card > header strong) { color: var(--hub-accent); }
+.hub-light-theme .hub-evaluation-policy-card > header span { color: var(--hub-muted); }
+.hub-light-theme .hub-assessment-admin pre { color: var(--hub-ink); }
+.hub-light-theme .hub-footer { background: #fff; border-color: var(--hub-border); color: var(--hub-muted); }
+.hub-light-theme .hub-footer a { color: var(--hub-accent); }
+@media (max-width: 1000px) {
+  .hub-light-theme .hub-workspace-layout { grid-template-columns: 1fr; }
+  .hub-light-theme .hub-sidebar { position: static; padding: 20px 20px 0; }
+  .hub-light-theme .hub-sidebar nav { display: flex; flex-wrap: wrap; gap: 6px; }
+  .hub-light-theme .hub-sidebar a { padding: 8px 12px; border: 1px solid var(--hub-border); background: #fff; }
+  .hub-light-theme .hub-sidebar-label, .hub-light-theme .hub-sidebar-help { display: none; }
+  .hub-light-theme .hub-workspace-layout > .hub-main { padding: 24px 20px 48px; }
+}
+@media (max-width: 640px) {
+  .hub-light-theme .hub-topbar { position: static; padding: 16px; flex-wrap: wrap; gap: 16px; }
+  .hub-light-theme .hub-header-actions { width: 100%; justify-content: space-between; gap: 12px; }
+  .hub-light-theme .hub-brand strong { font-size: 1rem; }
+  .hub-light-theme .hub-section-anchor { scroll-margin-top: 20px; }
+  .hub-light-theme .hub-workspace-layout > .hub-main { padding: 24px 16px 40px; }
+  .hub-light-theme :is(.hub-workspace-panel,.hub-admin-accounts,.hub-password-panel,.hub-trainer-section) { padding: 20px; }
+  .hub-light-theme .hub-account-form { grid-template-columns: 1fr; }
+  .hub-light-theme .hub-footer { padding: 20px 16px; }
+}
+
+.hub-light-theme [hidden] { display: none; }
+.hub-light-theme .hub-sidebar a[aria-current="page"] { background: #dceee9; color: #075e57; box-shadow: inset 3px 0 #0b7169; }
+.hub-light-theme .hub-skip-link:not(:focus) { clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; }
+.hub-light-theme :is(.hub-checklist label,.hub-acknowledgement,.hub-search-practice kbd) { background: var(--hub-soft); color: var(--hub-ink); border-color: #a6b7c4; }
+.hub-light-theme :is(.hub-prerequisites li span:last-child,.hub-audit-enrolment > p,.hub-audit-report > p,.hub-lineage,.hub-audit-metrics dt,.hub-audit-failures span,.hub-audit-log li) { color: var(--hub-muted); }
+.hub-light-theme .hub-audit-metrics dd { color: var(--hub-ink); }
+.hub-light-theme :is(.hub-audit-failures,.hub-lineage.is-unlinked strong) { color: #80520a; }
+.hub-light-theme .hub-lineage.is-linked strong { color: #0b615b; }
+.hub-light-theme :is(.hub-audit-attempts button,.hub-audit-card > button,.hub-audit-legacy button,.hub-audit-pagination button) { color: #0b615b; background: #edf6f3; border-color: #839eaa; min-height: 40px; }
+.hub-light-theme .hub-audit-pagination button:disabled { color: #526575; background: #e4eaf0; border-color: #b6c3ce; }
