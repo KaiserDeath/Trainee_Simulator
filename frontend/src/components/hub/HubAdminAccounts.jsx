@@ -84,15 +84,15 @@ export default function HubAdminAccounts() {
         <button className="hub-primary-button" type="submit" disabled={busy}>{busy ? 'Working…' : 'Create account'}</button>
       </form>
       {notice && <p className="hub-inline-notice" role="status">{notice}</p>}
-      <div className="hub-account-table-wrap">
+      <div className="hub-account-table-wrap hub-mobile-directory">
         <table className="hub-trainer-table">
           <thead><tr><th>Username</th><th>Full name</th><th>Role</th><th>Status</th><th>Staff password</th></tr></thead>
           <tbody>
             {accounts.map((account) => {
               const postulante = account.roles.includes('POSTULANTE');
               return <tr key={account.id}>
-                <td>{account.username || 'Not migrated'}</td><td>{account.displayName}</td><td>{account.roles.join(', ')}</td><td>{account.status}</td>
-                <td>{postulante ? 'No reset available' : <button type="button" disabled={busy} onClick={() => resetPassword(account)}>Reset to username</button>}</td>
+                <td data-label="Username">{account.username || 'Not migrated'}</td><td data-label="Full name">{account.displayName}</td><td data-label="Role">{account.roles.join(', ')}</td><td data-label="Status">{account.status}</td>
+                <td data-label="Staff password" className="hub-directory-actions">{postulante ? 'No reset available' : <button type="button" disabled={busy} onClick={() => resetPassword(account)}>Reset to username</button>}</td>
               </tr>;
             })}
           </tbody>

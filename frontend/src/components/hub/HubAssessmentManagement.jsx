@@ -33,6 +33,10 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
   const [report, setReport] = useState({ attempts: [], statistics: {} });
   const [evaluationPolicies, setEvaluationPolicies] = useState({ evaluations: [], gameFamilies: [], attemptSets: [], attempts: [], itemResults: [], reopenEvents: [] });
   const [newAccount, setNewAccount] = useState({ firstName: '', surname: '' });
+  const [editingAccount,setEditingAccount]=useState(null);
+  const editFirstName=useRef(null);
+  const editingId=editingAccount?.id;
+  useEffect(()=>{if(editingId)editFirstName.current?.focus();},[editingId]);
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [workspace, setWorkspace] = useState('people');
@@ -79,13 +83,12 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
     finally { setBusy(false); }
   };
 
-  const edit = async (account) => {
-    const firstName = window.prompt('First name', account.firstName || '');
-    if (firstName === null) return;
-    const surname = window.prompt('First surname', account.surname || '');
-    if (surname === null) return;
-    setBusy(true);
-    try { await updateHubPostulante(account.id, { firstName, surname }); setNotice('Postulante updated.'); await load(); }
+  const edit = (account) => {
+    setNotice('');setEditingAccount({id:account.id,displayName:account.displayName,firstName:account.firstName||'',surname:account.surname||''});
+  };
+  const saveAccount = async (event) => {
+    event.preventDefault();setBusy(true);setNotice('');
+    try { await updateHubPostulante(editingAccount.id, { firstName:editingAccount.firstName.trim(), surname:editingAccount.surname.trim() }); await load();setEditingAccount(null);setNotice('Postulante updated.'); }
     catch (error) { setNotice(error?.response?.data?.error?.message || 'The Postulante could not be updated.'); }
     finally { setBusy(false); }
   };
@@ -214,12 +217,22 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
     <section className="hub-admin-accounts" aria-labelledby="postulante-management-title">
       <p className="hub-eyebrow">TRAINER / RRHH</p><h2 id="postulante-management-title">Postulante management</h2>
       <form className="hub-account-form" onSubmit={create}><label>First name<input required value={newAccount.firstName} onChange={(event) => setNewAccount((value) => ({ ...value, firstName: event.target.value }))} /></label><label>First surname<input required value={newAccount.surname} onChange={(event) => setNewAccount((value) => ({ ...value, surname: event.target.value }))} /></label><button className="hub-primary-button" disabled={busy}>Create Postulante</button></form>
+      {editingAccount&&<section className="hub-inline-account-editor" aria-labelledby="hub-edit-account-title">
+        <h3 id="hub-edit-account-title">Edit {editingAccount.displayName}</h3>
+        <p className="hub-readonly-note">Changing a name preserves the login username, assigned courses and training history.</p>
+        <form className="hub-account-form" onSubmit={saveAccount}>
+          <label>Edit first name<input ref={editFirstName} required maxLength={120} value={editingAccount.firstName} onChange={event=>setEditingAccount({...editingAccount,firstName:event.target.value})}/></label>
+          <label>Edit surname<input required maxLength={120} value={editingAccount.surname} onChange={event=>setEditingAccount({...editingAccount,surname:event.target.value})}/></label>
+          <button className="hub-primary-button" disabled={busy||!editingAccount.firstName.trim()||!editingAccount.surname.trim()}>Save learner name</button>
+          <button className="hub-secondary-button" type="button" disabled={busy} onClick={()=>setEditingAccount(null)}>Cancel name edit</button>
+        </form>
+      </section>}
       <div className="hub-directory-toolbar">
         <label>Search Postulantes<input type="search" placeholder="Name or username" value={accountSearch} onChange={(event) => setAccountSearch(event.target.value)} /></label>
         <label>Account status<select value={accountStatus} onChange={(event) => setAccountStatus(event.target.value)}><option value="active">Active</option><option value="">All statuses</option><option value="deactivated">Deactivated</option></select></label>
         <p>{visibleAccounts.length} of {accounts.length} Postulantes</p>
       </div>
-      <div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>Username</th><th>Full name</th><th>Status</th><th>Course assignment</th><th>Actions</th></tr></thead><tbody>{visibleAccounts.map((account) => <tr key={account.id}><td>{account.username}</td><td>{account.displayName}</td><td>{account.status}</td><td><select aria-label={`Course for ${account.displayName}`} value={courseSelections[account.id] || courses[0]?.id || ''} onChange={(event) => setCourseSelections((current) => ({ ...current, [account.id]: event.target.value }))}>{courses.map((course) => <option value={course.id} key={course.id}>{course.title}{course.is_provisional ? ' (provisional)' : ''}</option>)}</select> <button type="button" onClick={() => assignCourse(account)} disabled={busy || account.status !== 'active' || courses.length === 0}>Assign</button></td><td><button type="button" onClick={() => edit(account)} disabled={busy || account.status !== 'active'}>Edit</button> <button type="button" onClick={() => deactivate(account)} disabled={busy || account.status !== 'active'}>Deactivate</button></td></tr>)}{visibleAccounts.length === 0 && <tr><td colSpan="5" className="hub-empty-state">No Postulantes match. Try another name or account status.</td></tr>}</tbody></table></div>
+      <div className="hub-account-table-wrap hub-mobile-directory"><table className="hub-trainer-table"><thead><tr><th>Username</th><th>Full name</th><th>Status</th><th>Course assignment</th><th>Actions</th></tr></thead><tbody>{visibleAccounts.map((account) => <tr key={account.id}><td data-label="Username">{account.username}</td><td data-label="Full name">{account.displayName}</td><td data-label="Status">{account.status}</td><td data-label="Course assignment" className="hub-directory-actions"><select aria-label={`Course for ${account.displayName}`} value={courseSelections[account.id] || courses[0]?.id || ''} onChange={(event) => setCourseSelections((current) => ({ ...current, [account.id]: event.target.value }))}>{courses.map((course) => <option value={course.id} key={course.id}>{course.title}{course.is_provisional ? ' (provisional)' : ''}</option>)}</select> <button type="button" onClick={() => assignCourse(account)} disabled={busy || account.status !== 'active' || courses.length === 0}>Assign</button></td><td data-label="Actions" className="hub-directory-actions"><button type="button" onClick={() => edit(account)} disabled={busy || account.status !== 'active'}>Edit</button> <button type="button" onClick={() => deactivate(account)} disabled={busy || account.status !== 'active'}>Deactivate</button></td></tr>)}{visibleAccounts.length === 0 && <tr><td colSpan="5" className="hub-empty-state">No Postulantes match. Try another name or account status.</td></tr>}</tbody></table></div>
     </section>
 
     </div>

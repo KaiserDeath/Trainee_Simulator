@@ -76,6 +76,48 @@ test('learner lessons use readable surfaces on desktop and mobile',async({page})
   await page.screenshot({path:'../outputs/hub-light-learner-mobile.png',fullPage:true});
 });
 
+test('mobile administrator can reach staff password controls without horizontal scrolling',async({page})=>{
+  await staff(page,'ADMIN');let reset=false;
+  await page.route('**/api/hub/admin/accounts',route=>json(route,{accounts:[{id:learnerId,username:'Ttrainer',displayName:'Training supervisor',roles:['TRAINER'],status:'active'}]}));
+  await page.route(`**/api/hub/admin/identities/${learnerId}/password-reset`,route=>{reset=true;return json(route,{});});
+  await page.setViewportSize({width:390,height:844});await page.goto('/hub');
+  const directory=page.locator('#hub-people .hub-mobile-directory');
+  await expect(directory.getByText('Training supervisor',{exact:true})).toBeVisible();
+  expect(await directory.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+  await directory.getByRole('button',{name:'Reset to username',exact:true}).click();
+  await expect(page.getByText("Ttrainer's password was reset to Ttrainer.")).toBeVisible();expect(reset).toBe(true);
+  await page.screenshot({path:'../outputs/hub-mobile-admin-account-cards.png',fullPage:true});
+});
+
+test('mobile trainer assigns a course and retries an inline name edit without losing the form',async({page})=>{
+  await staff(page,'TRAINER');let patched;let fail=true;let assignment;
+  let account={id:learnerId,username:'Flearner',firstName:'Fixture',surname:'Learner',displayName:'Fixture Learner',status:'active'};
+  await page.route('**/api/hub/staff/postulantes',route=>json(route,{postulantes:[account]}));
+  await page.route('**/api/hub/staff/courses',route=>json(route,{courses:[{id:activityId,title:'Operator foundations'}]}));
+  await page.route(`**/api/hub/trainer/postulantes/${learnerId}/enrolments`,route=>{assignment=route.request().postDataJSON();return json(route,{enrolment:{}});});
+  await page.route(`**/api/hub/staff/postulantes/${learnerId}`,route=>{
+    patched=route.request().postDataJSON();if(fail){fail=false;return json(route,{error:{message:'Try saving again.'}},503);}
+    account={...account,...patched,displayName:`${patched.firstName} ${patched.surname}`};return json(route,{identity:account});
+  });
+  await page.setViewportSize({width:390,height:844});await page.goto('/hub');
+  const directory=page.locator('.hub-assessment-admin .hub-mobile-directory');
+  await expect(directory.getByText('Fixture Learner',{exact:true})).toBeVisible();
+  expect(await directory.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+  await directory.getByRole('button',{name:'Assign',exact:true}).click();
+  await expect(page.getByText('Course assigned to Fixture Learner.')).toBeVisible();expect(assignment.courseId).toBe(activityId);
+  await directory.getByRole('button',{name:'Edit',exact:true}).click();
+  await expect(page.getByLabel('Edit first name',{exact:true})).toBeFocused();
+  await page.getByLabel('Edit first name',{exact:true}).fill('Revised');
+  await page.getByRole('button',{name:'Save learner name',exact:true}).click();
+  await expect(page.getByText('Try saving again.',{exact:true})).toBeVisible();
+  await expect(page.getByLabel('Edit first name',{exact:true})).toHaveValue('Revised');
+  await page.getByRole('button',{name:'Save learner name',exact:true}).click();
+  await expect(page.getByText('Postulante updated.',{exact:true})).toBeVisible();
+  await expect(directory.getByText('Revised Learner',{exact:true})).toBeVisible();
+  expect(patched).toEqual({firstName:'Revised',surname:'Learner'});
+  await page.screenshot({path:'../outputs/hub-mobile-learner-account-cards.png',fullPage:true});
+});
+
 test('TRAINER creates a cohort and safely revises its date after reload',async({page})=>{
   await staff(page,'TRAINER');let cohorts=[];const submissions=[];
   const courseId='10000000-0000-4000-8000-000000000002';
