@@ -17,6 +17,7 @@ import {
   submitHubRefreshBalance,
 } from '../api/client';
 import HubAdminAccounts from '../components/hub/HubAdminAccounts';
+import HubAdministratorConfiguration from '../components/hub/HubAdministratorConfiguration';
 import HubAssessmentManagement from '../components/hub/HubAssessmentManagement';
 import HubAuditorOverview from '../components/hub/HubAuditorOverview';
 import HubLearningPath, { ProgressBar } from '../components/hub/HubLearningPath';
@@ -645,7 +646,10 @@ export default function HubPage() {
         {roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">Open free operator simulator</a></p>}
         {isTrainer && <p><a className="hub-secondary-link" href="/trainer">Open simulator session reports</a></p>}
 
-        {isAdministrator && <HubAdminAccounts />}
+        {isAdministrator && <>
+          <HubAdministratorConfiguration onSaved={(displayName) => setContext((current) => ({ ...current, identity: { ...current.identity, displayName } }))} />
+          <HubAdminAccounts />
+        </>}
         {isAdministrator && <HubPolicyStudio locale={staffLanguage} />}
         {(isAdministrator || isTrainer) && <HubContentStudio canEdit={isAdministrator} locale={staffLanguage} />}
         {canManagePostulantes && <HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} />}

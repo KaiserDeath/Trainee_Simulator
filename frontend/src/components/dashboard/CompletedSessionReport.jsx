@@ -262,14 +262,14 @@ function LegacyReport({ report }) {
   );
 }
 
-export default function CompletedSessionReport({ sessionId }) {
+export default function CompletedSessionReport({ sessionId, refreshKey = 0 }) {
   const [filter, setFilter] = useState('Attention');
   const [query, setQuery] = useState('');
   const [type, setType] = useState('');
   const [game, setGame] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [retry, setRetry] = useState(0);
-  const data = useSessionReport(sessionId, retry);
+  const data = useSessionReport(sessionId, retry + refreshKey);
   if (data.loading) return <p role="status">Loading session evidence…</p>;
   if (data.error) return <div role="alert">Failed to load report data. <button onClick={() => setRetry((n) => n + 1)}>Retry report</button></div>;
   const report = data.report;

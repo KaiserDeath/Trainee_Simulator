@@ -58,12 +58,13 @@ test('populated review filters mistakes, explains evidence, links only exact aud
   await page.screenshot({ path: '../outputs/trainer-review-desktop.png', fullPage: true });
   expect(writes).toEqual([]);
 });
-test('open session follows canonical polling updates and removes live actions', async ({ page }) => {
+test('open session updates only on request and removes live actions', async ({ page }) => {
   let status = 'active';
   await fixture(page, { status: () => status });
-  await expect(page.getByRole('button', { name: 'Live Operations', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Operations', exact: true })).toBeVisible();
   status = 'completed';
-  await expect(page.getByRole('button', { name: 'Live Operations', exact: true })).toHaveCount(0, { timeout: 10000 });
+  await page.getByRole('button', { name: 'Update', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Operations', exact: true })).toHaveCount(0, { timeout: 10000 });
   await expect(page.getByRole('region', { name: 'Operation review' })).toBeVisible();
 });
 test('report failure retries without exposing stale data', async ({ page }) => {
@@ -73,4 +74,26 @@ test('report failure retries without exposing stale data', async ({ page }) => {
   failed = false;
   await page.getByRole('button', { name: 'Retry report' }).click();
   await expect(page.getByRole('region', { name: 'Operation review' })).toBeVisible();
+});
+
+
+test('trainer stays idle until Update and loads statistics only on demand', async ({ page }) => {
+  const reads = [];
+  page.on('request', request => { if (request.url().includes('/api/')) reads.push(new URL(request.url()).pathname); });
+  await page.clock.install();
+  await fixture(page);
+  await expect(page.getByRole('region', { name: 'Operation review' })).toBeVisible();
+  expect(reads.filter(path => path.endsWith('/operation-time-stats'))).toHaveLength(0);
+  const before = reads.length;
+  await page.clock.fastForward(120000);
+  expect(reads).toHaveLength(before);
+  const reports = reads.filter(path => path.endsWith('/report')).length;
+  await page.getByRole('button', { name: 'Update', exact: true }).click();
+  await expect.poll(() => reads.filter(path => path.endsWith('/report')).length).toBe(reports + 1);
+  await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Statistics', exact: true }).click();
+  await expect.poll(() => reads.filter(path => path.endsWith('/operation-time-stats')).length).toBe(1);
+  const statsReads = reads.length;
+  await page.clock.fastForward(120000);
+  expect(reads).toHaveLength(statsReads);
 });

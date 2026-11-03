@@ -37,10 +37,8 @@ export default function LiveSessionView({ sessionId }) {
     };
 
     fetchOps();
-    const interval = setInterval(fetchOps, 2000);
     return () => {
       mounted = false;
-      clearInterval(interval);
     };
   }, [sessionId]);
 
@@ -48,10 +46,10 @@ export default function LiveSessionView({ sessionId }) {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-2">
         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-        <h3 className="text-lg font-semibold text-slate-200">Live Operations Queue</h3>
+        <h3 className="text-lg font-semibold text-slate-200">Operations snapshot</h3>
       </div>
       
-      {state === 'failed' && <p role="status" className="text-amber-200">Queue unavailable. Previously loaded operations may be stale; retrying automatically.</p>}
+      {state === 'failed' && <p role="status" className="text-amber-200">Queue unavailable. Previously loaded operations may be stale; use Update to retry.</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {operations.length === 0 ? (
           <div className="col-span-full py-12 text-center text-slate-500 bg-slate-900/30 border border-slate-800/50 rounded-2xl border-dashed">

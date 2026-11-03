@@ -12,7 +12,6 @@ import GlobalOperationStatistics from '../components/dashboard/GlobalOperationSt
 import LiveSessionView from '../components/dashboard/LiveSessionView';
 import SessionStatisticsView from '../components/dashboard/SessionStatisticsView';
 import TraineesDirectory from '../components/dashboard/TraineesDirectory';
-import socket from '../sockets/socket';
 import '../styles/trainer-console.css';
 
 export default function DashboardPage() {
@@ -29,6 +28,9 @@ export default function DashboardPage() {
   const [statsError, setStatsError] = useState('');
   const [statsRefreshing, setStatsRefreshing] = useState(false);
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+  const [viewRefreshKey, setViewRefreshKey] = useState(0);
+  const [sessionsRefreshing, setSessionsRefreshing] = useState(false);
+  const [sessionsError, setSessionsError] = useState('');
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(30);
   const [minOpm, setMinOpm] = useState(2);
   const [maxOpm, setMaxOpm] = useState(4);
@@ -136,10 +138,12 @@ export default function DashboardPage() {
   };
 
   const fetchSessions = useCallback(async () => {
+    setSessionsRefreshing(true);
     try {
       const response = await api.get('/trainer/sessions');
       const sessionList = response.data || [];
       setSessions(sessionList);
+      setSessionsError('');
       setSelectedSessionIds((current) => {
         const validIds = sessionList
           .filter((session) => current.has(session.id))
@@ -149,55 +153,12 @@ export default function DashboardPage() {
 
       setSelectedSessionId((id) => sessionList.some((session) => session.id === id) ? id : null);
     } catch (err) {
+      setSessionsError('Sessions could not be updated. Previously loaded data may be stale.');
       console.error('Failed to fetch sessions', err);
     } finally {
       setLoading(false);
+      setSessionsRefreshing(false);
     }
-  }, []);
-
-  useEffect(() => {
-    const handleSessionUpdated = (
-      updatedSession
-    ) => {
-      setSessions((prevSessions) =>
-        prevSessions.map((session) =>
-          session.id === updatedSession.id
-            ? updatedSession
-            : session
-        )
-      );
-    };
-
-    const handleSessionCreated = (
-      newSession
-    ) => {
-      setSessions((prevSessions) => [
-        newSession,
-        ...prevSessions,
-      ]);
-    };
-
-    socket.on(
-      'session-updated',
-      handleSessionUpdated
-    );
-
-    socket.on(
-      'session-created',
-      handleSessionCreated
-    );
-
-    return () => {
-      socket.off(
-        'session-updated',
-        handleSessionUpdated
-      );
-
-      socket.off(
-        'session-created',
-        handleSessionCreated
-      );
-    };
   }, []);
 
   const filteredSessions = useMemo(() => {
@@ -280,11 +241,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void Promise.resolve().then(fetchSessions);
-    const interval = setInterval(fetchSessions, 5000); // refresh list every 5s
-    return () => clearInterval(interval);
   }, [fetchSessions]);
 
   useEffect(() => {
+    if (dashboardSection !== 'statistics') return;
     let mounted = true;
 
     const fetchOperationStats = async () => {
@@ -309,16 +269,12 @@ export default function DashboardPage() {
     };
 
     fetchOperationStats();
-    const interval = setInterval(
-      fetchOperationStats,
-      30000
-    );
 
     return () => {
       mounted = false;
-      clearInterval(interval);
+      setStatsRefreshing(false);
     };
-  }, [statsRefreshKey]);
+  }, [statsRefreshKey, dashboardSection]);
 
   return (
     <div className="trainer-console" data-sidebar-open={sidebarOpen}>
@@ -331,6 +287,15 @@ export default function DashboardPage() {
 
       {/* MAIN CONTENT */}
       <main className="trainer-console-main">
+        <div className="flex flex-wrap items-center gap-3 p-4">
+          <button type="button" disabled={sessionsRefreshing || statsRefreshing} onClick={() => {
+            void fetchSessions();
+            setStatsRefreshKey((key) => key + 1);
+            setViewRefreshKey((key) => key + 1);
+          }} className="rounded border border-slate-600 px-4 py-2 text-slate-100 disabled:opacity-50">{sessionsRefreshing || statsRefreshing ? 'Updating…' : 'Update'}</button>
+          <span className="text-sm text-slate-400">Snapshot view. Use Update to load current data.</span>
+          {sessionsError && <p role="alert">{sessionsError}</p>}
+        </div>
         
         {dashboardSection === 'statistics' ? (
           <div className="flex-1 overflow-y-auto p-8 relative z-10">
@@ -426,7 +391,7 @@ export default function DashboardPage() {
                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                 }`}
               >
-                Live Operations
+                Operations
               </button>
             )}
             <button
@@ -465,13 +430,13 @@ export default function DashboardPage() {
             </div>
 
             {selectedSession.status === 'active' && effectiveViewMode === 'live' ? (
-              <LiveSessionView key={selectedSession.id} sessionId={selectedSession.id} />
+              <LiveSessionView key={`${selectedSession.id}:${viewRefreshKey}`} refreshKey={viewRefreshKey} sessionId={selectedSession.id} />
             ) : effectiveViewMode === 'audit' ? (
-              <AuditLogPanel key={selectedSession.id} sessionId={selectedSession.id} />
+              <AuditLogPanel key={`${selectedSession.id}:${viewRefreshKey}`} refreshKey={viewRefreshKey} sessionId={selectedSession.id} />
             ) : effectiveViewMode === 'session-statistics' ? (
-              <SessionStatisticsView key={selectedSession.id} sessionId={selectedSession.id} />
+              <SessionStatisticsView key={`${selectedSession.id}:${viewRefreshKey}`} refreshKey={viewRefreshKey} sessionId={selectedSession.id} />
             ) : (
-              <CompletedSessionReport key={selectedSession.id} sessionId={selectedSession.id} />
+              <CompletedSessionReport key={`${selectedSession.id}:${viewRefreshKey}`} refreshKey={viewRefreshKey} sessionId={selectedSession.id} />
             )}
           </div>
         ) : (

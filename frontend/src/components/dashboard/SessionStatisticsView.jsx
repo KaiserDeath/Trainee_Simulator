@@ -7,8 +7,8 @@ import {
 } from './DashboardShared';
 import { formatDurationValue } from './dashboardFormatters';
 
-export default function SessionStatisticsView({ sessionId }) {
-  const { report, loading } = useSessionReport(sessionId);
+export default function SessionStatisticsView({ sessionId, refreshKey = 0 }) {
+  const { report, loading } = useSessionReport(sessionId, refreshKey);
 
   if (loading) {
     return (

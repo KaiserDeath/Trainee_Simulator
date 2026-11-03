@@ -33,6 +33,10 @@ export const changeHubPassword = async (currentPassword, newPassword) =>
 
 export const getHubAdminAccounts = async () => api.get('/hub/admin/accounts');
 
+export const getHubAdministratorProfile = () => api.get('/hub/admin/profile');
+export const updateHubAdministratorProfile = async (payload) =>
+  api.patch('/hub/admin/profile', payload, await withHubCsrf());
+
 export const createHubAccount = async (payload) =>
   api.post('/hub/admin/accounts', payload, await withHubCsrf());
 
