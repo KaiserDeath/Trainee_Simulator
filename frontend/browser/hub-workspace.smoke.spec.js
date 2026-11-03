@@ -163,6 +163,18 @@ test('learner sees own cohort date on mobile without membership or assignment co
   await page.getByRole('region',{name:'My training groups',exact:true}).screenshot({path:'../outputs/hub-cohorts-mobile.png'});
 });
 
+test('cohort dates follow the selected Hub language across browser locale and time zone',async({browser})=>{
+  const context=await browser.newContext({locale:'es-PE',timezoneId:'America/Los_Angeles'});
+  try{
+    const page=await context.newPage();await staff(page,'TRAINER');
+    await page.route('**/api/hub/cohorts',route=>json(route,{cohorts:[{id:'date-fixture',title:'December group',courseTitle:'Foundations',dueOn:'2026-12-15',revision:1,members:[]}],nextCursor:null}));
+    await page.goto('/hub');await page.getByRole('link',{name:'Cohorts & dates',exact:true}).click();await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
+    await expect(page.getByText(/December 15, 2026/)).toBeVisible();
+    await page.getByRole('button',{name:'Español',exact:true}).click();
+    await expect(page.getByText(/15 de diciembre de 2026/)).toBeVisible();
+  }finally{await context.close();}
+});
+
 test('ADMIN edits an instruction draft and submits it through the publication workflow',async({page})=>{
   await staff(page,'ADMIN');let draft;let versions=[];
   await page.route('**/api/hub/workspace/catalog',route=>json(route,{courses:[],modules:[{id:'module',title:'Foundations'}],activities:[{id:activityId,module_id:'module',title:'Original lesson',activity_type:'article',content:{summary:'Original summary',paragraphs:['Original body'],surface:'protected'}}]}));

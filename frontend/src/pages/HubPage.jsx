@@ -684,7 +684,7 @@ export default function HubPage() {
         {(isAdministrator || isTrainer) && <div id="hub-curriculum" hidden={activeSection!=='curriculum'} className="hub-section-anchor"><HubContentStudio canEdit={isAdministrator} locale={staffLanguage} /></div>}
         {(isAdministrator||isTrainer)&&<div id="hub-media" hidden={activeSection!=='media'} className="hub-section-anchor"><HubMediaLibrary canEdit={isAdministrator}/></div>}
         {canManagePostulantes && <div id="hub-coaching" hidden={activeSection!=='coaching'} className="hub-section-anchor"><HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} /></div>}
-        {!assessmentOpen&&(canManagePostulantes||roles.includes(POSTULANTE_ROLE))&&<div id="hub-groups" hidden={canManagePostulantes&&activeSection!=='groups'} className="hub-section-anchor"><HubCohorts canManage={canManagePostulantes}/></div>}
+        {!assessmentOpen&&(canManagePostulantes||roles.includes(POSTULANTE_ROLE))&&<div id="hub-groups" hidden={canManagePostulantes&&activeSection!=='groups'} className="hub-section-anchor"><HubCohorts canManage={canManagePostulantes} locale={staffLanguage}/></div>}
 
         {isTrainer && (
           <section id="hub-progress" hidden={activeSection!=='progress'} className="hub-trainer-section hub-section-anchor" aria-labelledby="hub-trainer-title">

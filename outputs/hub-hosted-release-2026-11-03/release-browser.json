@@ -1,0 +1,32 @@
+{
+  "runId": "ae3bc1e3-cb13-4982-ae8f-a445bc9fa7a7",
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "origin": "https://trainee-simulator.vercel.app",
+  "checks": [
+    "Real trainer browser login with same-origin cookies",
+    "Cohort and target date persist across real browser reload",
+    "Real learner browser login",
+    "Learner sees own cohort without membership; staff directory denied",
+    "Actual assigned article completion persists through reload and server learning-path read",
+    "Private coaching persists through reload and learner access is denied",
+    "RRHH browser session can read the approved private-coaching projection",
+    "Unassigned learner cannot see the cohort",
+    "Hosted mutation without CSRF header is denied"
+  ],
+  "startedAt": "2026-11-03T22:39:45.682Z",
+  "before": {
+    "cohorts": 0,
+    "identities": 4,
+    "learning_attempts": 10
+  },
+  "cohortId": "a73b70c5-c419-45f2-a63f-53dedb63ba1f",
+  "activityId": "10000000-0000-4000-8000-000000001101",
+  "passed": true,
+  "cleanupPassed": true,
+  "after": {
+    "cohorts": 0,
+    "identities": 4,
+    "learning_attempts": 10
+  },
+  "completedAt": "2026-11-03T22:41:48.548Z"
+}

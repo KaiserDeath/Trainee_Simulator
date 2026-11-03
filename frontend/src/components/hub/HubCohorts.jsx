@@ -2,9 +2,9 @@ import {useRef,useState} from 'react';
 import {getHubCohorts,getHubAssignableCourses,getHubPostulanteAccounts,saveHubCohort} from '../../api/client';
 
 const empty=()=>({id:null,title:'',courseId:'',dueOn:'',revision:0});
-const targetLabel=date=>date?new Intl.DateTimeFormat(undefined,{dateStyle:'long',timeZone:'UTC'}).format(new Date(`${date}T00:00:00Z`)):'No target date';
+const targetLabel=(date,locale)=>date?new Intl.DateTimeFormat(locale==='es'?'es-PE':'en-US',{dateStyle:'long',timeZone:'UTC'}).format(new Date(`${date}T00:00:00Z`)):'No target date';
 
-export default function HubCohorts({canManage=false}) {
+export default function HubCohorts({canManage=false,locale='en'}) {
   const [open,setOpen]=useState(false);
   const [cohorts,setCohorts]=useState([]);
   const [courses,setCourses]=useState([]);
@@ -50,7 +50,7 @@ export default function HubCohorts({canManage=false}) {
     {open&&<>
       {!cohorts.length&&<p>No cohorts on this page.</p>}
       <ul className="hub-version-list">{cohorts.map(cohort=><li key={cohort.id}>
-        <strong>{cohort.title}</strong> · {cohort.courseTitle} · {targetLabel(cohort.dueOn)}
+        <strong>{cohort.title}</strong> · {cohort.courseTitle} · {targetLabel(cohort.dueOn,locale)}
         {cohort.dueOn&&cohort.dueOn<new Date().toLocaleDateString('en-CA',{timeZone:'America/Lima'})&&<span> · Target date passed</span>}
         {canManage&&<><p>{cohort.members.length} / 100 learners</p><button type="button" disabled={busy} onClick={()=>edit(cohort)}>Edit {cohort.title}</button>
           <details><summary>View cohort members</summary><ul>{cohort.members.map(member=><li key={member.id}>{member.displayName} · {member.status}</li>)}</ul></details></>}
