@@ -44,6 +44,24 @@ verify cookie-backed login and reload against an isolated same-origin fixture.
 This supplements the development browser suite; verify the deployed rewrite
 and real Auth separately after deployment.
 
+### Durable worker scheduling
+
+Apply `20261103190000_simulation_worker_next_wake.sql` before deploying the
+worker scheduling update. Empty queues back off from 1 second to a maximum of
+30 seconds. Two RPCs are issued per empty check (claim and scalar next due
+timestamp), rather than one claim every second. When jobs exist, the next due
+time or lease expiry controls the next check, bounded at 30 seconds.
+
+Session creation wakes the worker in the same API process immediately after
+its schedule is committed. A separately hosted worker or another API instance
+discovers new work within the 30-second idle interval, plus request time.
+The timer waits after each completed check, so requests do not overlap.
+Failures back off; in-flight work retains its heartbeat and fenced delivery.
+Stopping prevents new polls while allowing the current job to finish.
+
+`npm run verify:local:worker` tests due times, leased-job recovery and permissions
+inside a rolled-back transaction on the fixed local database container.
+
 ## Fresh setup
 
 From the repository root:

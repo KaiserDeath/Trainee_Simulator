@@ -86,6 +86,7 @@ router.post('/start', async (req, res) => {
     }
     session.duration_minutes = minutes;
     if(process.env.TREZ_DURABLE_SIMULATION!=='true'&&process.env.NODE_ENV!=='production')await GameMaster.startSession(session.id,durationMs);
+    else req.app.locals.simulationWorker?.wake();
 
     res.json({
       message:
