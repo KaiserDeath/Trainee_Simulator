@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:browser": "playwright test --config browser/playwright.config.js",
+    "test:production:auth": "npm run build && node --test browser/production-auth.test.mjs",
     "test:browser:install": "playwright install chromium",
     "test:review": "node --test browser/trainer-review.unit.test.js"
   },

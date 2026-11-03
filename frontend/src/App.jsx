@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import socket from './sockets/socket';
 
 import SessionStartPage from "./pages/SessionStartPage";
 import TraineeDashboard from "./pages/TraineeDashboard";   // renamed from TrainerPage
@@ -53,22 +52,6 @@ function SimulatorApp() {
       return null;
     }
   });
-
-  useEffect(() => {
-    if (isHubRoute) return undefined;
-
-    const handleConnect = () => {
-      console.log('Socket connected:', socket.id);
-    };
-
-    socket.connect();
-    socket.on('connect', handleConnect);
-
-    return () => {
-      socket.off('connect', handleConnect);
-      socket.disconnect();
-    };
-  }, [isHubRoute]);
 
   useEffect(() => {
     document.title = getDocumentTitle(currentPath);

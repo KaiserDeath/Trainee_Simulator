@@ -24,6 +24,26 @@ Supabase Auth/governance gate now exist.
 
 Never place real credentials in committed files or test fixtures.
 
+### Hosted browser authentication
+
+Production browser requests use relative `/api` URLs. `frontend/vercel.json`
+forwards these requests to the Render backend before applying the SPA fallback.
+Keep that rewrite destination aligned with the backend when moving hosts.
+`VITE_API_URL` selects the backend only in development; a hosted Render URL in
+that variable does not override the production same-origin route.
+
+The backend `CLIENT_URL` must equal the public frontend origin so CSRF origin
+checks pass. Keep production secure, HttpOnly session cookies and SameSite=Lax.
+Do not call the Render origin directly from the browser: Vercel and Render are
+different sites, so those cookies would not accompany cross-site API calls.
+The app no longer opens an unused Socket.IO connection on simulator pages;
+Trainer review remains a manual snapshot workflow.
+
+Run `npm --prefix frontend run test:production:auth` to build the frontend and
+verify cookie-backed login and reload against an isolated same-origin fixture.
+This supplements the development browser suite; verify the deployed rewrite
+and real Auth separately after deployment.
+
 ## Fresh setup
 
 From the repository root:
