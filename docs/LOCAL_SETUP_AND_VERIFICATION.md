@@ -62,6 +62,24 @@ Stopping prevents new polls while allowing the current job to finish.
 `npm run verify:local:worker` tests due times, leased-job recovery and permissions
 inside a rolled-back transaction on the fixed local database container.
 
+### Statistics bandwidth
+
+Apply `20261103193000_operation_time_statistics.sql` before deploying the backend
+statistics change. The statistics route now calls the service-role-only
+`trainer_operation_time_stats` RPC once. PostgreSQL returns counts, sums and
+extrema by operation and session instead of individual operation rows. The
+backend preserves the existing response shape, sorting and JavaScript rounding.
+Missing RPCs or query failures fail the request; there is no expensive fallback
+to downloading historical rows. Trainer refresh stays manual.
+
+`npm run verify:local:stats` uses only the fixed local Supabase database container,
+creates fixtures inside a transaction and rolls them back. It compares results
+against the frozen pre-change calculation, covers more than 1,000 operations and
+more than 1,000 sessions, and verifies RPC permissions. Its byte comparison is
+fixture-specific, not a measurement of daily Supabase billed egress. Summaries
+still grow with session/type count; a history of one operation per session can
+benefit less than a dense session history.
+
 ## Fresh setup
 
 From the repository root:
