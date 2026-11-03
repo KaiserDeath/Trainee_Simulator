@@ -79,6 +79,9 @@ async function cleanupDatabase() {
   const fixtureVersions = `SELECT v.id FROM public.hub_content_versions v WHERE v.author_identity_id IN (${fixtureIdentities}) OR v.reviewed_by_identity_id IN (${fixtureIdentities})`;
   const sql = `BEGIN;
 SET LOCAL session_replication_role = replica;
+DELETE FROM public.hub_cohort_events WHERE cohort_id IN(SELECT id FROM public.hub_cohorts WHERE created_by IN (${fixtureIdentities}));
+DELETE FROM public.hub_cohort_members WHERE cohort_id IN(SELECT id FROM public.hub_cohorts WHERE created_by IN (${fixtureIdentities}));
+DELETE FROM public.hub_cohorts WHERE created_by IN (${fixtureIdentities});
 DELETE FROM public.hub_simulator_sessions WHERE identity_id IN (${fixtureIdentities});
 DELETE FROM public.hub_content_review_events WHERE content_version_id IN (${fixtureVersions}) OR actor_identity_id IN (${fixtureIdentities});
 DELETE FROM public.hub_content_versions WHERE id IN (${fixtureVersions});
@@ -502,6 +505,22 @@ try {
     body: { courseId: course.id },
   });
   assert.equal(enrolment.status, 201, JSON.stringify(enrolment.body));
+
+  const cohortBody={title:`Auth cohort ${runId}`,courseId:course.id,dueOn:'2026-12-15',learnerIds:[trainee.identity.id],expectedRevision:0,idempotencyKey:`cohort-${runId}`};
+  assert.equal((await request('/cohorts')).status,401);
+  assert.equal((await request('/cohorts',{jar:trainer.session.jar,method:'POST',body:cohortBody})).status,403);
+  assert.equal((await request('/cohorts',{jar:trainee.session.jar,csrf:trainee.session.csrf,method:'POST',body:cohortBody,headers:{'x-browser-role':'TRAINER'}})).status,403);
+  const createdCohort=await request('/cohorts',{jar:trainer.session.jar,csrf:trainer.session.csrf,method:'POST',body:cohortBody});
+  assert.equal(createdCohort.status,200,JSON.stringify(createdCohort.body));
+  const replayCohort=await request('/cohorts',{jar:trainer.session.jar,csrf:trainer.session.csrf,method:'POST',body:cohortBody});
+  assert.equal(replayCohort.body.cohort.id,createdCohort.body.cohort.id);
+  const ownCohorts=await request('/cohorts',{jar:trainee.session.jar});
+  assert.equal(ownCohorts.status,200,JSON.stringify(ownCohorts.body));
+  assert.equal(ownCohorts.body.cohorts.find(item=>item.id===createdCohort.body.cohort.id)?.dueOn,'2026-12-15');
+  assert.equal(ownCohorts.body.cohorts.find(item=>item.id===createdCohort.body.cohort.id)?.members,null);
+  const revisedCohort=await request(`/cohorts/${createdCohort.body.cohort.id}`,{jar:auditor.session.jar,csrf:auditor.session.csrf,method:'POST',body:{...cohortBody,dueOn:null,learnerIds:[],expectedRevision:1,idempotencyKey:`cohort-revise-${runId}`}});
+  assert.equal(revisedCohort.status,200,JSON.stringify(revisedCohort.body));
+  assert.equal(revisedCohort.body.cohort.revision,2);
 
   const path = await request('/learning-path', { jar: trainee.session.jar });
   assert.equal(path.status, 200);

@@ -22,6 +22,51 @@ async function staff(page,role){
   });
 }
 
+test('TRAINER creates a cohort and safely revises its date after reload',async({page})=>{
+  await staff(page,'TRAINER');let cohorts=[];const submissions=[];
+  const courseId='10000000-0000-4000-8000-000000000002';
+  const cohortId='10000000-0000-4000-8000-000000000003';
+  await page.route('**/api/hub/staff/courses',route=>json(route,{courses:[{id:courseId,title:'Operator foundations'}]}));
+  await page.route('**/api/hub/cohorts**',route=>{
+    if(route.request().method()==='POST'){
+      const body=route.request().postDataJSON();submissions.push(body);
+      cohorts=[{id:cohortId,title:body.title,courseId,courseTitle:'Operator foundations',dueOn:body.dueOn,revision:body.expectedRevision+1,members:[{id:learnerId,displayName:'Fixture learner',status:'in_progress'}]}];
+      return json(route,{cohort:cohorts[0]});
+    }return json(route,{cohorts,nextCursor:null});
+  });
+  await page.goto('/hub');
+  expect(submissions).toHaveLength(0);
+  await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
+  await page.getByLabel('Cohort name', {exact:true}).fill('November operators');
+  await page.getByRole('combobox',{name:'Cohort course',exact:true}).selectOption(courseId);
+  await page.getByLabel('Target date',{exact:true}).fill('2026-11-30');
+  await page.getByRole('checkbox',{name:'Fixture learner',exact:true}).check();
+  await page.getByRole('button',{name:'Save cohort',exact:true}).click();
+  await expect(page.getByText('November operators',{exact:true})).toBeVisible();
+  expect(submissions[0].learnerIds).toEqual([learnerId]);expect(submissions[0].idempotencyKey).toBeTruthy();
+  await page.reload();await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
+  await page.getByRole('button',{name:'Edit November operators',exact:true}).click();
+  await expect(page.getByRole('combobox',{name:'Cohort course',exact:true})).toBeDisabled();
+  await page.getByLabel('Target date',{exact:true}).fill('2026-12-15');
+  await page.getByRole('button',{name:'Save cohort',exact:true}).click();
+  await expect(page.getByText(/December 15, 2026/)).toBeVisible();
+  expect(submissions[1].expectedRevision).toBe(1);expect(submissions[1].learnerIds).toEqual([]);
+  await page.getByRole('region',{name:'Cohort management',exact:true}).screenshot({path:'../outputs/hub-cohorts-desktop.png'});
+});
+
+test('learner sees own cohort date on mobile without membership or assignment controls',async({page})=>{
+  await staff(page,'POSTULANTE');
+  await page.route('**/api/hub/learning-path',route=>json(route,{course:{title:'Operator foundations'},modules:[]}));
+  await page.route('**/api/hub/cohorts',route=>json(route,{cohorts:[{id:'cohort',title:'November operators',courseTitle:'Operator foundations',dueOn:'2026-11-30',members:null}],nextCursor:null}));
+  await page.setViewportSize({width:390,height:844});await page.goto('/hub');
+  await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
+  await expect(page.getByText('November operators',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Save cohort',exact:true})).toHaveCount(0);
+  await expect(page.getByText('View cohort members',{exact:true})).toHaveCount(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.getByRole('region',{name:'My training groups',exact:true}).screenshot({path:'../outputs/hub-cohorts-mobile.png'});
+});
+
 test('ADMIN edits an instruction draft and submits it through the publication workflow',async({page})=>{
   await staff(page,'ADMIN');let draft;let versions=[];
   await page.route('**/api/hub/workspace/catalog',route=>json(route,{courses:[],modules:[{id:'module',title:'Foundations'}],activities:[{id:activityId,module_id:'module',title:'Original lesson',activity_type:'article',content:{summary:'Original summary',paragraphs:['Original body'],surface:'protected'}}]}));

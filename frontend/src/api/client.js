@@ -72,6 +72,8 @@ export const getHubMediaLibrary=async()=>api.get('/hub/media');
 export const beginHubMediaUpload=async(body)=>api.post('/hub/media/uploads',body,await withHubCsrf());
 export const transitionHubMedia=async(id,command,body)=>api.post(`/hub/media/${id}/${command}`,body,await withHubCsrf());
 export const getHubMediaAccess=async(id)=>api.get(`/hub/media/${id}/access`);
+export const getHubCohorts=(cursor)=>api.get('/hub/cohorts',{params:cursor?{cursor}:{}});
+export const saveHubCohort=async(id,body)=>api.post(id?`/hub/cohorts/${id}`:'/hub/cohorts',body,await withHubCsrf());
 
 export const getHubLearningPath = async () => {
   return api.get('/hub/learning-path');

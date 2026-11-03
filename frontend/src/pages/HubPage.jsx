@@ -27,6 +27,7 @@ import HubContentStudio from '../components/hub/HubContentStudio';
 import HubCoachingWorkspace from '../components/hub/HubCoachingWorkspace';
 import HubPolicyStudio from '../components/hub/HubPolicyStudio';
 import HubMediaLibrary from '../components/hub/HubMediaLibrary';
+import HubCohorts from '../components/hub/HubCohorts';
 import '../styles/hub.css';
 
 const TRAINER_ROLE = 'TRAINER';
@@ -653,6 +654,7 @@ export default function HubPage() {
         {(isAdministrator || isTrainer) && <HubContentStudio canEdit={isAdministrator} locale={staffLanguage} />}
         {(isAdministrator||isTrainer)&&<HubMediaLibrary canEdit={isAdministrator}/>}
         {canManagePostulantes && <HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} />}
+        {!assessmentOpen&&(canManagePostulantes||roles.includes(POSTULANTE_ROLE))&&<HubCohorts canManage={canManagePostulantes}/>}
 
         {isTrainer && (
           <section className="hub-trainer-section" aria-labelledby="hub-trainer-title">

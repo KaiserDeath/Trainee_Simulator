@@ -14,6 +14,7 @@ import { createHubService } from '../hub/hubService.js';
 import { createHubFocusedPracticeService } from '../hub/hubFocusedPracticeService.js';
 import { createHubWorkspaceRouter } from './hubWorkspaceRoutes.js';
 import {createHubMediaRouter} from './hubMediaRoutes.js';
+import {createHubCohortRouter} from './hubCohortRoutes.js';
 import {assessmentReportCsv} from '../hub/hubAssessmentCsv.js';
 
 function asyncRoute(handler) {
@@ -39,6 +40,7 @@ export function createHubRouter({
   accountPracticeService,
   evaluationRuntimeService,
   mediaService,
+  cohortService,
 }) {
   const router = Router();
   const service = createHubService(repository);
@@ -51,6 +53,7 @@ export function createHubRouter({
 
   router.use(authenticateHub(identityVerifier));
   router.use(csrfProtection.middleware);
+  if(cohortService)router.use('/cohorts',createHubCohortRouter({service:cohortService}));
   if(mediaService)router.use('/media',createHubMediaRouter({service:mediaService}));
   router.get('/scored-evaluations/attempts/:attemptId/runtime',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
     if(!evaluationRuntimeService)throw new HubError(503,'HUB_EVALUATION_RUNTIME_UNAVAILABLE','Assessment runtime is not configured.');
