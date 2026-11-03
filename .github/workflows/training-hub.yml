@@ -1,0 +1,66 @@
+name: Training Hub verification
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: training-hub-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            shared/account-id-rules/package-lock.json
+      - run: npm run setup
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run verify:foundation
+
+  isolated-database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+      - run: npm ci && npm ci --prefix backend
+      - name: Start disposable Supabase
+        run: |
+          npm run local:prepare
+          node node_modules/supabase/dist/supabase.js start -x studio,postgres-meta,edge-runtime,logflare,vector,supavisor,mailpit,imgproxy
+          node scripts/write-local-env.mjs
+      - run: npm run verify:local:data
+      - run: npm run verify:local:hub
+      - run: npm run verify:local:hub:auth
+      - run: npm run verify:local:workspace
+      - run: npm run verify:local:capacity
+      - run: npm run verify:local:assessment-capacity
+      - name: Stop disposable Supabase
+        if: always()
+        run: node node_modules/supabase/dist/supabase.js stop --no-backup

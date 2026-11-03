@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import {notifySimulationWork} from '../engine/simulationSignals.js';
 
 import { supabase } from '../config/supabase.js';
 
@@ -86,6 +87,7 @@ router.post('/start', async (req, res) => {
     }
     session.duration_minutes = minutes;
     if(process.env.TREZ_DURABLE_SIMULATION!=='true'&&process.env.NODE_ENV!=='production')await GameMaster.startSession(session.id,durationMs);
+    else notifySimulationWork();
 
     res.json({
       message:

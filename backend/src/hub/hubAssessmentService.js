@@ -1,4 +1,5 @@
 import { HubError } from './HubError.js';
+import {notifySimulationWork} from '../engine/simulationSignals.js';
 
 const DEFAULT_SETTINGS_ID = '10000000-0000-4000-8000-000000000301';
 const OPERATION_TYPES = new Set(['ADD CREDITS', 'WITHDRAW CREDITS', 'CREATE ACCOUNT', 'REFRESH BALANCE', 'RESET PASSWORD']);
@@ -366,6 +367,7 @@ export function createHubAssessmentService({ client }) {
         p_idempotency_key: idempotencyKey,
       });
       if (result.error) throw assessmentDbError(result.error);
+      notifySimulationWork();
       return result.data;
     },
 

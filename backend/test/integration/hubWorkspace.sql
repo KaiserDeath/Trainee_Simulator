@@ -178,6 +178,12 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.hub_simulation_jobs WHERE id=job.id AND sequence_number=2 AND status='ready' AND lease_token IS NULL) THEN RAISE EXCEPTION 'job did not persist next tick'; END IF;
   UPDATE public.trainee_sessions SET status='submitted' WHERE id=queue_session;
   IF NOT EXISTS(SELECT 1 FROM public.hub_simulation_jobs WHERE id=job.id AND status='completed') THEN RAISE EXCEPTION 'job survived stopped session'; END IF;
+  INSERT INTO public.trainee_sessions(trainee_name,runtime_mode,status,duration_minutes)
+    VALUES('Workspace expired queue fixture','free_simulator','active',5) RETURNING id INTO queue_session;
+  UPDATE public.hub_simulation_jobs SET status='dead',deadline=now()-interval '1 second',next_run_at=now()+interval '1 minute' WHERE session_id=queue_session;
+  IF public.hub_next_worker_event() IS NULL OR public.hub_next_worker_event()>now() THEN RAISE EXCEPTION 'worker missed an earlier session deadline';END IF;
+  PERFORM public.hub_process_worker_deadlines();
+  IF NOT EXISTS(SELECT 1 FROM public.trainee_sessions WHERE id=queue_session AND status='completed') THEN RAISE EXCEPTION 'session outlived its deadline while waiting for the next generation tick';END IF;
   INSERT INTO public.hub_modules(id,course_id,stable_code,position,title) VALUES(exception_module,course,'workspace-exception',4,'Exceptions');
   INSERT INTO public.hub_activities(id,module_id,stable_code,position,activity_type,title,content)
     VALUES(exception_activity,exception_module,'workspace-exception',1,'quick_simulation','Exception decision','{"executionKind":"exception_decision","policyStatus":"approved"}');

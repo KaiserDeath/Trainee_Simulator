@@ -17,6 +17,7 @@
     "verify:local:hub:auth": "node scripts/run-local-hub-auth-verification.mjs",
     "verify:local:workspace": "node scripts/verify-local-workspace.mjs",
     "verify:local:capacity": "node scripts/run-local-verification.mjs capacity",
+    "verify:local:assessment-capacity": "node scripts/run-local-verification.mjs assessment-capacity",
     "dev:backend": "npm run dev --prefix backend",
     "dev:frontend": "npm run dev --prefix frontend",
     "test:backend": "npm test --prefix backend",
