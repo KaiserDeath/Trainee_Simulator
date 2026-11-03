@@ -54,3 +54,33 @@ test('TRAINER saves a private note, reloads it, and starts a versioned revision'
   await page.reload();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
   await expect(page.getByText('Review the game history before acting.').first()).toBeVisible();await page.getByRole('button',{name:'Add revision'}).click();await expect(page.getByRole('textbox',{name:'Coaching note',exact:true})).toHaveValue('Review the game history before acting.');
 });
+
+test('TRAINER publishes a replacement evaluation policy with a reason and revision check',async({page})=>{
+  await staff(page,'TRAINER');let submitted;
+  const policy={id:'10000000-0000-4000-8000-000000000401',title:'Orion checkpoint',position:1,revision:3,publication_status:'published',duration_minutes:30,theory_weight:20,practical_weight:80,history_review_days:7,history_record_limit:null,selected_game_family_keys:['orion-stars'],theory_item_codes:['verification-first'],required_action_codes:['CREATE_ACCOUNT'],practical_item_weights:{CREATE_ACCOUNT:80}};
+  await page.route('**/api/hub/assessment/evaluations',route=>json(route,{evaluations:[policy],gameFamilies:[{stable_key:'orion-stars',display_name:'Orion Stars',adapter_status:'verified'}],attemptSets:[],attempts:[],itemResults:[],reopenEvents:[]}));
+  await page.route('**/api/hub/assessment/evaluations/*/publish-version',route=>{submitted=route.request().postDataJSON();return json(route,{evaluation:{...policy,revision:4,duration_minutes:45}},201);});
+  await page.goto('/hub');await page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
+  await page.getByRole('button',{name:'Create policy version'}).click();
+  await page.getByRole('spinbutton',{name:'Duration in minutes',exact:true}).fill('45');
+  await page.getByRole('textbox',{name:'Publication reason',exact:true}).fill('Allow additional time for future attempts');
+  await page.getByRole('button',{name:'Publish new policy version'}).click();
+  await expect(page.getByText('Policy version 4 published. Existing attempts keep their original rules.')).toBeVisible();
+  expect(submitted.expectedRevision).toBe(3);expect(submitted.configuration.duration_minutes).toBe(45);expect(submitted.configuration).not.toHaveProperty('max_attempts_per_set');
+});
+
+test('TRAINER edits a question by publishing a new version',async({page})=>{
+  await staff(page,'TRAINER');let submitted;
+  const question={id:'question-fixture',stable_code:'verification-first',version:1,question:'What must be checked before acting?',choices:[{id:'verify',label:'The exact evidence'},{id:'guess',label:'Guess from the name'}],correct_option:'verify',source:'Existing operator requirements'};
+  await page.route('**/api/hub/assessment/questions',route=>{
+    if(route.request().method()==='POST'){submitted=route.request().postDataJSON();return json(route,{question:{...question,id:'question-version-2',version:2,question:submitted.question}},201);}
+    return json(route,{questions:[question]});
+  });
+  await page.goto('/hub');await page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
+  await page.getByRole('button',{name:'Open question bank'}).click();await page.getByRole('combobox',{name:'Question version',exact:true}).selectOption('question-fixture');
+  await page.getByRole('textbox',{name:'Question text',exact:true}).fill('Which verified evidence must be checked before acting?');
+  await page.getByRole('textbox',{name:'Question change reason',exact:true}).fill('Clarify the required verification');
+  await page.getByRole('button',{name:'Publish question version'}).click();
+  await expect(page.getByText('Question verification-first version 2 published. Opened assessments keep their captured question.')).toBeVisible();
+  expect(submitted.expectedVersion).toBe(1);expect(submitted.correctOption).toBe('verify');expect(submitted.choices).toHaveLength(2);
+});

@@ -3,7 +3,7 @@ CREATE TABLE public.hub_exception_practice (
   activity_attempt_id UUID NOT NULL REFERENCES public.hub_activity_attempts(id),
   session_id UUID NOT NULL UNIQUE REFERENCES public.trainee_sessions(id) ON DELETE RESTRICT,
   operation_id UUID NOT NULL UNIQUE REFERENCES public.sandbox_operations(id) ON DELETE RESTRICT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
 CREATE INDEX hub_exception_activity_idx ON public.hub_exception_practice(identity_id,activity_attempt_id,created_at);
 UPDATE public.hub_activities SET content=(content-'blockedReason')||'{"policyStatus":"approved","executionKind":"exception_decision"}'::jsonb WHERE stable_code='exceptional-operations-policy-gated-practice';

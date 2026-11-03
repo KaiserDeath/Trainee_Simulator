@@ -1,5 +1,8 @@
 import HubAttemptHistory from './HubAttemptHistory';
 import HubReportBreakdown from './HubReportBreakdown';
+import HubEvaluationPolicyEditor from './HubEvaluationPolicyEditor';
+import HubQuestionBank from './HubQuestionBank';
+import HubFormalEvidence from './HubFormalEvidence';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -225,22 +228,25 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
         {(evaluationPolicies.evaluations || []).map((evaluation) => <article className="hub-evaluation-policy-card" key={evaluation.id}>
           <header><div><span>Evaluation {evaluation.position}</span><h3>{evaluation.title}</h3></div><strong>{evaluation.publication_status}{evaluation.is_provisional ? ' · provisional' : ''}</strong></header>
           <div className="hub-account-form">
-            <label>Duration (minutes)<input type="number" min="1" disabled={!canEditEvaluations} value={evaluation.duration_minutes} onChange={(event) => changeEvaluation(evaluation.id, { duration_minutes: event.target.value })} /></label>
-            <label>Theory weight (%)<input type="number" min="0" max="100" disabled={!canEditEvaluations} value={evaluation.theory_weight} onChange={(event) => changeEvaluation(evaluation.id, { theory_weight: event.target.value })} /></label>
-            <label>Practical weight (%)<input type="number" min="0" max="100" disabled={!canEditEvaluations} value={evaluation.practical_weight} onChange={(event) => changeEvaluation(evaluation.id, { practical_weight: event.target.value })} /></label>
-            <label>History window (days)<input type="number" min="1" disabled={!canEditEvaluations} value={evaluation.history_review_days} onChange={(event) => changeEvaluation(evaluation.id, { history_review_days: event.target.value })} /></label>
-            <label>Optional recent-record limit<input type="number" min="1" disabled={!canEditEvaluations} value={evaluation.history_record_limit ?? ''} onChange={(event) => changeEvaluation(evaluation.id, { history_record_limit: event.target.value })} placeholder="All in window" /></label>
+            <label>Duration (minutes)<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.duration_minutes} onChange={(event) => changeEvaluation(evaluation.id, { duration_minutes: event.target.value })} /></label>
+            <label>Theory weight (%)<input type="number" min="0" max="100" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.theory_weight} onChange={(event) => changeEvaluation(evaluation.id, { theory_weight: event.target.value })} /></label>
+            <label>Practical weight (%)<input type="number" min="0" max="100" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.practical_weight} onChange={(event) => changeEvaluation(evaluation.id, { practical_weight: event.target.value })} /></label>
+            <label>History window (days)<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.history_review_days} onChange={(event) => changeEvaluation(evaluation.id, { history_review_days: event.target.value })} /></label>
+            <label>Optional recent-record limit<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.history_record_limit ?? ''} onChange={(event) => changeEvaluation(evaluation.id, { history_record_limit: event.target.value })} placeholder="All in window" /></label>
           </div>
           <p><strong>Attempts:</strong> 3 per set · <strong>Pass:</strong> 100% · <strong>Revision:</strong> {evaluation.revision}</p>
-          <fieldset className="hub-checklist" disabled={!canEditEvaluations}>
+          <fieldset className="hub-checklist" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'}>
             <legend>Verified game families</legend>
             <label><input type="checkbox" checked={evaluation.game_family_selection_mode === 'all_verified'} onChange={(event) => changeEvaluation(evaluation.id, { game_family_selection_mode: event.target.checked ? 'all_verified' : 'selected_verified' })} /><span>Use every verified family by default</span></label>
             {(evaluationPolicies.gameFamilies || []).map((family) => <label key={family.stable_key}><input type="checkbox" disabled={!canEditEvaluations || family.adapter_status !== 'verified' || evaluation.game_family_selection_mode === 'all_verified'} checked={(evaluation.selected_game_family_keys || []).includes(family.stable_key)} onChange={() => toggleEvaluationFamily(evaluation, family.stable_key)} /><span>{family.display_name} · {family.adapter_status}</span></label>)}
           </fieldset>
           {evaluation.required_action_codes?.length > 0 && <div><strong>Mandatory fixed sequence</strong><ol>{evaluation.required_action_codes.map((action) => <li key={action}>{action.replaceAll('_', ' ')}</li>)}</ol><p>Transaction Records defaults to all available movements in the previous seven days; TRAINER may change the history window or recent-record limit.</p></div>}
-          {canEditEvaluations && <button type="button" className="hub-primary-button" disabled={busy} onClick={() => saveEvaluation(evaluation)}>Save evaluation settings</button>}
+          {canEditEvaluations && evaluation.publication_status === 'draft' && <button type="button" className="hub-primary-button" disabled={busy} onClick={() => saveEvaluation(evaluation)}>Save draft settings</button>}
+          {canEditEvaluations&&<HubEvaluationPolicyEditor evaluation={evaluation} onPublished={published=>changeEvaluation(evaluation.id,published)}/>}
         </article>)}
       </div>
+      <HubQuestionBank canEdit={canEditEvaluations}/>
+      {(evaluationPolicies.attempts||[]).length>0&&<details><summary>Private recorded assessment actions</summary>{evaluationPolicies.attempts.map(attempt=><HubFormalEvidence key={attempt.id} attempt={attempt} label={evaluationById.get(attempt.evaluation_id)?.title||'Assessment'}/>)}</details>}
       <h3>Attempt-set reopening</h3>
       <div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>Postulante</th><th>Evaluation</th><th>Latest set</th><th>Status</th><th>Action</th></tr></thead><tbody>{accounts.flatMap((account) => (evaluationPolicies.evaluations || []).map((evaluation) => {
         const set = latestAttemptSet(evaluation.id, account.id);

@@ -9,6 +9,7 @@ DECLARE
   account_view JSONB; account_artifact UUID;
   reset_module UUID:=gen_random_uuid(); reset_activity UUID:=gen_random_uuid(); credential_view JSONB;
   queue_session UUID;queue_customer UUID;queue_operation UUID:=gen_random_uuid();job public.hub_simulation_jobs%ROWTYPE;claimed public.hub_simulation_jobs%ROWTYPE;
+  queue_account UUID;scenario_operation UUID:=gen_random_uuid();old_lease UUID;
   policy_proposal JSONB;new_policy_id UUID;
   exception_module UUID:=gen_random_uuid();exception_activity UUID:=gen_random_uuid();exception_view JSONB;first_exception UUID;decision TEXT;history_count INTEGER;
   note UUID; version UUID; start_result JSONB; captured JSONB; count_rows INTEGER;
@@ -158,6 +159,21 @@ BEGIN
     PERFORM public.create_fenced_sandbox_operation(job.id,gen_random_uuid(),jsonb_build_object('id',gen_random_uuid(),'session_id',queue_session,'customer_id',queue_customer,'game','Orion Stars','type','CREATE ACCOUNT','created_at',now()));
     RAISE EXCEPTION 'stale worker inserted operation';
   EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'HUB_WORKER_LEASE_LOST' THEN RAISE; END IF; END;
+  INSERT INTO public.sandbox_game_wallets(session_id,game,balance) VALUES(queue_session,'Orion Stars',20000);
+  INSERT INTO public.sandbox_game_accounts(session_id,customer_id,game,game_username,password,balance)
+    VALUES(queue_session,queue_customer,'Orion Stars','OS_Queue123','disposable-only',100) RETURNING id INTO queue_account;
+  result:=jsonb_build_object('id',scenario_operation,'session_id',queue_session,'customer_id',queue_customer,'game_account_id',queue_account,'game','Orion Stars','type','ADD CREDITS','amount',50,'customer_balance_at_request',100,'game_balance_at_request',100,'created_at',now(),'_movementScenario','ALREADY_PROCESSED','_botApplied',TRUE);
+  PERFORM public.create_fenced_sandbox_operation(job.id,job.lease_token,result);
+  PERFORM public.create_fenced_sandbox_operation(job.id,job.lease_token,result);
+  IF (SELECT balance FROM public.sandbox_game_accounts WHERE id=queue_account)<>150
+    OR (SELECT count(*) FROM public.sandbox_game_history WHERE game_account_id=queue_account)<>1 THEN RAISE EXCEPTION 'durable retry duplicated or omitted game posting'; END IF;
+  old_lease:=job.lease_token;
+  UPDATE public.hub_simulation_jobs SET lease_until=now()-interval '1 second' WHERE id=job.id;
+  SELECT * INTO job FROM public.hub_claim_simulation_job();
+  IF job.lease_token=old_lease OR job.sequence_number<>1 THEN RAISE EXCEPTION 'crashed delivery was not reclaimed with a fresh lease'; END IF;
+  IF public.hub_finish_simulation_job(job.id,old_lease,TRUE) THEN RAISE EXCEPTION 'stale worker finished reclaimed job'; END IF;
+  PERFORM public.create_fenced_sandbox_operation(job.id,job.lease_token,result);
+  IF (SELECT balance FROM public.sandbox_game_accounts WHERE id=queue_account)<>150 THEN RAISE EXCEPTION 'replacement worker duplicated game posting'; END IF;
   IF NOT public.hub_finish_simulation_job(job.id,job.lease_token,TRUE) THEN RAISE EXCEPTION 'job completion failed'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.hub_simulation_jobs WHERE id=job.id AND sequence_number=2 AND status='ready' AND lease_token IS NULL) THEN RAISE EXCEPTION 'job did not persist next tick'; END IF;
   UPDATE public.trainee_sessions SET status='submitted' WHERE id=queue_session;

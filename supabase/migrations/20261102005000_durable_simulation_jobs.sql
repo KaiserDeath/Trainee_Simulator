@@ -41,6 +41,9 @@ CREATE FUNCTION public.hub_finish_simulation_job(p_job_id UUID,p_lease_token UUI
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE v_job public.hub_simulation_jobs%ROWTYPE;
 BEGIN
+  SELECT * INTO v_job FROM public.hub_simulation_jobs WHERE id=p_job_id;
+  IF NOT FOUND THEN RETURN FALSE; END IF;
+  PERFORM 1 FROM public.trainee_sessions WHERE id=v_job.session_id FOR UPDATE;
   SELECT * INTO v_job FROM public.hub_simulation_jobs WHERE id=p_job_id AND lease_token=p_lease_token AND lease_until>now() FOR UPDATE;
   IF NOT FOUND THEN RETURN FALSE; END IF;
   IF v_job.deadline<=now() THEN
@@ -65,7 +68,17 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'HUB_WORKER_LEASE_LOST'; END IF;
   PERFORM 1 FROM public.hub_simulation_jobs WHERE id=p_job_id AND lease_token=p_lease_token AND status='running' AND lease_until>now() AND deadline>now() FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'HUB_WORKER_LEASE_LOST'; END IF;
+  SELECT * INTO v_operation FROM public.sandbox_operations WHERE id=(p_operation->>'id')::uuid AND session_id=v_job.session_id;
+  IF FOUND THEN RETURN v_operation; END IF;
   SELECT * INTO v_operation FROM public.create_reserved_sandbox_operation(p_operation);
+  IF p_operation->>'_movementScenario' IS NOT NULL THEN
+    PERFORM public.apply_sandbox_movement_scenario(v_operation.id,p_operation->>'_movementScenario',coalesce((p_operation->>'_botApplied')::boolean,FALSE));
+  END IF;
+  IF coalesce((p_operation->>'_changeGoldenPassword')::boolean,FALSE) AND v_operation.game='Golden Dragon' AND v_operation.type='RESET PASSWORD' THEN
+    UPDATE public.sandbox_game_accounts SET password='CHANGED:'||password
+      WHERE id=v_operation.game_account_id AND left(password,8)<>'CHANGED:';
+  END IF;
+  SELECT * INTO v_operation FROM public.sandbox_operations WHERE id=v_operation.id;
   RETURN v_operation;
 END; $$;
 CREATE FUNCTION public.apply_sandbox_movement_scenario(p_operation_id UUID,p_scenario TEXT,p_bot_applied BOOLEAN) RETURNS BOOLEAN

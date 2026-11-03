@@ -61,6 +61,7 @@ DELETE FROM hub_modules WHERE id='${moduleId}'::uuid; DELETE FROM hub_courses WH
 DELETE FROM hub_idempotency_keys WHERE identity_id IN (${ids});
 DELETE FROM hub_role_assignments WHERE identity_id IN (${ids}); DELETE FROM hub_identities WHERE id IN (${ids});
 DELETE FROM sandbox_game_history WHERE session_id IN (${sessionIds}); DELETE FROM sandbox_operations WHERE session_id IN (${sessionIds});
+DELETE FROM sandbox_game_wallets WHERE session_id IN (${sessionIds}); DELETE FROM sandbox_transaction_history WHERE session_id IN (${sessionIds}); DELETE FROM trainee_action_logs WHERE session_id IN (${sessionIds});
 DELETE FROM sandbox_game_accounts WHERE session_id IN (${sessionIds}); DELETE FROM sandbox_customers WHERE session_id IN (${sessionIds});
 DELETE FROM trainee_sessions WHERE id IN (${sessionIds}); COMMIT;`;
   const cleanup=spawnSync('docker',['exec','-i','supabase_db_simulador-dos-local','psql','-U','postgres','-d','postgres','-v','ON_ERROR_STOP=1'],{input:sql,encoding:'utf8',windowsHide:true});

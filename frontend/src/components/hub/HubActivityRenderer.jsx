@@ -8,6 +8,7 @@ import HubFocusedBalanceActivity from './HubFocusedBalanceActivity';
 import HubAccountPracticeActivity from './HubAccountPracticeActivity';
 import HubPasswordResetActivity from './HubPasswordResetActivity';
 import HubExceptionPracticeActivity from './HubExceptionPracticeActivity';
+import HubMixedPracticeActivity from './HubMixedPracticeActivity';
 
 const normaliseItems = (items = []) => items.map((item, index) => ({
   id: typeof item === 'string' ? `item-${index}` : item.id || `item-${index}`,
@@ -147,7 +148,7 @@ function PolicyBlockedContent({ activity }) {
 
 export default function HubActivityRenderer({ activity, busy, onComplete }) {
   const type = activity.type?.toLowerCase();
-  const disabled = busy || activity.completed;
+  const disabled = busy || activity.completed || activity.readOnly;
 
   return (
     <article className="hub-activity-card" aria-labelledby={`activity-${activity.id}-title`}>
@@ -168,6 +169,7 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
       )}
 
       {activity.summary && <p className="hub-activity-summary">{activity.summary}</p>}
+      {activity.content?.executionKind==='official_evaluation'&&<p className="hub-inline-notice">Open the corresponding assessment in Checkpoint and readiness results. This module completes after an official successful result is submitted.</p>}
 
       {type === 'article' && (
         <>
@@ -188,6 +190,7 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
       {['account_id_lab','account_creation'].includes(activity.content?.executionKind) && <HubAccountPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
       {activity.content?.executionKind === 'reset_current_account' && <HubPasswordResetActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
       {activity.content?.executionKind === 'exception_decision' && <HubExceptionPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
+      {activity.content?.executionKind==='mixed_practice'&&<HubMixedPracticeActivity activity={activity} busy={busy} onComplete={onComplete}/>}
       {type === 'interactive_rule_lab' && activity.content?.executionKind !== 'account_id_lab' && (
         <HubAccountIdLabActivity activity={activity} disabled={disabled} onComplete={onComplete} />
       )}
@@ -203,7 +206,7 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
       {type === 'quick_simulation' && activity.content?.policyStatus === 'required' && (
         <PolicyBlockedContent activity={activity} />
       )}
-      {!['article', 'checklist', 'acknowledgement', 'interactive_rule_lab', 'focused_practice', 'quick_simulation'].includes(type) && (
+      {activity.content?.executionKind!=='official_evaluation'&&!['article', 'checklist', 'acknowledgement', 'interactive_rule_lab', 'focused_practice', 'quick_simulation'].includes(type) && (
         <p className="hub-inline-notice" role="status">
           This assigned activity type is not available in the current Hub foundation.
         </p>

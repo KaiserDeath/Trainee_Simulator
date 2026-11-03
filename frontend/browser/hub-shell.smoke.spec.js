@@ -226,6 +226,51 @@ test('POSTULANTE sees numerical scored results without detailed failure evidence
   expect(submittedAttemptId).toBe('10000000-0000-4000-8000-000000000499');
 });
 
+test('POSTULANTE records theory and a game action without sending a client verdict',async({page})=>{
+  const attemptId='10000000-0000-4000-8000-000000000499';let received;
+  const respond=(route,data)=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  await page.route('**/api/hub/context',route=>respond(route,identity));
+  await page.route('**/api/hub/learning-path',route=>respond(route,learningPath));
+  await page.route('**/api/hub/scored-evaluations',route=>respond(route,{evaluations:[{id:'evaluation-fixture',title:'Orion checkpoint',position:1,publication_status:'published',is_provisional:false,attemptsRemaining:2,attempts:[{id:attemptId,status:'in_progress',attempt_in_set:1}]}]}));
+  const view={status:'in_progress',expiresAt:new Date(Date.now()+30*60*1000).toISOString(),theorySubmitted:false,questions:[{code:'verify',question:'Which player?',choices:[{id:'exact',label:'Exact assigned player'}]}],completedActions:0,totalActions:7,task:{action:'SEARCH_USER',game:'Orion Stars',customerUsername:'AssessmentPlayer',identifier:'OS_Assess123',credit:0,availableBalance:20000}};
+  await page.route(`**/api/hub/scored-evaluations/attempts/${attemptId}/runtime/*`,route=>{
+    const command=route.request().url().split('/').at(-1);const body=route.request().postDataJSON();
+    if(command==='start')return respond(route,view);
+    if(command==='theory'){expect(body.answers).toEqual({verify:'exact'});return respond(route,{...view,theorySubmitted:true});}
+    received=body;return respond(route,{status:'scored',score:100,result:'successful'});
+  });
+  await page.goto('/hub');await page.getByRole('button',{name:'Open assessment'}).click();
+  await expect(page.getByRole('heading',{name:'Formal assessment',exact:true})).toBeVisible();
+  await page.screenshot({path:'../outputs/hub-formal-assessment-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  await page.screenshot({path:'../outputs/hub-formal-assessment-mobile.png',fullPage:true});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.getByRole('radio',{name:'Exact assigned player'}).check();await page.getByRole('button',{name:'Record theory responses'}).click();
+  await expect(page.getByText('Theory responses recorded.')).toBeVisible();
+  await page.getByRole('textbox',{name:'Game ID',exact:true}).fill('OS_Assess123');await page.getByRole('button',{name:'Record action'}).click();
+  await expect(page.getByText('Result: 100% · Successful · Awaiting result submission')).toBeVisible();
+  expect(received.actionCode).toBe('SEARCH_USER');expect(received.identifier).toBe('OS_Assess123');expect(received).not.toHaveProperty('isCorrect');expect(received.idempotencyKey).toBeTruthy();
+});
+
+test('completed mixed practice can be repeated without resetting learning or consuming a formal attempt',async({page})=>{
+  const activityId='10000000-0000-4000-8000-000000001401';const runId='10000000-0000-4000-8000-000000008001';const worldId='10000000-0000-4000-8000-000000008002';let stage=1;const commands=[];
+  const respond=(route,data)=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});
+  const path=singleActivityPath({id:'mixed-module',code:'mixed-operation-practice',position:14,title:'Mixed practice'}, {id:activityId,type:'quick_simulation',title:'Mixed practice run',status:'completed',content:{executionKind:'mixed_practice',policyStatus:'approved'}});
+  path.enrolments[0].modules[0].status='completed';
+  await page.route('**/api/hub/context',route=>respond(route,identity));await page.route('**/api/hub/learning-path',route=>respond(route,path));
+  await page.route(`**/api/hub/activities/${activityId}/mixed-practice`,route=>respond(route,{status:'completed',result:true}));
+  await page.route(`**/api/hub/activities/${activityId}/mixed-practice/*`,route=>{
+    const command=route.request().url().split('/').at(-1);const body=route.request().postDataJSON();commands.push([command,body]);
+    if(command==='action'){expect(body.runId).toBe(runId);expect(body.worldId).toBe(worldId);expect(body.stage).toBe(stage);stage++;}
+    if(stage===3)return respond(route,{runId,status:'completed',result:true,learningCompletionRecorded:false});
+    return respond(route,{runId,status:'in_progress',completedActions:stage-1,totalActions:2,lastStageCorrect:stage===1?null:true,task:{action:stage===1?'ADD_CREDITS':'BACKEND_ADD_CREDITS',worldId,stage,game:'Orion Stars',identifier:'OS_Assess123',customerUsername:'AssessmentPlayer',credit:stage===1?100:150,availableBalance:20000,amount:50,operation:{id:'operation-fixture',type:'ADD CREDITS',amount:50,status:'PENDING'}}});
+  });
+  await page.goto('/hub');await page.getByRole('button',{name:'Start another practice run'}).click();
+  await page.getByRole('textbox',{name:'Game ID',exact:true}).fill('OS_Assess123');await page.getByRole('spinbutton',{name:'Credits',exact:true}).fill('50');await page.getByRole('button',{name:'Record action'}).click();
+  await page.getByRole('combobox',{name:'Backend decision',exact:true}).selectOption('APPROVED');await page.getByRole('textbox',{name:'Decision reason',exact:true}).fill('Verified the recorded movement');await page.getByRole('button',{name:'Record action'}).click();
+  await expect(page.getByText('Practice completed successfully.')).toBeVisible();expect(commands.map(([command])=>command)).toEqual(['start','action','action']);
+});
+
 test('POSTULANTE reuses a scored-attempt start key after an uncertain response', async ({ page }) => {
   const evaluationId = '10000000-0000-4000-8000-000000000401';
   const receivedKeys = [];

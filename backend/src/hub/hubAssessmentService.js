@@ -166,6 +166,7 @@ export function createHubAssessmentService({ client }) {
       const minimumOperations = positiveInteger(body.minimumOperations, 'minimumOperations');
       const maximumOperations = positiveInteger(body.maximumOperations, 'maximumOperations');
       if (maximumOperations < minimumOperations) throw new HubError(400, 'HUB_VALIDATION_ERROR', 'maximumOperations must be greater than or equal to minimumOperations.');
+      if(maximumOperations>50)throw new HubError(400,'HUB_VALIDATION_ERROR','Use at most 50 operations in one assessment.');
       const result = await client.from('hub_assessment_settings').update({
         duration_minutes: durationMinutes,
         minimum_operations: minimumOperations,
@@ -181,7 +182,7 @@ export function createHubAssessmentService({ client }) {
     async listEvaluationPolicies(identity, { includeAudit = false } = {}) {
       await actor(identity);
       const [evaluationResult, adapterResult] = await Promise.all([
-        client.from('hub_scored_evaluations').select('*').order('position', { ascending: true }),
+        client.rpc('hub_list_effective_evaluations').order('position', { ascending: true }),
         client.from('hub_game_family_adapters').select('id, stable_key, display_name, adapter_status, display_order').order('display_order', { ascending: true }),
       ]);
       if (evaluationResult.error || adapterResult.error) throw persistenceError();
@@ -269,7 +270,7 @@ export function createHubAssessmentService({ client }) {
       const expired = await client.rpc('hub_expire_scored_evaluation_attempts');
       if (expired.error) throw persistenceError();
       const [evaluationResult, setResult, attemptResult] = await Promise.all([
-        client.from('hub_scored_evaluations')
+        client.rpc('hub_list_effective_evaluations')
           .select('id, stable_code, title, position, evaluation_type, publication_status, is_provisional, duration_minutes, max_attempts_per_set, theory_weight, practical_weight, pass_score, selected_game_family_keys, required_action_codes, history_review_days, history_record_limit, revision')
           .order('position', { ascending: true }),
         client.from('hub_evaluation_attempt_sets')
@@ -309,6 +310,49 @@ export function createHubAssessmentService({ client }) {
           };
         }),
       };
+    },
+
+    async getFormalEvidence(identity,attemptId){
+      await actor(identity);const id=requireUuid(attemptId,'attemptId');
+      const [attempt,runtime,actions,stages]=await Promise.all([
+        client.from('hub_scored_evaluation_attempts').select('id,identity_id,evaluation_id,attempt_in_set,status,score,result_status,settings_snapshot,started_at,completed_at,submitted_at').eq('id',id).maybeSingle(),
+        client.from('hub_evaluation_runtime').select('theory_snapshot,theory_answers').eq('attempt_id',id).maybeSingle(),
+        client.from('hub_evaluation_action_evidence').select('id,sequence_number,item_code,game_family_key,is_correct,evidence,created_at').eq('attempt_id',id).order('sequence_number'),
+        client.from('hub_final_stage_evidence').select('id,sequence_number,stage_number,action_code,is_correct,evidence,created_at').eq('attempt_id',id).order('sequence_number').order('stage_number'),
+      ]);
+      if([attempt,runtime,actions,stages].some(result=>result.error))throw persistenceError();
+      if(!attempt.data)throw new HubError(404,'HUB_EVALUATION_NOT_FOUND','The assessment attempt was not found.');
+      return {attempt:attempt.data,questions:(runtime.data?.theory_snapshot||[]).map(question=>({...question,submittedOption:runtime.data?.theory_answers?.[question.code]??null})),actions:actions.data||[],stages:stages.data||[]};
+    },
+
+    async listTheoryQuestions(identity){
+      await actor(identity);
+      const result=await client.from('hub_theory_question_versions').select('*').order('stable_code').order('version',{ascending:false}).limit(500);
+      if(result.error)throw persistenceError();return {questions:result.data||[]};
+    },
+    async publishTheoryQuestion(identity,body={}){
+      if(typeof body.code!=='string'||body.code.length>100||!Number.isInteger(body.expectedVersion)||body.expectedVersion<0||typeof body.question!=='string'||body.question.length>3000||!Array.isArray(body.choices)||body.choices.length>8||typeof body.correctOption!=='string'||typeof body.source!=='string'||body.source.length>2000||typeof body.rationale!=='string'||body.rationale.length>2000)throw new HubError(400,'HUB_VALIDATION_ERROR','Provide the question, choices, correct option, source and change reason.');
+      const result=await client.rpc('hub_publish_theory_question',{p_external_subject:identity.subjectId,p_stable_code:body.code,p_expected_version:body.expectedVersion,p_question:body.question,p_choices:body.choices,p_correct_option:body.correctOption,p_source:body.source,p_rationale:body.rationale});
+      if(result.error){
+        const message=String(result.error.message||'');
+        if(message.includes('VERSION_CONFLICT'))throw new HubError(409,'HUB_QUESTION_VERSION_CONFLICT','This question changed. Reload before publishing.');
+        if(message.includes('HUB_INVALID_INPUT'))throw new HubError(400,'HUB_VALIDATION_ERROR','Use a unique question code, two to eight choices and a matching correct option.');
+        throw persistenceError();
+      }
+      return {question:result.data};
+    },
+
+    async publishEvaluationPolicy(identity,evaluationId,body={}) {
+      const revision=positiveInteger(body.expectedRevision,'expectedRevision');
+      if(!body.configuration||typeof body.configuration!=='object'||Array.isArray(body.configuration)||typeof body.rationale!=='string'||body.rationale.trim().length<5||body.rationale.length>2000)throw new HubError(400,'HUB_VALIDATION_ERROR','Provide the policy configuration and a reason for publishing.');
+      const result=await client.rpc('hub_publish_evaluation_policy',{p_external_subject:identity.subjectId,p_evaluation_id:requireUuid(evaluationId,'evaluationId'),p_expected_revision:revision,p_configuration:body.configuration,p_rationale:body.rationale});
+      if(result.error){
+        const message=String(result.error.message||'');
+        if(message.includes('REVISION_CONFLICT'))throw new HubError(409,'HUB_EVALUATION_REVISION_CONFLICT','This policy changed. Reload before publishing.');
+        if(message.includes('HUB_INVALID_INPUT')||message.startsWith('EVALUATION_')||message.includes('PUBLISHED_EVALUATION_'))throw new HubError(400,'HUB_EVALUATION_CONFIGURATION_INVALID','The policy needs valid weights, published questions, verified actions and prerequisites.');
+        throw assessmentDbError(result.error);
+      }
+      return result.data;
     },
 
     async startEvaluationAttempt(identity, evaluationId, body = {}) {
@@ -382,9 +426,9 @@ export function createHubAssessmentService({ client }) {
         if (query.settingsRevision && Number(attempt.settings_snapshot?.revision) !== Number(query.settingsRevision)) return false;
         return true;
       });
-      const enrolments = await client.from('hub_enrolments').select('identity_id, hub_module_progress(module_id,status)').neq('status', 'withdrawn');
-      if (enrolments.error) throw persistenceError();
-      const ready = (enrolments.data || []).filter((enrolment) => new Set((enrolment.hub_module_progress || []).filter((row) => row.status === 'completed' && row.module_id !== '10000000-0000-4000-8000-000000000111').map((row) => row.module_id)).size >= 10).length;
+      const readiness = await client.rpc('hub_readiness_summary');
+      if (readiness.error) throw persistenceError();
+      const ready = Number(readiness.data?.readyPostulantes || 0);
       return { attempts, statistics: summarize(attempts, ready), filters: query };
     },
   });

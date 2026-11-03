@@ -5,6 +5,7 @@ import {
   startHubScoredEvaluationAttempt,
   submitHubScoredEvaluationAttempt,
 } from '../../api/client';
+import HubEvaluationRuntime from './HubEvaluationRuntime';
 
 const attemptLabel = (attempt) => {
   if (attempt.status === 'in_progress') return 'In progress';
@@ -14,11 +15,13 @@ const attemptLabel = (attempt) => {
   return attempt.status.replaceAll('_', ' ');
 };
 
-export default function HubScoredEvaluationOverview() {
+export default function HubScoredEvaluationOverview({onActiveChange}) {
   const [evaluations, setEvaluations] = useState([]);
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const startKeys = useRef(new Map());
+  const [activeAttemptId,setActiveAttemptId]=useState(null);
+  useEffect(()=>{onActiveChange?.(Boolean(activeAttemptId));},[activeAttemptId,onActiveChange]);
 
   const load = useCallback(async () => {
     const response = await getMyHubScoredEvaluations();
@@ -58,6 +61,7 @@ export default function HubScoredEvaluationOverview() {
     finally { setBusy(false); }
   };
 
+  if(activeAttemptId)return <HubEvaluationRuntime key={activeAttemptId} attemptId={activeAttemptId} onReturn={async()=>{setActiveAttemptId(null);try{await load();}catch{setNotice('Checkpoint results could not be refreshed. Reload to see the recorded result.');}}}/>;
   return <section className="hub-scored-evaluations" aria-labelledby="postulante-evaluations-title">
     <p className="hub-eyebrow">Scored evaluations</p>
     <h2 id="postulante-evaluations-title">Checkpoint and readiness results</h2>
@@ -73,6 +77,7 @@ export default function HubScoredEvaluationOverview() {
           : <p>The evaluation policy and rubric remain hidden until TRAINER publishes this evaluation.</p>}
         {evaluation.attempts?.length > 0 && <ol className="hub-attempt-summary">{[...evaluation.attempts].sort((a, b) => a.attempt_in_set - b.attempt_in_set).map((attempt) => <li key={attempt.id}>Attempt {attempt.attempt_in_set}: {attemptLabel(attempt)}</li>)}</ol>}
         {evaluation.canSubmit && <button className="hub-primary-button" type="button" disabled={busy} onClick={() => submit(evaluation)}>Send latest result</button>}
+        {latest?.status==='in_progress'&&<button className="hub-primary-button" type="button" disabled={busy} onClick={()=>setActiveAttemptId(latest.id)}>Open assessment</button>}
         {!evaluation.canSubmit && available && evaluation.attemptSet?.status !== 'closed' && !latest?.status?.includes('in_progress') && <button className="hub-primary-button" type="button" disabled={busy || evaluation.attemptsRemaining === 0} onClick={() => start(evaluation)}>Start next attempt</button>}
         {evaluation.requiresTrainerReopen && <p className="hub-inline-notice" role="status">This evaluation is closed. TRAINER must reopen it before another set of three attempts is available.</p>}
       </article>;

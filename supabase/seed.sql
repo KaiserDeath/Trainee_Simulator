@@ -1172,4 +1172,9 @@ UPDATE hub_activities SET content=content || '{"policyStatus":"approved","execut
 UPDATE hub_activities SET content=(content-'blockedReason') || '{"policyStatus":"approved","executionKind":"account_creation","policyVersionId":"20000000-0000-4000-8000-000000000001"}'::jsonb WHERE stable_code='create-linked-training-account';
 UPDATE hub_activities SET content=(content-'blockedReason') || '{"artifactStatus":"available","executionKind":"exact_player_search"}'::jsonb WHERE stable_code='search-created-account';
 UPDATE hub_activities SET content=(content-'blockedReason')||'{"policyStatus":"approved","executionKind":"reset_current_account"}'::jsonb WHERE stable_code='reset-password-policy-gated-practice';
+SELECT public.hub_apply_operator_curriculum();
 UPDATE hub_activities SET content=(content-'blockedReason')||'{"policyStatus":"approved","executionKind":"exception_decision"}'::jsonb WHERE stable_code='exceptional-operations-policy-gated-practice';
+SELECT public.hub_initialize_assessment_defaults();
+SELECT public.hub_initialize_customer_checkpoint();
+SELECT public.hub_initialize_final_policy();
+SELECT public.hub_initialize_mixed_practice();

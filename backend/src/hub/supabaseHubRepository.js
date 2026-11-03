@@ -307,8 +307,8 @@ async function loadLearnerSnapshot(client, identity) {
                     publicationStatus: activity.publication_status,
                     provisional: activity.is_provisional,
                     scored: activity.is_scored,
-                    status: activityAttempt?.status || 'not_started',
-                    completedAt: activityAttempt?.completed_at || null
+                    status: activity.content?.executionKind==='official_evaluation'&&moduleProgress?.status==='completed'?'completed':activityAttempt?.status || 'not_started',
+                    completedAt: activity.content?.executionKind==='official_evaluation'&&moduleProgress?.status==='completed'?moduleProgress.completed_at:activityAttempt?.completed_at || null
                   };
                 }
               )

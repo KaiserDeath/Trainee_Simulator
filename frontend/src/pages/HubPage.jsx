@@ -116,6 +116,7 @@ const normalisePath = (data) => {
     const activities = (module.activities || []).map((activity) => ({
       ...activity,
       completed: completeStatus(activity.status),
+      readOnly:completeStatus(module.status)&&(module.activities||[]).some(item=>item.content?.executionKind==='official_evaluation'),
     }));
     const completedActivities = activities.filter((activity) => activity.completed).length;
     return {
@@ -162,6 +163,7 @@ const identityRoles = (identity) => {
 export default function HubPage() {
   const [context, setContext] = useState(null);
   const [path, setPath] = useState(null);
+  const [assessmentOpen,setAssessmentOpen]=useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [busyActivityId, setBusyActivityId] = useState(null);
   const [trainerLearners, setTrainerLearners] = useState(null);
@@ -463,7 +465,7 @@ export default function HubPage() {
     const idempotencyKey = pendingCompletionKeys.current.get(activity.id) || crypto.randomUUID();
     pendingCompletionKeys.current.set(activity.id, idempotencyKey);
     try {
-      if (['account_id_lab','account_creation','reset_current_account','exception_decision'].includes(activity.content?.executionKind) && activityState.serverCompleted) {
+      if (['account_id_lab','account_creation','reset_current_account','exception_decision','mixed_practice'].includes(activity.content?.executionKind) && activityState.serverCompleted) {
         // The dedicated command already committed server-verified completion.
       } else if (activity.type === 'focused_practice' && activity.content?.surface === 'balance') {
         await submitHubRefreshBalance(activity.id, {
@@ -629,7 +631,7 @@ export default function HubPage() {
       </header>
 
       <main className="hub-main">
-        {!isTrainer && !isAuditor && !isAdministrator && <section className="hub-course-hero" aria-labelledby="hub-course-title">
+        {!assessmentOpen&&!isTrainer && !isAuditor && !isAdministrator && <section className="hub-course-hero" aria-labelledby="hub-course-title">
           <div>
             <p className="hub-eyebrow">Assigned course</p>
             <h1 id="hub-course-title">{course.title || 'Operator foundations'}</h1>
@@ -642,7 +644,7 @@ export default function HubPage() {
         </section>}
 
         {notice && <p className="hub-page-notice" role="status">{notice}</p>}
-        {roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">Open free operator simulator</a></p>}
+        {!assessmentOpen&&roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">Open free operator simulator</a></p>}
         {isTrainer && <p><a className="hub-secondary-link" href="/trainer">Open simulator session reports</a></p>}
 
         {isAdministrator && <HubAdminAccounts />}
@@ -703,14 +705,14 @@ export default function HubPage() {
 
         {!isTrainer && !isAuditor && !isAdministrator && (
           <>
-            <HubLearningPath
+            {!assessmentOpen&&<HubLearningPath
               path={path}
               selectedModuleId={selectedModuleId}
               onSelectModule={setSelectedModuleId}
               busyActivityId={busyActivityId}
               onCompleteActivity={handleCompleteActivity}
-            />
-            <HubScoredEvaluationOverview />
+            />}
+            <HubScoredEvaluationOverview onActiveChange={setAssessmentOpen}/>
           </>
         )}
 

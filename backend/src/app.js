@@ -31,6 +31,7 @@ import { HubError } from './hub/HubError.js';
 import { createHubWorkspaceService } from './hub/hubWorkspaceService.js';
 import { createHubAccountPracticeService } from './hub/hubAccountPracticeService.js';
 import { createSimulatorAccess } from './auth/simulatorAccess.js';
+import { createHubEvaluationRuntimeService } from './hub/hubEvaluationRuntimeService.js';
 import { buildSessionReport } from './engine/SessionEngine.js';
 import { getSessionActionLog } from './engine/AuditLogger.js';
 
@@ -186,6 +187,7 @@ export function createApp(options = {}) {
       assessmentService: hubAssessmentService,
       workspaceService: options.hubWorkspaceService || createHubWorkspaceService({ client: supabase }),
       accountPracticeService: options.hubAccountPracticeService || createHubAccountPracticeService({ client: supabase }),
+      evaluationRuntimeService: options.hubEvaluationRuntimeService || createHubEvaluationRuntimeService({ client: supabase }),
     })
   );
 

@@ -586,7 +586,12 @@ class GameMaster {
           );
 
         if (generated) {
-          if(delivery)generated.id=uuidV5(`${delivery.deliveryId}:${i}`,uuidV5.URL);
+          if(delivery){
+            generated.id=uuidV5(`${delivery.deliveryId}:${i}`,uuidV5.URL);
+            generated._movementScenario=pickMovementScenario(generated.type);
+            generated._botApplied=generated._movementScenario==='ALREADY_PROCESSED'||(generated._movementScenario==='PENDING_RECONCILIATION'&&Math.random()<0.5);
+            generated._changeGoldenPassword=needsGoldenDragonReset(generated.type,selected.gameAccount?.game);
+          }
           const inserted =
             await this.insertGeneratedOperation(
               generated, delivery
@@ -594,13 +599,10 @@ class GameMaster {
 
           if (inserted) {
             operations.push(inserted);
-            await this.applyMovementScenario(
-              inserted
-            );
-            await this.applyGoldenDragonPasswordChange(
-              inserted,
-              selected.gameAccount
-            );
+            if(!delivery){
+              await this.applyMovementScenario(inserted);
+              await this.applyGoldenDragonPasswordChange(inserted,selected.gameAccount);
+            }
             occupyPendingOperation(
               occupancy,
               generated

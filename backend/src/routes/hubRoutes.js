@@ -35,6 +35,7 @@ export function createHubRouter({
   assessmentService,
   workspaceService,
   accountPracticeService,
+  evaluationRuntimeService,
 }) {
   const router = Router();
   const service = createHubService(repository);
@@ -47,6 +48,22 @@ export function createHubRouter({
 
   router.use(authenticateHub(identityVerifier));
   router.use(csrfProtection.middleware);
+  router.get('/scored-evaluations/attempts/:attemptId/runtime',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
+    if(!evaluationRuntimeService)throw new HubError(503,'HUB_EVALUATION_RUNTIME_UNAVAILABLE','Assessment runtime is not configured.');
+    res.json(await evaluationRuntimeService.command(req.hubIdentity,req.params.attemptId,'read'));
+  }));
+  router.get('/activities/:activityId/mixed-practice',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
+    if(!evaluationRuntimeService)throw new HubError(503,'HUB_RUNTIME_UNAVAILABLE','Training runtime is not configured.');
+    res.json(await evaluationRuntimeService.command(req.hubIdentity,req.params.activityId,'read',{},true));
+  }));
+  router.post('/activities/:activityId/mixed-practice/:command',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
+    if(!evaluationRuntimeService)throw new HubError(503,'HUB_RUNTIME_UNAVAILABLE','Training runtime is not configured.');
+    res.json(await evaluationRuntimeService.command(req.hubIdentity,req.params.activityId,req.params.command,req.body||{},true));
+  }));
+  router.post('/scored-evaluations/attempts/:attemptId/runtime/:command',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
+    if(!evaluationRuntimeService)throw new HubError(503,'HUB_EVALUATION_RUNTIME_UNAVAILABLE','Assessment runtime is not configured.');
+    res.json(await evaluationRuntimeService.command(req.hubIdentity,req.params.attemptId,req.params.command,req.body||{}));
+  }));
   if (workspaceService) router.use('/workspace', createHubWorkspaceRouter({ service: workspaceService }));
   router.post('/activities/:activityId/account-practice/:command',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{
     if(!accountPracticeService)throw new HubError(503,'HUB_ACCOUNT_PRACTICE_UNAVAILABLE','Account practice is not configured.');
@@ -443,6 +460,10 @@ export function createHubRouter({
     })
   );
 
+  router.post('/assessment/evaluations/:evaluationId/publish-version',requireHubRole(HUB_ROLES.TRAINER),asyncRoute(async(req,res)=>{
+    res.status(201).json(await assessmentService.publishEvaluationPolicy(req.hubIdentity,req.params.evaluationId,req.body||{}));
+  }));
+
   router.put(
     '/admin/trainers/:trainerIdentityId/postulantes/:postulanteIdentityId',
     requireHubRole(HUB_ROLES.ADMIN),
@@ -488,6 +509,9 @@ export function createHubRouter({
       { includeAudit: true }
     )))
   );
+  router.get('/assessment/questions',requireHubRole(HUB_ROLES.TRAINER,HUB_ROLES.RRHH),asyncRoute(async(req,res)=>res.json(await assessmentService.listTheoryQuestions(req.hubIdentity))));
+  router.get('/assessment/attempts/:attemptId/evidence',requireHubRole(HUB_ROLES.TRAINER,HUB_ROLES.RRHH),asyncRoute(async(req,res)=>res.json(await assessmentService.getFormalEvidence(req.hubIdentity,req.params.attemptId))));
+  router.post('/assessment/questions',requireHubRole(HUB_ROLES.TRAINER),asyncRoute(async(req,res)=>res.status(201).json(await assessmentService.publishTheoryQuestion(req.hubIdentity,req.body||{}))));
 
   router.put(
     '/assessment/evaluations/:evaluationId',

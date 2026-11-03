@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
 const host = "127.0.0.1";
 const port = Number(process.env.TREZ_BROWSER_TEST_PORT || 4173);
@@ -12,7 +13,7 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: "list",
-  outputDir: "../node_modules/.cache/playwright-results",
+  outputDir: fileURLToPath(new URL('../.cache/playwright-results/', import.meta.url)),
   use: {
     baseURL,
     permissions: ["clipboard-read", "clipboard-write"],

@@ -65,6 +65,9 @@ export const commandHubExceptionPractice = async (id,command,body) => api.post(`
 export const getHubAccountPolicies=()=>api.get('/hub/workspace/account-policies');
 export const proposeHubAccountPolicy=async(body)=>api.post('/hub/workspace/account-policies/proposals',body,await withHubCsrf());
 export const reviewHubAccountPolicy=async(id,body)=>api.post(`/hub/workspace/account-policies/proposals/${id}/review`,body,await withHubCsrf());
+export const commandHubEvaluation=async(id,command,body)=>api.post(`/hub/scored-evaluations/attempts/${id}/runtime/${command}`,body,await withHubCsrf());
+export const getHubMixedPractice=async(id)=>api.get(`/hub/activities/${id}/mixed-practice`);
+export const commandHubMixedPractice=async(id,command,body)=>api.post(`/hub/activities/${id}/mixed-practice/${command}`,body,await withHubCsrf());
 
 export const getHubLearningPath = async () => {
   return api.get('/hub/learning-path');
@@ -135,6 +138,10 @@ export const getHubAssessmentSettings = async () => api.get('/hub/assessment/set
 export const updateHubAssessmentSettings = async (payload) => api.put('/hub/assessment/settings', payload, await withHubCsrf());
 export const getHubAssessmentReport = async (params = {}) => api.get('/hub/assessment/report', { params });
 export const getHubScoredEvaluationPolicies = async () => api.get('/hub/assessment/evaluations');
+export const publishHubEvaluationPolicy=async(id,payload)=>api.post(`/hub/assessment/evaluations/${id}/publish-version`,payload,await withHubCsrf());
+export const getHubTheoryQuestions=async()=>api.get('/hub/assessment/questions');
+export const getHubFormalEvidence=async(id)=>api.get(`/hub/assessment/attempts/${id}/evidence`);
+export const publishHubTheoryQuestion=async(payload)=>api.post('/hub/assessment/questions',payload,await withHubCsrf());
 export const updateHubScoredEvaluationPolicy = async (evaluationId, payload) => api.put(`/hub/assessment/evaluations/${evaluationId}`, payload, await withHubCsrf());
 export const reopenHubScoredEvaluation = async (evaluationId, postulanteIdentityId, reason) => api.post(`/hub/assessment/evaluations/${evaluationId}/postulantes/${postulanteIdentityId}/reopen`, { reason }, await withHubCsrf());
 export const getMyHubScoredEvaluations = async () => api.get('/hub/scored-evaluations');

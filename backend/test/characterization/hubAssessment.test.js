@@ -29,6 +29,30 @@ async function requestAs(role, path, options = {}, assessmentService = unused, a
   }
 }
 
+test('only TRAINER publishes new assessment policy versions',async()=>{
+  let received;
+  const service={async publishEvaluationPolicy(identity,id,body){received={identity,id,body};return {evaluation:{revision:4}};}};
+  const path='/assessment/evaluations/10000000-0000-4000-8000-000000000401/publish-version';
+  for(const role of ['POSTULANTE','ADMIN','RRHH'])assert.equal((await requestAs(role,path,{method:'POST',body:JSON.stringify({expectedRevision:3})},service)).status,403);
+  const result=await requestAs('TRAINER',path,{method:'POST',body:JSON.stringify({expectedRevision:3})},service);
+  assert.equal(result.status,201);assert.equal(received.identity.subjectId,'trainer-subject');assert.equal(received.body.expectedRevision,3);
+});
+
+test('question answer keys are staff-only and only TRAINER can publish',async()=>{
+  const service={async listTheoryQuestions(){return {questions:[{correct_option:'private-key'}]};},async publishTheoryQuestion(){return {question:{version:2}};}};
+  for(const role of ['POSTULANTE','ADMIN'])assert.equal((await requestAs(role,'/assessment/questions',{},service)).status,403);
+  for(const role of ['POSTULANTE','ADMIN','RRHH'])assert.equal((await requestAs(role,'/assessment/questions',{method:'POST',body:'{}'},service)).status,403);
+  assert.equal((await requestAs('RRHH','/assessment/questions',{},service)).body.questions[0].correct_option,'private-key');
+  assert.equal((await requestAs('TRAINER','/assessment/questions',{method:'POST',body:'{}'},service)).status,201);
+});
+
+test('formal failure evidence remains restricted to TRAINER and RRHH',async()=>{
+  const service={async getFormalEvidence(){return {stages:[{is_correct:false,evidence:{reason:'private assessment finding'}}]};}};
+  const path='/assessment/attempts/10000000-0000-4000-8000-000000000499/evidence';
+  for(const role of ['POSTULANTE','ADMIN'])assert.equal((await requestAs(role,path,{},service)).status,403);
+  for(const role of ['TRAINER','RRHH'])assert.equal((await requestAs(role,path,{},service)).body.stages[0].evidence.reason,'private assessment finding');
+});
+
 test('TRAINER manages assessment settings while TRAINER and RRHH read filtered statistics', async () => {
   const calls = [];
   const service = {
