@@ -1,7 +1,7 @@
 import { HubError } from './HubError.js';
 import { readAllById } from '../domain/readAllById.js';
 
-const instructionKeys = new Set(['summary','body','paragraphs','learningObjectives','keyPoints','topics','steps','sections','items','prompts','instructions','introduction','statement']);
+const instructionKeys = new Set(['summary','body','paragraphs','learningObjectives','keyPoints','topics','steps','sections','items','prompts','instructions','introduction','statement','mediaAssetIds']);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function workspaceUuid(value, optional = false) {
   if (optional && (value === null || value === undefined || value === '')) return null;
@@ -19,7 +19,10 @@ export function validateInstruction(body) {
   }
   // Keep the native renderer's schema predictable; rich text is rendered as text.
   for (const [key, value] of Object.entries(instruction)) {
-    if (['paragraphs','learningObjectives','keyPoints','topics','steps','prompts'].includes(key)) {
+    if(key==='mediaAssetIds'){
+      if(!Array.isArray(value)||value.length>20)throw new HubError(400,'HUB_VALIDATION_ERROR','Choose at most 20 published training assets.');
+      instruction.mediaAssetIds=[...new Set(value.map(id=>workspaceUuid(id).toLowerCase()))];
+    }else if (['paragraphs','learningObjectives','keyPoints','topics','steps','prompts'].includes(key)) {
       if (!Array.isArray(value) || value.length > 100 || value.some(item => typeof item !== 'string' || item.length > 4000)) {
         throw new HubError(400, 'HUB_VALIDATION_ERROR', `${key} must contain text entries.`);
       }

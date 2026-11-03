@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {Buffer} from 'node:buffer';
 
 const activityId='10000000-0000-4000-8000-000000001101';
 const learnerId='10000000-0000-4000-8000-000000009001';
@@ -83,4 +84,32 @@ test('TRAINER edits a question by publishing a new version',async({page})=>{
   await page.getByRole('button',{name:'Publish question version'}).click();
   await expect(page.getByText('Question verification-first version 2 published. Opened assessments keep their captured question.')).toBeVisible();
   expect(submitted.expectedVersion).toBe(1);expect(submitted.correctOption).toBe('verify');expect(submitted.choices).toHaveLength(2);
+});
+
+test('ADMIN uploads a private training asset and cannot approve their own upload',async({page})=>{
+  await staff(page,'ADMIN');let assets=[];let registration;let uploaded=false;
+  const assetId='10000000-0000-4000-8000-000000008801';
+  await page.route('**/api/hub/media',route=>json(route,{assets}));
+  await page.route('**/api/hub/media/uploads',route=>{registration=route.request().postDataJSON();return json(route,{asset:{id:assetId},uploadUrl:`${new URL(route.request().url()).origin}/fixture-media-upload`});});
+  await page.route('**/fixture-media-upload',route=>{uploaded=route.request().method()==='PUT';return json(route,{Key:'private-fixture'});});
+  await page.route(`**/api/hub/media/${assetId}/complete`,route=>{assets=[{id:assetId,title:'Account verification guide',version:1,status:'pending_review',file_name:'sample.png',expected_size:13,source_reference:'Approved operator training guide',canReview:false}];return json(route,{asset:assets[0]});});
+  await page.goto('/hub');await page.getByRole('button',{name:'Open media library',exact:true}).click();
+  await page.getByRole('textbox',{name:'Resource code',exact:true}).fill('account-verification');await page.getByRole('textbox',{name:'Asset title',exact:true}).fill('Account verification guide');
+  await page.getByLabel('Training file (25 MB maximum)',{exact:true}).setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from('fixture-image')});
+  await page.getByRole('textbox',{name:'Alternative text for images',exact:true}).fill('A training diagram of account verification');await page.getByRole('textbox',{name:'Source and approval reference',exact:true}).fill('Approved operator training guide');
+  await page.getByRole('button',{name:'Upload private asset',exact:true}).click();
+  await expect(page.getByText('File stored privately. A different ADMIN must review publication.')).toBeVisible();expect(uploaded).toBe(true);expect(registration.mimeType).toBe('image/png');expect(registration.size).toBe(13);
+  await page.getByRole('textbox',{name:'Media review reason',exact:true}).fill('Reviewed the training diagram');await expect(page.getByRole('button',{name:'Approve media publication',exact:true})).toBeDisabled();
+});
+
+test('ADMIN attaches a published media version to a lesson draft',async({page})=>{
+  await staff(page,'ADMIN');let draft;
+  const assetId='10000000-0000-4000-8000-000000008802';
+  await page.route('**/api/hub/workspace/catalog',route=>json(route,{courses:[],modules:[{id:'module',title:'Foundations'}],activities:[{id:activityId,module_id:'module',title:'Media lesson',activity_type:'article',content:{summary:'Lesson'}}]}));
+  await page.route(`**/api/hub/workspace/activities/${activityId}/versions`,route=>{if(route.request().method()==='POST'){draft=route.request().postDataJSON();return json(route,{contentVersion:{id:'media-version',status:'draft'}});}return json(route,{versions:[]});});
+  await page.route('**/api/hub/media',route=>json(route,{assets:[{id:assetId,title:'Approved guide',version:2,status:'published'}]}));
+  await page.goto('/hub');await page.getByRole('button',{name:'Open content catalog',exact:true}).click();await page.getByRole('combobox',{name:'Activity',exact:true}).selectOption(activityId);
+  await page.getByRole('button',{name:'Choose published training assets',exact:true}).click();await page.getByRole('checkbox',{name:'Approved guide · v2',exact:true}).check();
+  await page.getByRole('textbox',{name:'Reason for change',exact:true}).fill('Attach the approved reference guide');await page.getByRole('button',{name:'Create new draft',exact:true}).click();
+  await expect(page.getByText('Draft created. Submit it for review.')).toBeVisible();expect(draft.instruction.mediaAssetIds).toEqual([assetId]);
 });

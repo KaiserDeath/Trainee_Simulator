@@ -63,6 +63,7 @@ jobs:
       - run: npm run verify:local:hub
       - run: npm run verify:local:hub:auth
       - run: npm run verify:local:workspace
+      - run: npm run verify:local:media
       - run: npm run verify:local:capacity
       - run: npm run verify:local:assessment-capacity
       - name: Stop disposable Supabase

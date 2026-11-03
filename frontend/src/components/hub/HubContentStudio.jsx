@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { getHubWorkspaceCatalog,getHubInstructionVersions,createHubInstruction,submitHubContentVersion,reviewHubContentVersion } from '../../api/client';
+import { getHubWorkspaceCatalog,getHubInstructionVersions,createHubInstruction,submitHubContentVersion,reviewHubContentVersion,getHubMediaLibrary } from '../../api/client';
+import HubMediaItem from './HubMediaItem';
 
-const fields = ['summary','body','paragraphs','learningObjectives','keyPoints','topics','steps','sections','items','prompts','instructions','introduction','statement'];
+const fields = ['summary','body','paragraphs','learningObjectives','keyPoints','topics','steps','sections','items','prompts','instructions','introduction','statement','mediaAssetIds'];
 const message = error => error?.response?.data?.error?.message || 'Content could not be loaded or saved. Please retry.';
 
 export default function HubContentStudio({ canEdit,locale='en' }) {
@@ -9,7 +10,8 @@ export default function HubContentStudio({ canEdit,locale='en' }) {
   const [catalog,setCatalog]=useState(null);
   const [selected,setSelected]=useState(null);
   const [versions,setVersions]=useState([]);
-  const [form,setForm]=useState({title:'',summary:'',paragraphs:'',keyPoints:'',items:'',rationale:''});
+  const [form,setForm]=useState({title:'',summary:'',paragraphs:'',keyPoints:'',items:'',rationale:'',mediaAssetIds:[]});
+  const [mediaAssets,setMediaAssets]=useState(null);
   const [reviewReason,setReviewReason]=useState('');
   const [notice,setNotice]=useState('');
   const [busy,setBusy]=useState(false);
@@ -23,9 +25,9 @@ export default function HubContentStudio({ canEdit,locale='en' }) {
   const choose=async(id)=>{
     const request=++selection.current;
     const activity=catalog.activities.find(row=>row.id===id);
-    setSelected(activity||null);setVersions([]);setNotice('');setReviewReason('');
+    setSelected(activity||null);setVersions([]);setNotice('');setReviewReason('');setMediaAssets(null);
     if(!activity)return;
-    setForm({title:activity.title,summary:activity.content?.summary||'',paragraphs:(activity.content?.paragraphs||[]).join('\n\n'),keyPoints:(activity.content?.keyPoints||[]).join('\n'),items:(activity.content?.items||[]).map(item=>typeof item==='string'?item:item.label).join('\n'),rationale:''});
+    setForm({title:activity.title,summary:activity.content?.summary||'',paragraphs:(activity.content?.paragraphs||[]).join('\n\n'),keyPoints:(activity.content?.keyPoints||[]).join('\n'),items:(activity.content?.items||[]).map(item=>typeof item==='string'?item:item.label).join('\n'),rationale:'',mediaAssetIds:activity.content?.mediaAssetIds||[]});
     if(canEdit){
       setBusy(true);
       try {const response=await getHubInstructionVersions(id);if(request===selection.current)setVersions(response.data.versions.sort((a,b)=>b.version_number-a.version_number));}
@@ -38,7 +40,7 @@ export default function HubContentStudio({ canEdit,locale='en' }) {
     event.preventDefault();setBusy(true);setNotice('');
     try{
       const instruction=Object.fromEntries(Object.entries(selected.content||{}).filter(([key])=>fields.includes(key)));
-      Object.assign(instruction,{summary:form.summary,paragraphs:form.paragraphs.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean),keyPoints:form.keyPoints.split('\n').map(x=>x.trim()).filter(Boolean)});
+      Object.assign(instruction,{summary:form.summary,paragraphs:form.paragraphs.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean),keyPoints:form.keyPoints.split('\n').map(x=>x.trim()).filter(Boolean),mediaAssetIds:form.mediaAssetIds});
       if(selected.activity_type==='checklist')instruction.items=form.items.split('\n').map(x=>x.trim()).filter(Boolean).map((label,index)=>({id:`item-${index}`,label}));
       await createHubInstruction(selected.id,{title:form.title,instruction,changeRationale:form.rationale});
       await refreshVersions();setNotice(es?'Borrador creado. Envíelo a revisión.':'Draft created. Submit it for review.');
@@ -54,6 +56,7 @@ export default function HubContentStudio({ canEdit,locale='en' }) {
     }catch(error){setNotice(message(error));}finally{setBusy(false);}
   };
   const update=key=>event=>setForm(current=>({...current,[key]:event.target.value}));
+  const loadMedia=async()=>{const request=selection.current;setBusy(true);try{const response=await getHubMediaLibrary();if(request===selection.current)setMediaAssets(response.data.assets.filter(asset=>asset.status==='published'));}catch(error){setNotice(message(error));}finally{if(request===selection.current)setBusy(false);}};
   return <section className="hub-workspace-panel">
     <h2>{es?'Estudio de contenido':'Content studio'}</h2>
     <p>{es?'Edite instrucciones sin cambiar las reglas operativas. Otro administrador debe aprobar la publicación.':'Edit instructions without changing operational rules. A different administrator must approve publication. Existing attempts retain their original lesson.'}</p>
@@ -69,6 +72,9 @@ export default function HubContentStudio({ canEdit,locale='en' }) {
         <label>{es?'Resumen':'Summary'}<textarea value={form.summary} onChange={update('summary')} maxLength={12000}/></label>
         <label>{es?'Contenido (separe párrafos con una línea vacía)':'Lesson text (blank line between paragraphs)'}<textarea rows={7} value={form.paragraphs} onChange={update('paragraphs')}/></label>
         <label>{es?'Puntos clave (uno por línea)':'Key points (one per line)'}<textarea rows={4} value={form.keyPoints} onChange={update('keyPoints')}/></label>
+        {canEdit&&<><button type="button" onClick={loadMedia}>Choose published training assets</button><p>{form.mediaAssetIds.length} training assets attached.</p>
+          {mediaAssets?.map(asset=><label key={asset.id}><input type="checkbox" checked={form.mediaAssetIds.includes(asset.id)} onChange={event=>setForm(current=>({...current,mediaAssetIds:event.target.checked?[...current.mediaAssetIds,asset.id]:current.mediaAssetIds.filter(id=>id!==asset.id)}))}/>{asset.title} · v{asset.version}</label>)}
+          {form.mediaAssetIds.length>0&&<button type="button" onClick={()=>setForm(current=>({...current,mediaAssetIds:[]}))}>Remove all attached assets</button>}</>}
         {selected.activity_type==='checklist'&&<label>{es?'Lista (una entrada por línea)':'Checklist (one item per line)'}<textarea value={form.items} onChange={update('items')}/></label>}
         {canEdit&&<><label>{es?'Motivo del cambio':'Reason for change'}<input required value={form.rationale} onChange={update('rationale')} maxLength={2000}/></label><button type="submit">{es?'Crear nueva versión':'Create new draft'}</button></>}
       </fieldset>
@@ -78,7 +84,7 @@ export default function HubContentStudio({ canEdit,locale='en' }) {
       <label>{es?'Motivo de revisión':'Review rationale'}<input value={reviewReason} onChange={event=>setReviewReason(event.target.value)} maxLength={2000}/></label>
       <ul className="hub-version-list">{versions.map(version=><li key={version.id}>
         <strong>v{version.version_number} · {version.status}</strong><p>{version.change_rationale}</p>
-        <details><summary>{es?'Ver versión':'Preview version'}</summary><p>{version.content.title}</p><p>{version.content.instruction?.summary}</p>{(version.content.instruction?.paragraphs||[]).map((p,i)=><p key={i}>{p}</p>)}</details>
+        <details><summary>{es?'Ver versión':'Preview version'}</summary><p>{version.content.title}</p><p>{version.content.instruction?.summary}</p>{(version.content.instruction?.paragraphs||[]).map((p,i)=><p key={i}>{p}</p>)}{(version.content.instruction?.mediaAssetIds||[]).map(id=><HubMediaItem key={id} assetId={id}/>)}</details>
         {version.status==='draft'&&<button type="button" disabled={busy} onClick={()=>transition(version,'submit')}>{es?'Enviar a revisión':'Submit for review'}</button>}
         {version.status==='pending_review'&&<><button type="button" disabled={busy||!reviewReason.trim()} onClick={()=>transition(version,'approve')}>{es?'Aprobar':'Approve publication'}</button><button type="button" disabled={busy||!reviewReason.trim()} onClick={()=>transition(version,'reject')}>{es?'Rechazar':'Reject'}</button></>}
       </li>)}</ul>

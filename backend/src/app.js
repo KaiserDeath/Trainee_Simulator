@@ -32,6 +32,7 @@ import { createHubWorkspaceService } from './hub/hubWorkspaceService.js';
 import { createHubAccountPracticeService } from './hub/hubAccountPracticeService.js';
 import { createSimulatorAccess } from './auth/simulatorAccess.js';
 import { createHubEvaluationRuntimeService } from './hub/hubEvaluationRuntimeService.js';
+import {createHubMediaService} from './hub/hubMediaService.js';
 import { buildSessionReport } from './engine/SessionEngine.js';
 import { getSessionActionLog } from './engine/AuditLogger.js';
 
@@ -188,6 +189,7 @@ export function createApp(options = {}) {
       workspaceService: options.hubWorkspaceService || createHubWorkspaceService({ client: supabase }),
       accountPracticeService: options.hubAccountPracticeService || createHubAccountPracticeService({ client: supabase }),
       evaluationRuntimeService: options.hubEvaluationRuntimeService || createHubEvaluationRuntimeService({ client: supabase }),
+      mediaService:options.hubMediaService||createHubMediaService({client:supabase}),
     })
   );
 

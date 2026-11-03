@@ -12,6 +12,9 @@
 .hub-workspace-panel dl { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,12rem),1fr)); gap: .7rem; }
 .hub-workspace-panel dt { color: #b6c9d8; font-size: .85rem; }
 .hub-workspace-panel dd { margin: .2rem 0; }
+.hub-media-item { margin: 1rem 0; padding: 1rem; border: 1px solid #557080; border-radius: .4rem; min-width: 0; }
+.hub-media-item img, .hub-media-item video { display: block; max-width: 100%; max-height: 70vh; margin: 1rem 0; }
+.hub-media-item a { color: #78dfce; overflow-wrap: anywhere; }
 .hub-workspace-form fieldset { border: 0; padding: 0; min-width: 0; }
 .hub-version-list { list-style: none; padding: 0; }
 .hub-version-list > li { border-top: 1px solid #365161; padding: 1rem 0; overflow-wrap: anywhere; }

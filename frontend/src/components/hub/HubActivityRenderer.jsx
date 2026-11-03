@@ -9,6 +9,7 @@ import HubAccountPracticeActivity from './HubAccountPracticeActivity';
 import HubPasswordResetActivity from './HubPasswordResetActivity';
 import HubExceptionPracticeActivity from './HubExceptionPracticeActivity';
 import HubMixedPracticeActivity from './HubMixedPracticeActivity';
+import HubMediaItem from './HubMediaItem';
 
 const normaliseItems = (items = []) => items.map((item, index) => ({
   id: typeof item === 'string' ? `item-${index}` : item.id || `item-${index}`,
@@ -169,6 +170,7 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
       )}
 
       {activity.summary && <p className="hub-activity-summary">{activity.summary}</p>}
+      {(activity.content?.mediaAssetIds||[]).map((id,index)=><HubMediaItem key={id} assetId={id} label={`Open training asset ${index+1}`}/>)}
       {activity.content?.executionKind==='official_evaluation'&&<p className="hub-inline-notice">Open the corresponding assessment in Checkpoint and readiness results. This module completes after an official successful result is submitted.</p>}
 
       {type === 'article' && (

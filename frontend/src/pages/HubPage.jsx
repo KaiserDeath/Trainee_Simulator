@@ -26,6 +26,7 @@ import HubTrainerOverview from '../components/hub/HubTrainerOverview';
 import HubContentStudio from '../components/hub/HubContentStudio';
 import HubCoachingWorkspace from '../components/hub/HubCoachingWorkspace';
 import HubPolicyStudio from '../components/hub/HubPolicyStudio';
+import HubMediaLibrary from '../components/hub/HubMediaLibrary';
 import '../styles/hub.css';
 
 const TRAINER_ROLE = 'TRAINER';
@@ -650,6 +651,7 @@ export default function HubPage() {
         {isAdministrator && <HubAdminAccounts />}
         {isAdministrator && <HubPolicyStudio locale={staffLanguage} />}
         {(isAdministrator || isTrainer) && <HubContentStudio canEdit={isAdministrator} locale={staffLanguage} />}
+        {(isAdministrator||isTrainer)&&<HubMediaLibrary canEdit={isAdministrator}/>}
         {canManagePostulantes && <HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} />}
 
         {isTrainer && (

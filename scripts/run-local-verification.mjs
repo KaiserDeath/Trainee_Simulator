@@ -4,7 +4,7 @@ import path from 'node:path';
 import {assertLocalE2EBackendEnvironment} from '../backend/src/config/localE2EGuard.js';
 
 const root=fileURLToPath(new URL('..',import.meta.url));
-const tasks={capacity:'runHubCapacity.mjs','assessment-capacity':'runHubAssessmentCapacity.mjs'};
+const tasks={capacity:'runHubCapacity.mjs','assessment-capacity':'runHubAssessmentCapacity.mjs',media:'runHubMediaLocal.mjs'};
 const target=tasks[process.argv[2]];
 if(!target)throw new Error('Choose a supported local verification task.');
 const status=spawnSync(process.execPath,[path.join(root,'node_modules/supabase/dist/supabase.js'),'status','-o','env'],{cwd:root,encoding:'utf8',windowsHide:true});

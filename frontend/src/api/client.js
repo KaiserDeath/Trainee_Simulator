@@ -68,6 +68,10 @@ export const reviewHubAccountPolicy=async(id,body)=>api.post(`/hub/workspace/acc
 export const commandHubEvaluation=async(id,command,body)=>api.post(`/hub/scored-evaluations/attempts/${id}/runtime/${command}`,body,await withHubCsrf());
 export const getHubMixedPractice=async(id)=>api.get(`/hub/activities/${id}/mixed-practice`);
 export const commandHubMixedPractice=async(id,command,body)=>api.post(`/hub/activities/${id}/mixed-practice/${command}`,body,await withHubCsrf());
+export const getHubMediaLibrary=async()=>api.get('/hub/media');
+export const beginHubMediaUpload=async(body)=>api.post('/hub/media/uploads',body,await withHubCsrf());
+export const transitionHubMedia=async(id,command,body)=>api.post(`/hub/media/${id}/${command}`,body,await withHubCsrf());
+export const getHubMediaAccess=async(id)=>api.get(`/hub/media/${id}/access`);
 
 export const getHubLearningPath = async () => {
   return api.get('/hub/learning-path');
