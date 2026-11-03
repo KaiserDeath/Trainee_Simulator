@@ -91,6 +91,7 @@ FROM public.hub_attempts attempt
 WHERE attempt.id IN (${fixtureAttempts})
   AND attempt.legacy_trainee_session_id IS NOT NULL;
 SET LOCAL session_replication_role = replica;
+DELETE FROM public.hub_operation_evidence WHERE session_id IN (SELECT id FROM trez_cleanup_sessions);
 DELETE FROM public.hub_practice_contexts
 WHERE identity_id IN (${fixtureIdentities})
    OR attempt_id IN (${fixtureAttempts});
@@ -232,7 +233,14 @@ try {
   const initial = await request(server, subjects.traineeA, '/learning-path');
   assert.equal(initial.status, 200);
   const modules = initial.body.enrolments[0].modules;
-  assert.equal(modules.length, 11);
+  assert.equal(modules.length, 15);
+  assert.deepEqual(modules.map(module=>module.position),Array.from({length:15},(_,index)=>index+1));
+  assert.equal(modules[8].code,'checkpoint-game-platforms');
+  assert.equal(modules[10].code,'checkpoint-operations');
+  assert.equal(modules[11].code,'backend-customer-experience');
+  assert.equal(modules[12].code,'checkpoint-movements-customer-experience');
+  assert.equal(modules[13].code,'mixed-operation-practice');
+  assert.ok(modules.slice(1).every(module=>module.available===false));
   assert.equal(modules[0].available, true);
   assert.equal(modules[1].available, false);
   assert.equal(modules[2].available, false);
