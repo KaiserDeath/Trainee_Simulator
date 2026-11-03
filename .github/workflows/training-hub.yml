@@ -70,6 +70,7 @@ jobs:
       - run: npm run verify:local:capacity
       - run: npm run verify:local:assessment-capacity
       - run: npm run verify:local:formal-browser
+      - run: npm run verify:local:recovery
       - name: Stop disposable Supabase
         if: always()
         run: node node_modules/supabase/dist/supabase.js stop --no-backup

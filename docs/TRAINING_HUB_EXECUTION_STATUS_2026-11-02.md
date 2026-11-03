@@ -161,3 +161,38 @@ Verification passed: the real local browser gate and fixture cleanup, plus the
 full foundation (236 backend, 12 shared-rule, 61 database-safety and 56 browser
 checks, lint/build). One overlapping browser run timed out at sign-in; cleanup
 passed and the separate rerun passed. The existing build-size warning remains.
+
+### Local database recovery rehearsal (2026-11-03)
+
+Main `a3d0b12` foundation and isolated-database CI passed. Continued with recovery
+while the four hosted evaluations remain draft pending content approval.
+
+Added `npm run verify:local:recovery`, now included after the other CI local
+gates. It takes a real custom-format PostgreSQL dump from the fixed local
+container and restores into a fresh disposable database using the local
+Supabase administrative role. Hashes/counts for 67 tables, Auth users and Storage
+metadata match, as do functions, triggers, constraints, indexes, sequences,
+ownership, privileges and row-security policies. All eight transactional Hub
+workspace/evaluation/cohort suites pass on the restored database.
+
+A second backup/restore includes nonempty formal results/evidence, historical
+lesson snapshots, coaching revisions and an Auth credential fixture created
+only in the restored copy. Their hashes match after recovery; learner privacy
+and snapshot immutability remain enforced. Both scratch databases and the
+temporary archive are removed, and the source database is unchanged.
+
+The initial rehearsal exposed orphan worker jobs left by older local test
+cleanup that disabled cascades. Fixed Auth and both capacity cleanup scripts.
+After confirming the named disposable stack had no identities or sessions,
+rebuilt it from migrations/seed, reran real Auth and both ten-client capacity
+gates, and repeated recovery. All passed; there are zero orphan worker jobs.
+Final recovery including both restores and integration suites took 21.6 seconds
+on this local machine. Evidence: `outputs/hub-recovery-2026-11-03/REPORT.md` and
+`recovery.json`. JavaScript syntax and diff-whitespace checks also passed.
+
+This verifies local logical database recovery within the same PostgreSQL
+cluster with pre-existing roles. It does not establish hosted backup recovery,
+offsite/encrypted copies, Storage file-byte recovery, configuration/secret
+recovery or an operational recovery-time objective. Those remain release gates,
+alongside retention/disposal, abandoned uploads, accessibility and content
+acceptance. No hosted data or formal publication was changed in this increment.

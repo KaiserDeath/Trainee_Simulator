@@ -527,6 +527,32 @@ checked for idempotency. The JSON result is written to
 CI runs this gate in its disposable database job. These checks do not publish or
 certify the four hosted evaluations, which remain subject to content approval.
 
+## Database recovery rehearsal
+
+After `npm run local:start`, run `npm run verify:local:recovery` alone against
+the named disposable stack. It accepts no hosted target, environment file or
+database argument. It uses the container's local `supabase_admin` role to create
+a PostgreSQL custom archive and restore ownership and privileges. Cluster roles
+must already exist; it does not export their passwords.
+
+The command restores into a new randomly named database and compares all public
+table hashes/counts, Auth users, Storage metadata, functions, triggers,
+constraints, indexes, sequences, row security and privileges. Eight transactional
+Hub integration suites run against that recovered database. It then creates
+retained formal results, lesson snapshots, private coaching revisions and an
+Auth credential fixture only in the recovered copy. A second backup/restore must
+preserve those records and enforce snapshot immutability and private access.
+The source database remains unchanged. Both scratch databases and the archive
+are removed, including on a failed run; cleanup failure fails the command.
+The sanitized result is `outputs/hub-recovery-local.json`. CI runs this after
+other local gates so foreign-key violations left by fixture cleanup are caught.
+
+This is a local logical database recovery rehearsal using the same PostgreSQL
+cluster and pre-existing roles. It does not restore Storage file bytes, hosting
+configuration/secrets, another PostgreSQL version or a lost Supabase project.
+Hosted backup availability, offsite/encrypted copies, retention, recovery time
+and full application/file recovery remain separate operational release gates.
+
 ## Shared Account ID rule boundary
 
 `shared/account-id-rules` extracts framework-independent normalization, segmented construction, pattern generation, and answer validation. Policies are supplied by the caller. The package contains no default game catalogue, real initials, family assignments, password rules, or approved scoring formulas.

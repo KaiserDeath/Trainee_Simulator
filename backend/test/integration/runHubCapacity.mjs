@@ -49,6 +49,7 @@ try{
   const attempts=`SELECT a.id FROM hub_attempts a JOIN hub_module_progress p ON p.id=a.module_progress_id WHERE p.course_id='${courseId}'::uuid`;
   const sql=`BEGIN; SET LOCAL session_replication_role=replica;
 DELETE FROM hub_operation_evidence WHERE session_id IN (${sessionIds});
+DELETE FROM hub_simulation_jobs WHERE session_id IN (${sessionIds});
 DELETE FROM hub_account_practice WHERE identity_id IN (${ids});
 DELETE FROM hub_evidence_events WHERE attempt_id IN (${attempts});
 DELETE FROM hub_attempt_artifacts WHERE attempt_id IN (${attempts});

@@ -95,6 +95,12 @@ DELETE FROM public.hub_trainer_learner_assignments WHERE trainer_identity_id IN 
 DELETE FROM public.hub_idempotency_keys WHERE identity_id IN (${fixtureIdentities});
 DELETE FROM public.hub_role_assignments WHERE identity_id IN (${fixtureIdentities});
 DELETE FROM public.hub_identities i WHERE ${fixtureIdentity};
+DELETE FROM public.hub_operation_evidence WHERE session_id IN (
+  SELECT id FROM public.trainee_sessions
+  WHERE trainee_name LIKE '${legacySessionPrefix}%'
+     OR trainee_name = '${accountInputs.postulante.firstName} ${accountInputs.postulante.surname}'
+);
+SET LOCAL session_replication_role = origin;
 DELETE FROM public.trainee_sessions
   WHERE trainee_name LIKE '${legacySessionPrefix}%'
      OR trainee_name = '${accountInputs.postulante.firstName} ${accountInputs.postulante.surname}';
