@@ -507,6 +507,26 @@ locally trusted identity.
 
 When Module 4 exists, expand this gate with keyboard-only coverage and observable `Ctrl+F` followed by `Ctrl+V` inside the application-controlled training search.
 
+## Formal assessment browser gate
+
+After starting the named disposable Supabase stack and installing frontend
+Chromium (`npm --prefix frontend run test:browser:install`), run
+`npm run verify:local:formal-browser`. This starts real Express and Vite servers
+on loopback ports 8088 and 4474 and uses real local Auth/database requests.
+Run it alone against that stack: it temporarily publishes the seeded local
+Orion checkpoint, then restores its exact original draft row and removes its
+generated identities, Auth users, courses, attempts, evidence and sandbox worlds.
+It refuses non-loopback targets and requires the seeded draft with no policy head.
+
+The gate checks prerequisite denial, correct/incorrect scoring, retry visibility,
+manual submission, latest-only submission, automatic third-attempt closure,
+fourth-attempt denial, trainer reopening with a reason, preserved old results,
+staff evidence/report access, and learner privacy. Start and action replays are
+checked for idempotency. The JSON result is written to
+`outputs/hub-formal-browser-local.json`; a failed cleanup also fails the command.
+CI runs this gate in its disposable database job. These checks do not publish or
+certify the four hosted evaluations, which remain subject to content approval.
+
 ## Shared Account ID rule boundary
 
 `shared/account-id-rules` extracts framework-independent normalization, segmented construction, pattern generation, and answer validation. Policies are supplied by the caller. The package contains no default game catalogue, real initials, family assignments, password rules, or approved scoring formulas.

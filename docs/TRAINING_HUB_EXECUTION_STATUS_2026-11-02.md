@@ -134,3 +134,30 @@ User confirmed the preceding workflow worked and requested the next step. Verifi
 The existing scorer correctly marks unnecessary cancellation of a normal movement as incorrect; the verification retains that verdict while separately checking reservation release and retry safety. All four exception outcomes passed: ALREADY_PROCESSED, PLAYER_IN_GAME and both applied/not-applied reconciliation cases. No decision replay performed another game posting. Evidence: `outputs/hub-orion-operations-2026-11-03/REPORT.md`, `operations-browser.json` and `outputs/hub-orion-exceptions-2026-11-03/exceptions-browser.json`.
 
 All temporary identities/Auth users, course/attempt/evidence records and sandbox sessions were removed. Both final runs preserved the pre-existing counts (four identities, one original course, one original session). The native activity fixtures establish runtime/UI behavior, not approval of original curriculum content or formal readiness. Main `a0ac0e1` CI is green after rerunning the database job that had failed on runner port 54322. Next: hosted formal attempt/submission/reopening/reporting verification, followed by retention/disposal, restore rehearsal and broader accessibility/user acceptance.
+
+### Formal evaluation browser workflow (2026-11-03)
+
+Fixed a learner navigation defect: after a scored attempt, the results screen
+offered submission but hid the next attempt while submission was available.
+Learners can now choose either action after attempts one and two. Closed sets
+still hide the start button, and server attempt limits remain authoritative.
+
+Added `npm run verify:local:formal-browser` and its CI gate, using real local
+Supabase Auth, Express, Vite and Chromium without API mocks. It exercises the
+Orion checkpoint through prerequisite completion, a successful manually submitted
+result, three unsuccessful results with automatic closure, latest-only submission,
+fourth-attempt denial, trainer reopening with a required reason, a new attempt
+set, preserved prior results, staff evidence/report reads, learner privacy, and
+idempotent start/action retries. The exact seeded draft policy is restored and
+all generated fixture identities/Auth users and their records are removed.
+
+The full published workflow runs on the isolated local stack. The catalog has
+four fixed evaluation slots; all four hosted evaluations remain draft, so a full
+hosted formal cycle remains pending content approval/publication. The local
+fixture temporarily publishes only its isolated checkpoint. Evidence is recorded
+in `outputs/hub-formal-verification-2026-11-03/REPORT.md` and `browser.json`.
+
+Verification passed: the real local browser gate and fixture cleanup, plus the
+full foundation (236 backend, 12 shared-rule, 61 database-safety and 56 browser
+checks, lint/build). One overlapping browser run timed out at sign-in; cleanup
+passed and the separate rerun passed. The existing build-size warning remains.

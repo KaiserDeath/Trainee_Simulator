@@ -53,7 +53,10 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             backend/package-lock.json
-      - run: npm ci && npm ci --prefix backend
+            frontend/package-lock.json
+      - run: npm ci && npm ci --prefix backend && npm ci --prefix frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
       - name: Start disposable Supabase
         run: |
           npm run local:prepare
@@ -66,6 +69,7 @@ jobs:
       - run: npm run verify:local:media
       - run: npm run verify:local:capacity
       - run: npm run verify:local:assessment-capacity
+      - run: npm run verify:local:formal-browser
       - name: Stop disposable Supabase
         if: always()
         run: node node_modules/supabase/dist/supabase.js stop --no-backup

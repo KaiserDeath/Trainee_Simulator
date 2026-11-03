@@ -78,7 +78,7 @@ export default function HubScoredEvaluationOverview({onActiveChange}) {
         {evaluation.attempts?.length > 0 && <ol className="hub-attempt-summary">{[...evaluation.attempts].sort((a, b) => a.attempt_in_set - b.attempt_in_set).map((attempt) => <li key={attempt.id}>Attempt {attempt.attempt_in_set}: {attemptLabel(attempt)}</li>)}</ol>}
         {evaluation.canSubmit && <button className="hub-primary-button" type="button" disabled={busy} onClick={() => submit(evaluation)}>Send latest result</button>}
         {latest?.status==='in_progress'&&<button className="hub-primary-button" type="button" disabled={busy} onClick={()=>setActiveAttemptId(latest.id)}>Open assessment</button>}
-        {!evaluation.canSubmit && available && evaluation.attemptSet?.status !== 'closed' && !latest?.status?.includes('in_progress') && <button className="hub-primary-button" type="button" disabled={busy || evaluation.attemptsRemaining === 0} onClick={() => start(evaluation)}>Start next attempt</button>}
+        {available && evaluation.attemptSet?.status !== 'closed' && !latest?.status?.includes('in_progress') && <button className="hub-primary-button" type="button" disabled={busy || evaluation.attemptsRemaining === 0} onClick={() => start(evaluation)}>Start next attempt</button>}
         {evaluation.requiresTrainerReopen && <p className="hub-inline-notice" role="status">This evaluation is closed. TRAINER must reopen it before another set of three attempts is available.</p>}
       </article>;
     })}</div>

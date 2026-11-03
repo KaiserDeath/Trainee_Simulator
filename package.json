@@ -34,7 +34,8 @@
     "build:frontend": "npm run build --prefix frontend",
     "verify:baseline": "npm run test:backend && npm run lint:frontend && npm run build:frontend",
     "verify:foundation": "npm run verify:baseline && npm run test:shared && npm run test:database:safety && npm run test:browser",
-    "verify:milestone0": "npm run verify:foundation && npm run test:database:integration"
+    "verify:milestone0": "npm run verify:foundation && npm run test:database:integration",
+    "verify:local:formal-browser": "node scripts/run-local-verification.mjs formal-browser"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

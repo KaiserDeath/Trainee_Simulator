@@ -220,6 +220,7 @@ test('POSTULANTE sees numerical scored results without detailed failure evidence
   await expect(page.getByRole('heading', { name: 'Checkpoint and readiness results' })).toBeVisible();
   await expect(page.getByText('Unsuccessful · 80%')).toBeVisible();
   await expect(page.getByText('Attempts remaining: 2 of 3')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start next attempt', exact: true })).toBeEnabled();
   await expect(page.getByText('SECRET_FAILURE_DETAIL')).toHaveCount(0);
   await page.getByRole('button', { name: 'Send latest result' }).click();
   await expect(page.getByText('Checkpoint 1 — Game Platforms result submitted.')).toBeVisible();
