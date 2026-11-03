@@ -1,0 +1,64 @@
+{
+  "runId": "e2b7661e-e925-45d9-b930-4729a2cdabce",
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "origin": "https://trainee-simulator.vercel.app",
+  "checks": [
+    "Real learner browser login to the disposable Orion course",
+    "Server-owned account artifact prepared through the normal account commands",
+    "Refresh verifies observed balances, rejects incorrect values and accepts a safe retry",
+    "Add Credits: one game action and one correct Backend settlement; retries preserve balances",
+    "Add Credits: cancellation releases the reservation and preserves the normal-case incorrect verdict; retries preserve balances",
+    "Withdraw Credits: one game action and one correct Backend settlement; retries preserve balances",
+    "Withdraw Credits: cancellation releases the reservation and preserves the normal-case incorrect verdict; retries preserve balances",
+    "Password reset requires game action and Backend confirmation, safely retries and excludes literal passwords from learning evidence",
+    "Exception PLAYER_IN_GAME: decision matches evidence and does not repeat the game movement",
+    "All tested activity results persist after browser reload",
+    "Another learner cannot read the movement practice"
+  ],
+  "startedAt": "2026-11-03T22:58:17.144Z",
+  "fixture": "Disposable course using native Orion activities; original curriculum/evaluations are not changed.",
+  "before": {
+    "courses": 1,
+    "identities": 4,
+    "sessions": 1
+  },
+  "movements": [
+    {
+      "kind": "add-credits",
+      "decision": "APPROVED",
+      "operationId": "2dcaea57-29a6-45be-a197-d890c24d575b",
+      "duplicateGamePosting": false,
+      "isCorrect": true
+    },
+    {
+      "kind": "add-credits",
+      "decision": "CANCELLED",
+      "operationId": "ab116876-9a54-4453-a60a-0f1d5670cd56",
+      "duplicateGamePosting": false,
+      "isCorrect": false
+    },
+    {
+      "kind": "withdraw-credits",
+      "decision": "APPROVED",
+      "operationId": "5e1242c8-f68c-4c9c-a4e6-1adad68eba3c",
+      "duplicateGamePosting": false,
+      "isCorrect": true
+    },
+    {
+      "kind": "withdraw-credits",
+      "decision": "CANCELLED",
+      "operationId": "56372ab7-2307-4c2b-ba34-1b8246995138",
+      "duplicateGamePosting": false,
+      "isCorrect": false
+    }
+  ],
+  "exceptionScenario": "PLAYER_IN_GAME",
+  "passed": true,
+  "cleanupPassed": true,
+  "after": {
+    "courses": 1,
+    "identities": 4,
+    "sessions": 1
+  },
+  "completedAt": "2026-11-03T23:00:46.468Z"
+}

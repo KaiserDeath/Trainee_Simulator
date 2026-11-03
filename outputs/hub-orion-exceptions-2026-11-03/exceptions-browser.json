@@ -1,0 +1,57 @@
+{
+  "runId": "bd707992-4843-4a35-88e7-7a87722e9e18",
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "origin": "https://trainee-simulator.vercel.app",
+  "checks": [
+    "Four native exception outcomes verified in the hosted browser",
+    "Game history and credit unchanged by reconciliation/settlement",
+    "Customer reservation settles/releases correctly",
+    "Repeated responses preserve the original result without another posting",
+    "All results persist after reload"
+  ],
+  "startedAt": "2026-11-03T23:02:39.912Z",
+  "fixture": "Disposable native exception activities, seeded reproducibly through the native start command. Mismatched seed trials roll back inside the fixture transaction.",
+  "before": {
+    "courses": 1,
+    "identities": 4,
+    "sessions": 1
+  },
+  "cases": [
+    {
+      "scenario": "ALREADY_PROCESSED",
+      "alreadyApplied": true,
+      "correct": true,
+      "gamePostingRepeated": false,
+      "retrySafe": true
+    },
+    {
+      "scenario": "PLAYER_IN_GAME",
+      "alreadyApplied": false,
+      "correct": true,
+      "gamePostingRepeated": false,
+      "retrySafe": true
+    },
+    {
+      "scenario": "PENDING_RECONCILIATION",
+      "alreadyApplied": true,
+      "correct": true,
+      "gamePostingRepeated": false,
+      "retrySafe": true
+    },
+    {
+      "scenario": "PENDING_RECONCILIATION",
+      "alreadyApplied": false,
+      "correct": true,
+      "gamePostingRepeated": false,
+      "retrySafe": true
+    }
+  ],
+  "passed": true,
+  "cleanupPassed": true,
+  "after": {
+    "courses": 1,
+    "identities": 4,
+    "sessions": 1
+  },
+  "completedAt": "2026-11-03T23:03:44.919Z"
+}
