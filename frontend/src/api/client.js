@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  // Production cookies must stay on the frontend origin. Vercel proxies /api.
+  baseURL: import.meta.env.PROD ? '/api' : `${import.meta.env.VITE_API_URL || ''}/api`,
   withCredentials: true,
 })
 
@@ -32,6 +33,10 @@ export const changeHubPassword = async (currentPassword, newPassword) =>
   api.post('/hub/auth/password', { currentPassword, newPassword }, await withHubCsrf());
 
 export const getHubAdminAccounts = async () => api.get('/hub/admin/accounts');
+
+export const getHubAdministratorProfile = () => api.get('/hub/admin/profile');
+export const updateHubAdministratorProfile = async (payload) =>
+  api.patch('/hub/admin/profile', payload, await withHubCsrf());
 
 export const createHubAccount = async (payload) =>
   api.post('/hub/admin/accounts', payload, await withHubCsrf());

@@ -28,23 +28,29 @@ test('nonadvancing provider results fail closed', async () => {
   const query = () => ({ order() { return this; }, limit() { return this; }, gt() { return this; }, then(resolve) { return Promise.resolve({ data: [{ id: 'same' }] }).then(resolve); } });
   await assert.rejects(readAllById(query), /did not advance/);
 });
-test('real statistics builder aggregates all timed samples past the 1000-row cap', async () => {
+test('statistics builder uses one summary RPC and never downloads operation rows', async () => {
   process.env.SUPABASE_URL = 'http://127.0.0.1:54321';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'local-characterization-only';
   const { supabase } = await import('../../src/config/supabase.js');
   const { buildOperationTimeStats } = await import('../../src/engine/SessionEngine.js');
-  const rows = Array.from({ length: 1503 }, (_, n) => ({ id: String(n).padStart(6, '0'), type: n < 1000 ? 'ADD CREDITS' : 'WITHDRAW CREDITS', handling_time_seconds: n < 1000 ? 10 : 20, session: { id: 'session', trainee_name: 'Fixture' } }));
-  const original = supabase.from;
-  const factory = fixture(rows);
-  supabase.from = (table) => {
-    assert.equal(table, 'sandbox_operations');
-    return { select() { return this; }, not() { return factory(); } };
+  const originalRpc = supabase.rpc;
+  const originalFrom = supabase.from;
+  let calls = 0;
+  supabase.from = () => assert.fail('Statistics must not download individual operations');
+  supabase.rpc = async (name) => {
+    assert.equal(name, 'trainer_operation_time_stats'); calls++;
+    return { data: { overall: { count: 1503, totalSeconds: 20060, minSeconds: 10, maxSeconds: 20 },
+      allOperations: [{ type: 'WITHDRAW CREDITS', count: 503, totalSeconds: 10060, minSeconds: 20, maxSeconds: 20 }], perPerson: [] } };
   };
   try {
     const stats = await buildOperationTimeStats();
+    assert.equal(calls, 1);
     assert.equal(stats.overall.count, 1503);
-    assert.equal(stats.overall.averageSeconds, Number(((10000 + 503 * 20) / 1503).toFixed(2)));
-    assert.equal(stats.allOperations.find((row) => row.type === 'WITHDRAW CREDITS').count, 503);
-    assert.equal(stats.perPerson[0].overall.count, 1503);
-  } finally { supabase.from = original; }
+    assert.equal(stats.overall.averageSeconds, Number((20060 / 1503).toFixed(2)));
+    assert.equal(stats.allOperations[0].count, 503);
+    supabase.rpc = async () => ({ error: new Error('summary unavailable') });
+    await assert.rejects(buildOperationTimeStats(), /summary unavailable/);
+    supabase.rpc = async () => ({ data: null });
+    await assert.rejects(buildOperationTimeStats(), /Invalid operation statistics/);
+  } finally { supabase.rpc = originalRpc; supabase.from = originalFrom; }
 });

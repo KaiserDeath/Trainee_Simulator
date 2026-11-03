@@ -392,6 +392,14 @@ export function createHubRouter({
     res.status(204).end();
   }));
 
+  router.get('/admin/profile', requireHubRole(HUB_ROLES.ADMIN), asyncRoute(async (req, res) => {
+    res.json(await accountService.getAdministratorProfile(req.hubIdentity));
+  }));
+
+  router.patch('/admin/profile', requireHubRole(HUB_ROLES.ADMIN), asyncRoute(async (req, res) => {
+    res.json(await accountService.updateAdministratorProfile(req.hubIdentity, req.body || {}));
+  }));
+
   router.post(
     '/auth/password',
     requireHubRole(HUB_ROLES.ADMIN, HUB_ROLES.TRAINER, HUB_ROLES.RRHH),

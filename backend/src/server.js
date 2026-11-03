@@ -80,7 +80,7 @@ server.listen(PORT, HOST, () => {
     `Server running on ${HOST || 'all interfaces'}:${PORT}`
   );
   if(process.env.TREZ_DURABLE_SIMULATION==='true'||process.env.NODE_ENV==='production'){
-    const worker=startSimulationWorker();server.on('close',()=>worker.stop());return;
+    const worker=startSimulationWorker();app.locals.simulationWorker=worker;server.on('close',()=>worker.stop());return;
   }
 
   let recovering = false;

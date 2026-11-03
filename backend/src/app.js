@@ -51,6 +51,8 @@ function unavailableAccountService() {
     updatePostulante: unavailable,
     deactivatePostulante: unavailable,
     changeOwnPassword: unavailable,
+    getAdministratorProfile: unavailable,
+    updateAdministratorProfile: unavailable,
     resetStaffPassword: unavailable,
     deactivate: unavailable,
   });

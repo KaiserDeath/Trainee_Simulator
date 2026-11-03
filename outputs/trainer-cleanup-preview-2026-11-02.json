@@ -1,0 +1,299 @@
+{
+  "generatedAt": "2026-11-02T17:03:16.148Z",
+  "mode": "preview-only",
+  "selectedNames": [
+    "test test",
+    "t6est test",
+    "test tes",
+    "capa capa"
+  ],
+  "byName": {
+    "test test": 17,
+    "TEST TEST": 4,
+    "t6est test": 1,
+    "Test Test": 13,
+    "Test test": 1,
+    "CAPA CAPA": 1,
+    "test tes": 1,
+    "test TEST": 1
+  },
+  "sessions": [
+    {
+      "id": "010ff069-f6b8-4342-b45c-b8ae5aa64abb",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-20T17:38:13.58827+00:00"
+    },
+    {
+      "id": "016a2b1c-baf3-43f8-8fc7-1d9cf716cbfa",
+      "trainee_name": "TEST TEST",
+      "status": "completed",
+      "started_at": "2026-08-12T18:37:41.53217+00:00"
+    },
+    {
+      "id": "125d9627-7512-43d4-adb3-37d95fd227d7",
+      "trainee_name": "t6est test",
+      "status": "completed",
+      "started_at": "2026-08-20T17:17:37.30613+00:00"
+    },
+    {
+      "id": "250206f5-4a98-484f-99b0-4204cc5bc968",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-14T17:09:50.74202+00:00"
+    },
+    {
+      "id": "29da066b-4f93-4ad4-b451-6b783024331d",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-14T22:02:10.604448+00:00"
+    },
+    {
+      "id": "2d8bad63-4311-4f0e-8c9f-c46c4d247c98",
+      "trainee_name": "Test Test",
+      "status": "submitted",
+      "started_at": "2026-09-28T21:53:30.143609+00:00"
+    },
+    {
+      "id": "32720ac2-042a-4581-a405-430c8a33fda4",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-20T17:22:19.998133+00:00"
+    },
+    {
+      "id": "3ccb9658-6d51-4842-81c3-feea0c06ba18",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-19T22:13:36.844296+00:00"
+    },
+    {
+      "id": "410550c8-9c42-4302-8542-7c1ec5eb8f64",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-28T17:16:47.661122+00:00"
+    },
+    {
+      "id": "450612af-3c76-41ee-aa2f-3f36040b880e",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-08-28T17:23:18.07723+00:00"
+    },
+    {
+      "id": "458f0190-c369-4209-bcca-82bc31762b21",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-08-17T16:49:12.468145+00:00"
+    },
+    {
+      "id": "4fa5d09d-8e82-4844-bf8d-823c9df88928",
+      "trainee_name": "Test Test",
+      "status": "submitted",
+      "started_at": "2026-09-28T20:51:57.507218+00:00"
+    },
+    {
+      "id": "5966ed82-a4c2-4944-b49c-f0a1e68254a1",
+      "trainee_name": "Test test",
+      "status": "completed",
+      "started_at": "2026-10-30T15:29:32.898047+00:00"
+    },
+    {
+      "id": "60dc5a79-6e66-46d9-81b5-4fc66572b152",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-07-08T15:57:13.567105+00:00"
+    },
+    {
+      "id": "6166aaec-b36a-4fdd-9391-ca8651d0ef7e",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-08-27T16:35:00.775646+00:00"
+    },
+    {
+      "id": "6947d2b4-b2c8-4c4a-b7fc-d14e881be15a",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-07-03T16:29:58.675266+00:00"
+    },
+    {
+      "id": "6ba6e727-e8f4-4bf7-bdb4-24441dc34049",
+      "trainee_name": "TEST TEST",
+      "status": "completed",
+      "started_at": "2026-08-13T18:34:11.807445+00:00"
+    },
+    {
+      "id": "703ccf1f-e899-41e2-aaa4-22313f7122d7",
+      "trainee_name": "TEST TEST",
+      "status": "completed",
+      "started_at": "2026-08-26T18:14:40.198114+00:00"
+    },
+    {
+      "id": "70776d06-b99c-459b-a87f-ef47e9b84a2b",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-07-08T16:54:07.760805+00:00"
+    },
+    {
+      "id": "72beae4f-0785-4303-a5d3-fd07a3bea0b0",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-09-25T17:23:37.240299+00:00"
+    },
+    {
+      "id": "79141a23-3f2d-49c9-9760-4b1bb44d34ce",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-10-29T20:00:54.131274+00:00"
+    },
+    {
+      "id": "7ba3d09b-c13a-4d34-8da9-f9d3c1c55a7a",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-10-29T20:35:27.245331+00:00"
+    },
+    {
+      "id": "806d184e-94d5-4b16-aa29-018d124bf1e1",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-18T17:38:10.990009+00:00"
+    },
+    {
+      "id": "81cd6324-77b1-42cc-b288-048128969e2c",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-10-29T20:59:57.994114+00:00"
+    },
+    {
+      "id": "877cdb99-0621-4b83-9e20-aa0ac834190c",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-12T18:09:31.954758+00:00"
+    },
+    {
+      "id": "8bf9b930-91e1-40a5-8118-336cbb86eb18",
+      "trainee_name": "CAPA CAPA",
+      "status": "completed",
+      "started_at": "2026-10-30T19:18:21.016213+00:00"
+    },
+    {
+      "id": "8ed9600d-ce40-4a55-a73e-f85f970ca5a3",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-08-12T22:31:58.622862+00:00"
+    },
+    {
+      "id": "91c0a1b7-5a08-47a5-993e-70b962322f2c",
+      "trainee_name": "test tes",
+      "status": "completed",
+      "started_at": "2026-10-29T12:30:57.490308+00:00"
+    },
+    {
+      "id": "a7bed0f0-2761-428c-804f-1e25d669f89e",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-25T17:19:35.857253+00:00"
+    },
+    {
+      "id": "ac60e2d7-ac4f-4bca-b3d5-2061e0ed6571",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-12T18:21:00.627096+00:00"
+    },
+    {
+      "id": "b1dfc661-b806-42f1-852e-c139de0821c1",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-08-21T21:09:17.429053+00:00"
+    },
+    {
+      "id": "c8e84366-49fa-4720-904b-3cbafba5187c",
+      "trainee_name": "Test Test",
+      "status": "completed",
+      "started_at": "2026-08-13T20:48:45.772695+00:00"
+    },
+    {
+      "id": "d2afaea1-8c03-4776-8530-74783e344b6a",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-26T17:40:31.408352+00:00"
+    },
+    {
+      "id": "d466df62-ba9f-44c7-a02e-c5e5a7c56551",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-12T18:31:04.539019+00:00"
+    },
+    {
+      "id": "ea6acfab-ae78-43e9-a555-128c7cf1a99c",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-09-01T16:55:15.573324+00:00"
+    },
+    {
+      "id": "eee81e81-c638-4887-9a24-a85ca11a4ea3",
+      "trainee_name": "test TEST",
+      "status": "completed",
+      "started_at": "2026-08-19T20:19:08.795485+00:00"
+    },
+    {
+      "id": "eff0e848-dfc8-4385-93c5-1587f4868f9c",
+      "trainee_name": "TEST TEST",
+      "status": "completed",
+      "started_at": "2026-08-11T18:27:31.4355+00:00"
+    },
+    {
+      "id": "f6030ff5-0249-4835-a377-23615b5a8a19",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-09-25T15:48:03.500484+00:00"
+    },
+    {
+      "id": "f6accacd-5e8c-4751-aa93-568bed3f557b",
+      "trainee_name": "test test",
+      "status": "completed",
+      "started_at": "2026-08-12T22:26:46.046587+00:00"
+    }
+  ],
+  "relatedCounts": [
+    {
+      "table": "sandbox_operations",
+      "count": 627
+    },
+    {
+      "table": "sandbox_customers",
+      "count": 623
+    },
+    {
+      "table": "sandbox_game_accounts",
+      "count": 1411
+    },
+    {
+      "table": "sandbox_game_wallets",
+      "count": 117
+    },
+    {
+      "table": "sandbox_transaction_history",
+      "count": 7511
+    },
+    {
+      "table": "trainee_action_logs",
+      "count": 256
+    },
+    {
+      "table": "hub_attempts",
+      "count": 0
+    },
+    {
+      "table": "hub_practice_contexts",
+      "count": 0
+    },
+    {
+      "table": "hub_assessment_attempts",
+      "count": 0
+    }
+  ],
+  "activeSessions": 0,
+  "excludedAmbiguousNames": [
+    "Capacitacion -"
+  ],
+  "deleted": 0
+}

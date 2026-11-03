@@ -1,0 +1,23 @@
+{
+  "url": "https://trainee-simulator.vercel.app/hub",
+  "loginPassed": false,
+  "error": "CSRF token is missing or invalid",
+  "events": [
+    {
+      "path": "/api/hub/context",
+      "status": 401
+    },
+    {
+      "path": "/api/hub/auth/csrf",
+      "status": 200,
+      "cookieAttributes": [
+        "Max-Age=0; Path=/api/hub; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; SameSite=Lax",
+        "Path=/api; Secure; SameSite=Lax"
+      ]
+    },
+    {
+      "path": "/api/hub/auth/login",
+      "status": 403
+    }
+  ]
+}

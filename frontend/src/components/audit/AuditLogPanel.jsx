@@ -31,10 +31,8 @@ export default function AuditLogPanel({ sessionId, operationId }) {
     };
 
     fetchAuditLog();
-    const interval = setInterval(fetchAuditLog, 5000);
     return () => {
       mounted = false;
-      clearInterval(interval);
     };
   }, [sessionId]);
 

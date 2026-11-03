@@ -237,6 +237,28 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
       return this.deactivate(identityId);
     },
 
+    async getAdministratorProfile(identity) {
+      if (!identity.roles.includes('ADMIN')) throw new HubError(403, 'HUB_ROLE_FORBIDDEN', 'Administrator access is required.');
+      const result = await serviceClient.from('hub_identities')
+        .select('first_name, surname, username').eq('id', identity.hubIdentityId).eq('status', 'active').single();
+      if (result.error || !result.data) throw persistenceError();
+      return { firstName: result.data.first_name, surname: result.data.surname, username: result.data.username };
+    },
+
+    async updateAdministratorProfile(identity, { firstName: firstNameValue, surname: surnameValue }) {
+      if (!identity.roles.includes('ADMIN')) throw new HubError(403, 'HUB_ROLE_FORBIDDEN', 'Administrator access is required.');
+      const firstName = normalizePersonName(firstNameValue, 'First name');
+      const surname = normalizePersonName(surnameValue, 'Surname');
+      const result = await serviceClient.from('hub_identities').update({
+        first_name: firstName,
+        surname,
+        display_name: `${firstName} ${surname}`,
+        updated_at: new Date().toISOString(),
+      }).eq('id', identity.hubIdentityId).eq('status', 'active').select('first_name, surname, username').single();
+      if (result.error || !result.data) throw persistenceError();
+      return { firstName: result.data.first_name, surname: result.data.surname, username: result.data.username };
+    },
+
     async changeOwnPassword(identity, { currentPassword, newPassword }) {
       if (identity.roles.includes('POSTULANTE')) throw new HubError(403, 'HUB_ROLE_FORBIDDEN', 'Postulantes cannot change or reset their password.');
       const username = normalizeUsername(identity.username);

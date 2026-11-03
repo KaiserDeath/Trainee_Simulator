@@ -1,0 +1,30 @@
+{
+  "commit": "21e6ec9",
+  "checkedAt": "2026-11-03T18:16:41.840Z",
+  "checks": [
+    {
+      "name": "live admin browser login and reload",
+      "passed": true,
+      "cookie": {
+        "domain": "trainee-simulator.vercel.app",
+        "httpOnly": true,
+        "secure": true,
+        "sameSite": "Lax"
+      }
+    },
+    {
+      "name": "live Trainer idle for 65 seconds",
+      "passed": true,
+      "requests": []
+    },
+    {
+      "name": "live manual Update",
+      "passed": true
+    },
+    {
+      "name": "API requests remain same origin",
+      "passed": true
+    }
+  ],
+  "cleanup": true
+}

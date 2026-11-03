@@ -97,6 +97,8 @@ router.get('/operation-time-stats', async (
     const stats =
       await buildOperationTimeStats();
 
+    res.set('Cache-Control', 'private, no-store');
+    res.set('X-Trez-Statistics-Source', 'postgres-aggregate');
     res.json(stats);
   } catch (err) {
     console.error(err);

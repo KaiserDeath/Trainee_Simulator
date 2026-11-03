@@ -17,6 +17,7 @@ import {
   submitHubRefreshBalance,
 } from '../api/client';
 import HubAdminAccounts from '../components/hub/HubAdminAccounts';
+import HubAdministratorConfiguration from '../components/hub/HubAdministratorConfiguration';
 import HubAssessmentManagement from '../components/hub/HubAssessmentManagement';
 import HubAuditorOverview from '../components/hub/HubAuditorOverview';
 import HubLearningPath, { ProgressBar } from '../components/hub/HubLearningPath';
@@ -678,7 +679,7 @@ export default function HubPage() {
         {!assessmentOpen&&roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">Open free operator simulator</a></p>}
         {isTrainer && <p><a className="hub-secondary-link" href="/trainer">Open simulator session reports</a></p>}
 
-        {isAdministrator && <div id="hub-people" hidden={activeSection!=='people'} className="hub-section-anchor"><HubAdminAccounts /></div>}
+        {isAdministrator && <div id="hub-people" hidden={activeSection!=='people'} className="hub-section-anchor"><HubAdministratorConfiguration onSaved={(displayName)=>setContext(current=>({...current,identity:{...current.identity,displayName}}))}/><HubAdminAccounts /></div>}
         {isAdministrator && <div id="hub-policies" hidden={activeSection!=='policies'} className="hub-section-anchor"><HubPolicyStudio locale={staffLanguage} /></div>}
         {(isAdministrator || isTrainer) && <div id="hub-curriculum" hidden={activeSection!=='curriculum'} className="hub-section-anchor"><HubContentStudio canEdit={isAdministrator} locale={staffLanguage} /></div>}
         {(isAdministrator||isTrainer)&&<div id="hub-media" hidden={activeSection!=='media'} className="hub-section-anchor"><HubMediaLibrary canEdit={isAdministrator}/></div>}

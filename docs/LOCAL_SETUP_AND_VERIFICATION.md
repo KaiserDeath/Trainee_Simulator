@@ -24,6 +24,64 @@ Supabase Auth/governance gate now exist.
 
 Never place real credentials in committed files or test fixtures.
 
+### Hosted browser authentication
+
+Production browser requests use relative `/api` URLs. `frontend/vercel.json`
+forwards these requests to the Render backend before applying the SPA fallback.
+Keep that rewrite destination aligned with the backend when moving hosts.
+`VITE_API_URL` selects the backend only in development; a hosted Render URL in
+that variable does not override the production same-origin route.
+
+The backend `CLIENT_URL` must equal the public frontend origin so CSRF origin
+checks pass. Keep production secure, HttpOnly session cookies and SameSite=Lax.
+Do not call the Render origin directly from the browser: Vercel and Render are
+different sites, so those cookies would not accompany cross-site API calls.
+The app no longer opens an unused Socket.IO connection on simulator pages;
+Trainer review remains a manual snapshot workflow.
+
+Run `npm --prefix frontend run test:production:auth` to build the frontend and
+verify cookie-backed login and reload against an isolated same-origin fixture.
+This supplements the development browser suite; verify the deployed rewrite
+and real Auth separately after deployment.
+
+### Durable worker scheduling
+
+Apply `20261103190000_simulation_worker_next_wake.sql` before deploying the
+worker scheduling update. Empty queues back off from 1 second to a maximum of
+30 seconds. Two RPCs are issued per empty check (claim and scalar next due
+timestamp), rather than one claim every second. When jobs exist, the next due
+time or lease expiry controls the next check, bounded at 30 seconds.
+
+Session creation wakes the worker in the same API process immediately after
+its schedule is committed. A separately hosted worker or another API instance
+discovers new work within the 30-second idle interval, plus request time.
+The timer waits after each completed check, so requests do not overlap.
+Failures back off; in-flight work retains its heartbeat and fenced delivery.
+Stopping prevents new polls while allowing the current job to finish.
+
+`npm run verify:local:worker` tests due times, leased-job recovery and permissions
+inside a rolled-back transaction on the fixed local database container.
+
+### Statistics bandwidth
+
+Apply `20261103193000_operation_time_statistics.sql` before deploying the backend
+statistics change. The statistics route now calls the service-role-only
+`trainer_operation_time_stats` RPC once. PostgreSQL returns counts, sums and
+extrema by operation and session instead of individual operation rows. The
+backend preserves the existing response shape, sorting and JavaScript rounding.
+Successful responses include `X-Trez-Statistics-Source: postgres-aggregate` for
+deployment verification and `Cache-Control: private, no-store` for report privacy.
+Missing RPCs or query failures fail the request; there is no expensive fallback
+to downloading historical rows. Trainer refresh stays manual.
+
+`npm run verify:local:stats` uses only the fixed local Supabase database container,
+creates fixtures inside a transaction and rolls them back. It compares results
+against the frozen pre-change calculation, covers more than 1,000 operations and
+more than 1,000 sessions, and verifies RPC permissions. Its byte comparison is
+fixture-specific, not a measurement of daily Supabase billed egress. Summaries
+still grow with session/type count; a history of one operation per session can
+benefit less than a dense session history.
+
 ## Fresh setup
 
 From the repository root:

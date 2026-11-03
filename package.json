@@ -16,6 +16,8 @@
     "verify:local:hub": "node scripts/run-local-hub-verification.mjs",
     "verify:local:hub:auth": "node scripts/run-local-hub-auth-verification.mjs",
     "verify:local:workspace": "node scripts/verify-local-workspace.mjs",
+    "verify:local:worker": "node scripts/verify-local-simulation-worker.mjs",
+    "verify:local:stats": "node scripts/verify-local-operation-stats.mjs",
     "verify:local:capacity": "node scripts/run-local-verification.mjs capacity",
     "verify:local:assessment-capacity": "node scripts/run-local-verification.mjs assessment-capacity",
     "verify:local:media": "node scripts/run-local-verification.mjs media",

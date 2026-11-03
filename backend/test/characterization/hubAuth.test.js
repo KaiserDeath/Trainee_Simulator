@@ -14,6 +14,30 @@ const localEnvironment = {
   CLIENT_URL: 'http://localhost:5173',
 };
 
+test('administrator name configuration updates only the signed-in identity and preserves credentials', async () => {
+  let update;
+  const filters = [];
+  const chain = {
+    update(value) { update = value; return chain; },
+    eq(key, value) { filters.push([key, value]); return chain; },
+    select() { return chain; },
+    async single() { return { data: { first_name: update.first_name, surname: update.surname, username: 'Aadmin' }, error: null }; },
+  };
+  const service = createHubAccountService({ serviceClient: { from(table) { assert.equal(table, 'hub_identities'); return chain; } } });
+  const result = await service.updateAdministratorProfile({ roles: ['ADMIN'], hubIdentityId: 'signed-in-admin' }, {
+    firstName: '  Ana  ', surname: ' Perez ', hubIdentityId: 'someone-else', username: 'Changed', roles: ['TRAINER'],
+  });
+  assert.deepEqual(filters, [['id', 'signed-in-admin'], ['status', 'active']]);
+  assert.equal(update.display_name, 'Ana Perez');
+  assert.equal(update.username, undefined);
+  assert.equal(update.auth_user_id, undefined);
+  assert.equal(result.username, 'Aadmin');
+  for (const method of ['getAdministratorProfile', 'updateAdministratorProfile']) {
+    await assert.rejects(() => service[method]({ roles: ['TRAINER'] }, { firstName: 'Ana', surname: 'Perez' }), { code: 'HUB_ROLE_FORBIDDEN' });
+  }
+  await assert.rejects(() => service.updateAdministratorProfile({ roles: ['ADMIN'] }, { firstName: ' ', surname: 'Perez' }), { code: 'HUB_VALIDATION_ERROR' });
+});
+
 function responseRecorder() {
   const headers = new Map();
   return {
