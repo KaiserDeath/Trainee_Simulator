@@ -1,0 +1,5 @@
+
+> trez-training-hub-workspace@0.0.0 verify:local:assessment-capacity
+> node scripts/run-local-verification.mjs assessment-capacity
+
+{"gate":"10-concurrent-native-final-assessment-clients","clients":10,"commands":98,"operations":34,"errors":0,"p95Milliseconds":23,"scope":"Local REST/database native final execution and retries with synthetic prerequisite fixtures; not browser/Auth/hosted load certification."}

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import {hubIntegrationCases,readHubIntegrationCase} from './hub-integration-cases.mjs';
 
 // No environment files, credentials, database arguments or remote targets accepted.
 const container = 'supabase_db_simulador-dos-local';
@@ -77,11 +78,11 @@ try {
   report.tableCount = before.tables.length;
   report.checks.push('All public table hashes/counts, Auth users, Storage metadata, views, functions, triggers, constraints, indexes, sequences, RLS and table/view/function privileges match');
   // Exercise recovered functions and their authorization/immutable-evidence rules.
-  for (const file of ['hubWorkspace.sql', 'hubEvaluationRuntime.sql', 'hubBackendEvaluation.sql', 'hubCustomerEvaluation.sql', 'hubEvaluationPolicyVersions.sql', 'hubFinalEvaluation.sql', 'hubMixedPractice.sql', 'hubCohorts.sql', 'hubCoachingRetention.sql']) {
-    sql(restoredDatabase, readFileSync(new URL(`../backend/test/integration/${file}`, import.meta.url), 'utf8'));
+  for (const file of hubIntegrationCases) {
+    sql(restoredDatabase, readHubIntegrationCase(file));
   }
   assert.deepEqual(manifest(restoredDatabase), before, 'Transactional recovery fixtures left changes behind');
-  report.checks.push('Recovered database passed all nine transactional Hub workspace/evaluation/cohort/retention scenarios; fixtures rolled back');
+  report.checks.push('Recovered database passed all ten transactional Hub workspace/evaluation/cohort/retention scenarios; fixtures rolled back');
 
   // A clean developer stack may have no learner history. Build real retained
   // records only in the restored copy, then prove a second backup recovers them.

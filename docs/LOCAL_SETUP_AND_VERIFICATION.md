@@ -537,7 +537,7 @@ must already exist; it does not export their passwords.
 
 The command restores into a new randomly named database and compares all public
 table hashes/counts, Auth users, Storage metadata, functions, triggers,
-constraints, indexes, sequences, row security and privileges. Nine transactional
+constraints, indexes, sequences, row security and privileges. Ten transactional
 Hub integration suites run against that recovered database. It then creates
 retained formal results, lesson snapshots, private coaching revisions and an
 Auth credential fixture only in the recovered copy. A second backup/restore must
@@ -638,6 +638,51 @@ approval and a real concurrent revision/disposal race. The nine-suite database
 recovery gate repeats retention tests against the recovered database. Age is
 advanced only inside guarded local fixtures. Formal assessment evidence disposal
 is still separate: it must preserve consumed-attempt and readiness semantics.
+
+## Governed formal evidence disposal
+
+In staff evaluation results, open **Review recorded evidence**, then **Open
+evidence retention**. The review identifies the learner and attempt and shows
+packet counts, blockers and the minimum retention deadline. TRAINER manages
+packet holds, requests and cancellation. Another active TRAINER approves with
+a brief operational reason. RRHH reads; ADMIN and learners are denied. There is
+no automatic formal-evidence purge. Coaching holds and formal packet holds are
+separate scopes: use the packet hold for formal evidence.
+
+Eligibility requires a closed attempt set and a completed attempt. The minimum
+deadline covers two years after completion/submission and later recorded
+evidence, history and attributed retry-cache timestamps. Active/shared sandboxes,
+unattributed legacy retry data and unreviewed foreign-key dependencies block
+disposal. Old history caches are attributed only when actual history IDs prove
+ownership. An unresolved cache does not become permission to discard it.
+
+Approval checks current eligibility, case revision and packet fingerprint while
+holding the same per-attempt lock as native runtime commands. It removes the
+theory/runtime, item/action/stage detail, operation plans, attributable cached
+replies, settlement snapshots and exclusively owned sandbox session records.
+Every deletion stays in one transaction; ordinary immutable protections remain
+active, with a scoped executing-review exception. The service role cannot
+directly delete evidence or invoke the old runtime/report bypass functions.
+
+The result row, score, status, attempt-set membership, consumed opportunities,
+policy snapshot and official module/readiness progress remain unchanged. A
+disposed packet gets an explicit receipt in evidence review and reporting/CSV.
+Operation/failure breakdowns describe retained evidence only; missing disposed
+detail is not a zero-percent result. Learner runtime reads and old/new action
+retries return 410 after disposal rather than replaying deleted private data.
+
+`verify:local:workspace` and recovery reuse real completed Orion/final fixtures
+inside a rollback-only tenth case. Checks include official progress, result
+immutability, closed budgets, shared sandboxes, legacy cache backfill, holds,
+stale revisions and future dependencies. `verify:local:formal-browser` uses two
+real TRAINER logins to request/approve an aged native packet, then verifies
+private-detail removal, retained result and denied learner replay. Its age helper
+is confined to the named local database and exact disposable attempt IDs.
+
+This covers detailed packets for the four governed evaluation runtimes. It is
+not deletion of legacy assessment/focused/mixed-practice history, global policy
+definitions, identities, result ledgers, exported copies or backups. It does not
+establish a legal retention/compliance certification or full hosted recovery.
 
 ## Shared Account ID rule boundary
 

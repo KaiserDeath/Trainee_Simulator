@@ -1,5 +1,6 @@
 export default function HubReportBreakdown({ statistics = {} }) {
   return <div className="hub-report-breakdowns">
+    {statistics.disposedEvidencePackets>0&&<p>{statistics.disposedEvidencePackets} attempt(s) have disposed detailed evidence. Scores remain recorded; operation and failure breakdowns cover retained evidence only.</p>}
     {[
       ['By operation type', statistics.accuracyByOperationType],
       ['By game', statistics.accuracyByGame],

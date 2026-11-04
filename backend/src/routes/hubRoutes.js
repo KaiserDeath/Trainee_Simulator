@@ -526,6 +526,8 @@ export function createHubRouter({
   );
   router.get('/assessment/questions',requireHubRole(HUB_ROLES.TRAINER,HUB_ROLES.RRHH),asyncRoute(async(req,res)=>res.json(await assessmentService.listTheoryQuestions(req.hubIdentity))));
   router.get('/assessment/attempts/:attemptId/evidence',requireHubRole(HUB_ROLES.TRAINER,HUB_ROLES.RRHH),asyncRoute(async(req,res)=>res.json(await assessmentService.getFormalEvidence(req.hubIdentity,req.params.attemptId))));
+  router.get('/assessment/attempts/:attemptId/retention',requireHubRole(HUB_ROLES.TRAINER,HUB_ROLES.RRHH),asyncRoute(async(req,res)=>res.json(await assessmentService.formalRetentionPreview(req.hubIdentity,req.params.attemptId))));
+  router.post('/assessment/attempts/:attemptId/retention',requireHubRole(HUB_ROLES.TRAINER),asyncRoute(async(req,res)=>res.json(await assessmentService.formalRetentionCommand(req.hubIdentity,req.params.attemptId,req.body||{}))));
   router.post('/assessment/questions',requireHubRole(HUB_ROLES.TRAINER),asyncRoute(async(req,res)=>res.status(201).json(await assessmentService.publishTheoryQuestion(req.hubIdentity,req.body||{}))));
 
   router.put(

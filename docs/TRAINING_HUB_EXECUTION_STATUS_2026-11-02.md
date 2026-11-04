@@ -288,3 +288,57 @@ the schema/REST preview. Formal assessment evidence disposal still needs its
 own dependency-preserving path; hosted file/backup recovery, accessibility and
 curriculum/publication acceptance remain open. Live-table text deletion does
 not remove existing backups or exported copies and is not a compliance claim.
+
+### Governed formal evidence disposal (2026-11-04)
+
+Main `04c8785` CI passed. Added per-attempt retention preview, holds, optimistic
+case revisions, reasoned requests/cancellation and independent TRAINER approval
+to recorded formal evidence review. RRHH reads; ADMIN/learners cannot use the
+private workflow. Eligibility requires a completed attempt in a closed set,
+elapsed two-year evidence retention, no active packet hold, no shared/active
+sandbox and no unreviewed dependency or unattributed private retry response.
+
+Added retry lineage for native commands. The migration can attribute older
+tagged responses and history replies only when stored identifiers prove their
+owner. Unknown legacy content blocks disposal. The reviewed transaction removes
+the full owned raw packet: runtime/theory responses, item/action/stage details,
+final operation plans, retry copies, settlement snapshots and sandbox sessions.
+Normal immutable guards remain, and direct service-role delete/bypass grants
+are revoked. Runtime commands and approval serialize on the attempt. After
+disposal, runtime reads/replays return 410 before reaching cached data.
+
+Result rows, scores, set membership/counts, policy snapshots and official
+progress remain byte-for-byte unchanged in tests. Reports retain the result and
+explicitly mark disposed detail; CSV adds an evidence-retention column. Missing
+operation detail is unknown rather than a fabricated zero-percent accuracy.
+The staff UI identifies both the learner and attempt before review and shows a
+receipt after disposal. There is no automatic formal-packet deletion worker.
+
+Fresh migration/seed replay and all ten transactional integration cases passed,
+including real Orion/final workloads, official progress preservation, closed-set
+denial after disposal, independent approval, holds, stale revisions, shared
+sandbox protection, legacy history attribution and unknown-dependency denial.
+The actual local Auth/Express/Vite/Chromium gate passed independent TRAINER
+browser approval and exact retry, removed detail/cache copies, preserved score
+and budget, and denied learner runtime replay. Exact Auth/database fixtures were
+removed. Full foundation passed 242 backend, 12 shared-rule, 61 database-safety
+and 58 browser checks, lint/build. Backend tests were repeated after the final
+missing-record 404 mapping. Ten-client native final capacity and the restored
+database's ten-suite gate passed; recovery compares 76 tables plus views and
+security/schema definitions. The existing build-size warning remains.
+
+Applied `20261104000000_formal_evidence_retention.sql` transactionally with its
+ledger entry to the active hosted project. Current before/after baseline is five
+identities, zero formal attempts/runtimes and four draft evaluations. Read-only
+service-role REST probes confirm authorized missing-attempt 404 and learner
+private-preview 403. Direct delete, browser execution and old runtime/backfill
+bypass privileges are denied. No hosted formal evidence was disposed. Evidence:
+`outputs/hub-formal-retention-2026-11-04/REPORT.md`, `browser.json`,
+`hosted-probe.json`, `capacity.txt` and `recovery.json`.
+
+This disposes governed formal detail while retaining result/budget/progress
+ledgers. Legacy/focused/mixed-practice history, identities, global definitions
+and existing backup/export copies are outside the operation. Hosted end-user
+disposal/deployment acceptance, broader accessibility, hosted file/backup
+recovery and curriculum publication/acceptance remain open; all four hosted
+evaluations remain draft.

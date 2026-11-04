@@ -15,6 +15,13 @@ test('missing legacy scores remain unknown while a recorded zero is included',()
   const stats=summarizeAssessmentAttempts([{identity_id:'one',attempt_number:1,status:'abandoned',score:null,completed_at:'2026-11-03T12:01:00Z',started_at:'2026-11-03T12:00:00Z'},{identity_id:'two',attempt_number:1,status:'timed_out',score:0,completed_at:'2026-11-03T12:00:00Z',started_at:'2026-11-03T11:00:00Z'}],0);
   assert.equal(stats.averageScore,0);assert.equal(stats.latestScore,null);assert.equal(stats.bestScore,0);
 });
+
+test('disposed detail keeps scores/readiness but does not manufacture zero operation accuracy',()=>{
+  const disposed={identity_id:'learner',attempt_number:1,status:'passed',score:100,evidenceRetention:{state:'disposed'},operationResults:[]};
+  const stats=summarizeAssessmentAttempts([disposed],7);assert.equal(stats.averageScore,100);assert.equal(stats.moduleReadyPostulantes,7);assert.equal(stats.operationAccuracy,null);assert.equal(stats.disposedEvidencePackets,1);
+  const mixed=summarizeAssessmentAttempts([disposed,{...disposed,identity_id:'other',score:50,status:'unsuccessful',evidenceRetention:null,operationResults:[{is_correct:false}]}],7);assert.equal(mixed.averageScore,75);assert.equal(mixed.operationAccuracy,0);
+  assert.match(assessmentReportCsv({attempts:[disposed]}),/Detailed evidence disposed/);
+});
 test('CSV export quotes cells, neutralizes spreadsheet formulas and omits unselected private evidence',()=>{
   const csv=assessmentReportCsv({attempts:[{postulante:{display_name:' =HYPERLINK("bad")',username:'@unsafe'},source:'governed_evaluation',evaluationTitle:'Checkpoint, "one"',attempt_number:1,status:'passed',officialSubmitted:false,score:100,settings_snapshot:{revision:2,password:'NEVER_EXPORT'},operationResults:[{operation_type:'ADD CREDITS',game:'Orion Stars',is_correct:true,failure_points:['NEVER_EXPORT']}]}]});
   assert.ok(csv.startsWith('\uFEFF'));assert.ok(csv.includes('"\' =HYPERLINK(""bad"")"'));assert.ok(csv.includes('"\'@unsafe"'));assert.ok(csv.includes('"Checkpoint, ""one"""'));assert.ok(csv.includes('"Not submitted"'));assert.equal(csv.includes('NEVER_EXPORT'),false);

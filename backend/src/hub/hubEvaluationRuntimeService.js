@@ -31,6 +31,7 @@ export function createHubEvaluationRuntimeService({client}){
       const result=await client.rpc(practice?'hub_mixed_command':'hub_evaluation_runtime_command',{p_external_subject:identity.subjectId,...(practice?{p_activity_id:attemptId}:{p_attempt_id:attemptId}),p_command:command,p_input:input,p_idempotency_key:command==='read'?null:body.idempotencyKey});
       if(result.error){
         const error=String(result.error.message||'');
+        if(error.includes('HUB_FORMAL_EVIDENCE_DISPOSED'))throw new HubError(410,'HUB_FORMAL_EVIDENCE_DISPOSED','Detailed evidence was disposed under retention. Your score and consumed attempts remain recorded.');
         if(error.includes('HUB_PRACTICE_CONFLICT'))throw new HubError(409,'HUB_PRACTICE_CONFLICT','This practice run changed. Reload its saved progress before continuing.');
         if(error.includes('HUB_PREREQUISITE_INCOMPLETE')||error.includes('HUB_ACTIVITY_BLOCKED'))throw new HubError(409,'HUB_ACTIVITY_BLOCKED','Complete the required learning before opening this practice.');
         if(result.error.code==='22023')throw new HubError(400,'HUB_VALIDATION_ERROR','Provide a permitted decision and the required reason.');

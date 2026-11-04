@@ -17,7 +17,7 @@ const origin=urls.frontend.origin;const apiOrigin=urls.backend.origin;
 const evaluationId='10000000-0000-4000-8000-000000000401';
 const runId=randomUUID();const tag=runId.replaceAll('-','').slice(0,10);
 const courseId=randomUUID(),moduleId=randomUUID(),activityId=randomUUID();
-const people=['trainer','rrhh','postulante','postulante','postulante'].map((role,i)=>({id:randomUUID(),role,username:`F${tag}${i}`,displayName:`Formal fixture ${tag} ${i}`,password:randomBytes(24).toString('base64url')}));
+const people=['trainer','rrhh','postulante','postulante','postulante','trainer'].map((role,i)=>({id:randomUUID(),role,username:`F${tag}${i}`,displayName:`Formal fixture ${tag} ${i}`,password:randomBytes(24).toString('base64url')}));
 const contexts=[];let browser,server,vite,original,changed=false;let viteLog='';
 const report={target:'isolated loopback Supabase and actual Express/Vite/browser',checks:[],runId};
 const checked=(result,label)=>{if(result.error)throw new Error(`${label}: ${result.error.message}`);return result.data;};
@@ -90,6 +90,24 @@ try{
  for(const staff of [trainer,auditor]){const evidence=await get(staff.context,`assessment/attempts/${successful.attemptId}/evidence`);assert.equal(evidence.questions[0].correctOption,'verify');assert.equal(evidence.actions.length,7);const reportRows=await get(staff.context,`assessment/report?postulanteId=${people[3].id}`);assert.ok(reportRows.attempts.length>=3);}
  const outsider=await login(people[4]);assert.equal((await outsider.context.request.get(`${apiOrigin}/api/hub/scored-evaluations/attempts/${successful.attemptId}/runtime`)).status(),403);
  record('TRAINER/RRHH can review formal evidence and reports; learner/private evidence and foreign-attempt reads are denied');
+ const retentionPath=`assessment/attempts/${successful.attemptId}/retention`;
+ sql(fs.readFileSync(path.join(root,'backend/test/integration/formalRetentionAgeFixture.sql'),'utf8')+`\nSELECT pg_temp.age_formal('${successful.attemptId}');`);
+ const retainedRoot=checked(await supabase.from('hub_scored_evaluation_attempts').select('*').eq('id',successful.attemptId).single(),'retention root');
+ const proposal={command:'request',expectedRevision:0,reason:'Closed aged native packet reviewed for disposal',idempotencyKey:randomUUID()};
+ assert.equal((await post(manual.context,retentionPath,proposal)).status(),403);assert.equal((await post(auditor.context,retentionPath,proposal)).status(),403);
+ const proposed=await post(trainer.context,retentionPath,proposal);assert.equal(proposed.status(),200,await proposed.text());
+ assert.equal((await post(trainer.context,retentionPath,{command:'approve',expectedRevision:1,reason:'Cannot approve my own request',idempotencyKey:randomUUID()})).status(),409);
+ const reviewer=await login(people[5]);await reviewer.page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();await reviewer.page.getByText('Private recorded assessment actions',{exact:true}).click();
+ const packet=reviewer.page.locator(`[data-attempt-id="${successful.attemptId}"]`);await packet.getByRole('button',{name:'Review recorded evidence',exact:true}).click();await packet.getByRole('button',{name:'Open evidence retention',exact:true}).click();
+ await packet.getByRole('button',{name:'Review evidence disposal',exact:true}).click();await packet.getByLabel('Brief evidence retention reason (omit private evidence)',{exact:true}).fill('Independent age and dependency review completed');
+ const disposing=reviewer.page.waitForResponse(r=>r.url().endsWith(`/attempts/${successful.attemptId}/retention`)&&r.request().method()==='POST');await packet.getByRole('button',{name:'Approve evidence disposal',exact:true}).click();const disposed=await disposing;assert.equal(disposed.status(),200,await disposed.text());
+ const receipt=await disposed.json();assert.equal(receipt.state,'disposed');assert.equal(receipt.removed_counts.actions,7);
+ const repeat=await post(reviewer.context,retentionPath,disposed.request().postDataJSON());assert.equal(repeat.status(),200);assert.deepEqual(await repeat.json(),receipt);
+ const empty=await get(trainer.context,`assessment/attempts/${successful.attemptId}/evidence`);assert.equal(empty.evidenceRetention.state,'disposed');assert.equal(empty.questions.length,0);assert.equal(empty.actions.length,0);
+ assert.deepEqual(checked(await supabase.from('hub_scored_evaluation_attempts').select('*').eq('id',successful.attemptId).single(),'retained result after disposal'),retainedRoot);
+ assert.equal((await manual.context.request.get(`${apiOrigin}/api/hub/scored-evaluations/attempts/${successful.attemptId}/runtime`)).status(),410);
+ assert.equal((await post(manual.context,`scored-evaluations/${evaluationId}/attempts`,{idempotencyKey:randomUUID()})).status(),409);
+ record('Independent TRAINER browser review disposed an aged packet; detail and cached copies were removed while score, closed budget and result remain; learner runtime replay denied');
  fs.mkdirSync(path.join(root,'outputs'),{recursive:true});await trainer.page.screenshot({path:path.join(root,'outputs/hub-formal-browser-trainer.png'),fullPage:true});report.passed=true;
 }catch(error){report.passed=false;report.failure=error.message;console.error(error);if(viteLog&&!browser)console.error(viteLog);process.exitCode=1;}
 finally{
@@ -99,6 +117,7 @@ finally{
   let restore='';if(changed){const keys=Object.keys(original);const json=JSON.stringify(original).replaceAll("'","''");restore=`UPDATE hub_scored_evaluations SET (${keys.map(k=>'"'+k+'"').join(',')})=(SELECT ${keys.map(k=>'r."'+k+'"').join(',')} FROM jsonb_populate_record(NULL::hub_scored_evaluations,'${json}'::jsonb)r) WHERE id='${evaluationId}';`;}
   sql(`BEGIN;SET LOCAL session_replication_role=replica;${restore}
 CREATE TEMP TABLE formal_fixture_sessions ON COMMIT DROP AS SELECT session_id AS id FROM hub_evaluation_worlds WHERE attempt_id IN(${attempts});
+DELETE FROM hub_formal_retention_events WHERE attempt_id IN(${attempts});DELETE FROM hub_formal_retention_cases WHERE attempt_id IN(${attempts});DELETE FROM hub_formal_retry_lineage WHERE identity_id IN(${ids});
 DELETE FROM hub_evaluation_action_evidence WHERE attempt_id IN(${attempts});DELETE FROM hub_evaluation_worlds WHERE attempt_id IN(${attempts});DELETE FROM hub_evaluation_runtime WHERE attempt_id IN(${attempts});DELETE FROM hub_scored_evaluation_item_results WHERE attempt_id IN(${attempts});DELETE FROM hub_evaluation_reopen_events WHERE identity_id IN(${ids});DELETE FROM hub_scored_evaluation_attempts WHERE identity_id IN(${ids});DELETE FROM hub_evaluation_attempt_sets WHERE identity_id IN(${ids});
 DELETE FROM hub_evidence_events WHERE attempt_id IN(SELECT id FROM hub_attempts WHERE module_progress_id IN(SELECT id FROM hub_module_progress WHERE course_id='${courseId}'));DELETE FROM hub_activity_attempts WHERE module_id='${moduleId}';DELETE FROM hub_attempts WHERE module_id='${moduleId}';DELETE FROM hub_module_progress WHERE course_id='${courseId}';DELETE FROM hub_enrolments WHERE course_id='${courseId}';DELETE FROM hub_activities WHERE module_id='${moduleId}';DELETE FROM hub_modules WHERE course_id='${courseId}';DELETE FROM hub_courses WHERE id='${courseId}';
 DO $$ DECLARE r RECORD;BEGIN FOR r IN SELECT c.table_name FROM information_schema.columns c JOIN information_schema.tables t USING(table_schema,table_name) WHERE c.table_schema='public' AND c.column_name='session_id' AND t.table_type='BASE TABLE' LOOP EXECUTE format('DELETE FROM public.%I WHERE session_id IN(SELECT id FROM formal_fixture_sessions)',r.table_name);END LOOP;END;$$;

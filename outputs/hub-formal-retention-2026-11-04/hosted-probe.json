@@ -1,0 +1,15 @@
+{
+  "target": "active hosted database/service-role REST",
+  "passed": true,
+  "staffMissingAttemptStatus": 404,
+  "learnerPrivatePreviewStatus": 403,
+  "counts": {
+    "hub_identities": 5,
+    "hub_scored_evaluation_attempts": 0,
+    "hub_evaluation_runtime": 0,
+    "hub_formal_retention_cases": 0,
+    "hub_formal_retention_events": 0
+  },
+  "draftEvaluations": 4,
+  "hostedDisposalPerformed": false
+}

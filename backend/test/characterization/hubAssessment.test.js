@@ -4,6 +4,7 @@ import test from 'node:test';
 import express from 'express';
 
 import { createHubRouter } from '../../src/routes/hubRoutes.js';
+import {createHubAssessmentService} from '../../src/hub/hubAssessmentService.js';
 
 const csrf = { middleware(_req, _res, next) { next(); } };
 const unused = new Proxy({}, { get() { return async () => { throw new Error('unused'); }; } });
@@ -51,6 +52,17 @@ test('formal failure evidence remains restricted to TRAINER and RRHH',async()=>{
   const path='/assessment/attempts/10000000-0000-4000-8000-000000000499/evidence';
   for(const role of ['POSTULANTE','ADMIN'])assert.equal((await requestAs(role,path,{},service)).status,403);
   for(const role of ['TRAINER','RRHH'])assert.equal((await requestAs(role,path,{},service)).body.stages[0].evidence.reason,'private assessment finding');
+});
+
+test('formal retention preview is private and mutations remain TRAINER-only',async()=>{
+  const service={async formalRetentionPreview(){return {eligible:false};},async formalRetentionCommand(){return {state:'pending'};}};
+  const path='/assessment/attempts/10000000-0000-4000-8000-000000000499/retention';
+  for(const role of ['POSTULANTE','ADMIN'])assert.equal((await requestAs(role,path,{},service)).status,403);
+  assert.equal((await requestAs('RRHH',path,{},service)).status,200);
+  for(const role of ['POSTULANTE','ADMIN','RRHH'])assert.equal((await requestAs(role,path,{method:'POST',body:'{}'},service)).status,403);
+  assert.equal((await requestAs('TRAINER',path,{method:'POST',body:'{}'},service)).status,200);
+  const missing=createHubAssessmentService({client:{async rpc(){return {error:{message:'HUB_OBJECT_NOT_FOUND'}};}}});
+  await assert.rejects(()=>missing.formalRetentionPreview({subjectId:'trainer'},'10000000-0000-4000-8000-000000000499'),error=>error.statusCode===404);
 });
 
 test('TRAINER manages assessment settings while TRAINER and RRHH read filtered statistics', async () => {

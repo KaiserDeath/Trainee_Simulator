@@ -12,6 +12,11 @@ function persistenceError() {
 function assessmentDbError(error) {
   const message = String(error?.message || '');
   const mappings = [
+    ['HUB_OBJECT_NOT_FOUND',404,'HUB_EVALUATION_NOT_FOUND','The assessment attempt was not found.'],
+    ['HUB_RETENTION_PROTECTED',409,'HUB_RETENTION_PROTECTED','This packet is protected by its retention date, hold, activity or dependencies. Refresh the preview.'],
+    ['HUB_RETENTION_STATE_CONFLICT',409,'HUB_RETENTION_STATE_CONFLICT','This retention case changed. Refresh the preview.'],
+    ['HUB_SEPARATE_APPROVER_REQUIRED',409,'HUB_SEPARATE_APPROVER_REQUIRED','A different active TRAINER must approve evidence disposal.'],
+    ['HUB_INVALID_INPUT',400,'HUB_VALIDATION_ERROR','Provide a valid retention action, revision, reason and retry key.'],
     ['EVALUATION_NOT_FOUND', 404, 'HUB_EVALUATION_NOT_FOUND', 'The scored evaluation was not found.'],
     ['EVALUATION_NOT_AVAILABLE', 409, 'HUB_EVALUATION_NOT_AVAILABLE', 'This scored evaluation is not yet published with verified adapters.'],
     ['EVALUATION_REOPEN_REQUIRED', 409, 'HUB_EVALUATION_REOPEN_REQUIRED', 'TRAINER must reopen this evaluation before another attempt can begin.'],
@@ -135,7 +140,8 @@ function summarize(attempts, readiness) {
     averageDurationMinutes: durations.length ? Number((durations.reduce((sum, value) => sum + value, 0) / durations.length).toFixed(2)) : null,
     timedOut: attempts.filter((attempt) => attempt.status === 'timed_out').length,
     abandoned: attempts.filter((attempt) => attempt.status === 'abandoned').length,
-    operationAccuracy: results.length ? Math.round(correct / results.length * 100) : 0,
+    operationAccuracy: results.length ? Math.round(correct / results.length * 100) : attempts.some(row=>row.evidenceRetention?.state==='disposed')?null:0,
+    disposedEvidencePackets:attempts.filter(row=>row.evidenceRetention?.state==='disposed').length,
     accuracyByOperationType: groupAccuracy('operation_type'),
     accuracyByGame: groupAccuracy('game'),
     accuracyByCategory: groupAccuracy('operation_category'),
@@ -320,15 +326,26 @@ export function createHubAssessmentService({ client }) {
 
     async getFormalEvidence(identity,attemptId){
       await actor(identity);const id=requireUuid(attemptId,'attemptId');
-      const [attempt,runtime,actions,stages]=await Promise.all([
-        client.from('hub_scored_evaluation_attempts').select('id,identity_id,evaluation_id,attempt_in_set,status,score,result_status,settings_snapshot,started_at,completed_at,submitted_at').eq('id',id).maybeSingle(),
+      const [attempt,runtime,actions,stages,retention]=await Promise.all([
+        client.from('hub_scored_evaluation_attempts').select('id,identity_id,evaluation_id,attempt_in_set,status,score,result_status,settings_snapshot,started_at,completed_at,submitted_at,hub_identities(display_name,username)').eq('id',id).maybeSingle(),
         client.from('hub_evaluation_runtime').select('theory_snapshot,theory_answers').eq('attempt_id',id).maybeSingle(),
         client.from('hub_evaluation_action_evidence').select('id,sequence_number,item_code,game_family_key,is_correct,evidence,created_at').eq('attempt_id',id).order('sequence_number'),
         client.from('hub_final_stage_evidence').select('id,sequence_number,stage_number,action_code,is_correct,evidence,created_at').eq('attempt_id',id).order('sequence_number').order('stage_number'),
+        client.from('hub_formal_retention_cases').select('state,disposed_at,removed_counts').eq('attempt_id',id).maybeSingle(),
       ]);
-      if([attempt,runtime,actions,stages].some(result=>result.error))throw persistenceError();
+      if([attempt,runtime,actions,stages,retention].some(result=>result.error))throw persistenceError();
       if(!attempt.data)throw new HubError(404,'HUB_EVALUATION_NOT_FOUND','The assessment attempt was not found.');
-      return {attempt:attempt.data,questions:(runtime.data?.theory_snapshot||[]).map(question=>({...question,submittedOption:runtime.data?.theory_answers?.[question.code]??null})),actions:actions.data||[],stages:stages.data||[]};
+      return {attempt:attempt.data,questions:(runtime.data?.theory_snapshot||[]).map(question=>({...question,submittedOption:runtime.data?.theory_answers?.[question.code]??null})),actions:actions.data||[],stages:stages.data||[],evidenceRetention:retention.data?.state==='disposed'?retention.data:null};
+    },
+    async formalRetentionPreview(identity,attemptId){
+      const result=await client.rpc('hub_formal_retention_preview',{p_external_subject:identity.subjectId,p_attempt_id:requireUuid(attemptId,'attemptId')});
+      if(result.error)throw assessmentDbError(result.error);return result.data;
+    },
+    async formalRetentionCommand(identity,attemptId,body){
+      const id=requireUuid(attemptId,'attemptId');
+      if(!['hold','release','request','cancel','approve'].includes(body.command)||!Number.isInteger(body.expectedRevision)||body.expectedRevision<0||typeof body.reason!=='string'||body.reason.trim().length<5||body.reason.length>500||typeof body.idempotencyKey!=='string'||!body.idempotencyKey.trim()||body.idempotencyKey.length>200)throw new HubError(400,'HUB_VALIDATION_ERROR','Provide an action, current revision, brief reason and retry key.');
+      const result=await client.rpc('hub_formal_retention_command',{p_external_subject:identity.subjectId,p_attempt_id:id,p_command:body.command,p_expected_revision:body.expectedRevision,p_reason:body.reason.trim(),p_idempotency_key:body.idempotencyKey});
+      if(result.error)throw assessmentDbError(result.error);return result.data;
     },
 
     async listTheoryQuestions(identity){
