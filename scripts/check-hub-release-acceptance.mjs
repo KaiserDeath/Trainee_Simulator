@@ -13,7 +13,8 @@ assert.ok(config.audiences.includes('newLearners')&&config.audiences.includes('e
 assert.ok(config.rollout.totalLearnerLimit===null||(Number.isInteger(config.rollout.totalLearnerLimit)&&config.rollout.totalLearnerLimit>=1));
 assert.ok(Number.isInteger(config.pilot.maximumLearners)&&config.pilot.maximumLearners>=1);
 assert.ok(Number.isInteger(config.pilot.maximumConcurrentLearners)&&config.pilot.maximumConcurrentLearners>=1&&config.pilot.maximumConcurrentLearners<=config.pilot.maximumLearners);
-if(config.pilot.maximumConcurrentLearners>config.rollout.verifiedConcurrentLearners&&!config.pilot.capacityEvidence)pending.push('pilot: verify larger concurrent capacity before expanding simultaneous use');
+assert.ok(Number.isInteger(config.rollout.initialConcurrentLearnerTarget)&&config.rollout.initialConcurrentLearnerTarget>=1);
+if(config.pilot.maximumConcurrentLearners>config.rollout.initialConcurrentLearnerTarget&&!config.pilot.capacityEvidence)pending.push('pilot: verify larger hosted concurrent capacity before expanding simultaneous use; local stress results do not certify hosting');
 assert.ok(Array.isArray(config.pilot.learnerUsernames));
 assert.equal(new Set(config.pilot.learnerUsernames).size,config.pilot.learnerUsernames.length,'Duplicate pilot learner');
 assert.ok(config.pilot.learnerUsernames.length<=config.pilot.maximumLearners);

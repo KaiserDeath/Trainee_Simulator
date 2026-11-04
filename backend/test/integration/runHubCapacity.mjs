@@ -3,21 +3,24 @@ import {randomUUID} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {createClient} from '@supabase/supabase-js';
 import {assertLocalE2EBackendEnvironment} from '../../src/config/localE2EGuard.js';
+import {localCapacityClientCount,settleCapacityClients} from './localCapacityOptions.mjs';
 
 assertLocalE2EBackendEnvironment();
 const makeClient=()=>createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const client=makeClient();
 const runId=randomUUID();const courseId=randomUUID();const moduleId=randomUUID();const labId=randomUUID();const creationId=randomUUID();
-const identities=Array.from({length:10},(_,index)=>({id:randomUUID(),external_subject_reference:`__TREZ_CAPACITY__:${runId}:${index}`,display_name:`Capacity fixture ${index}`}));
+const clients=localCapacityClientCount();
+const identities=Array.from({length:clients},(_,index)=>({id:randomUUID(),external_subject_reference:`__TREZ_CAPACITY__:${runId}:${index}`,display_name:`Capacity fixture ${index}`}));
 const durations=[];
+let summary;
 const checked=(result,label)=>{if(result.error)throw new Error(`${label}: ${result.error.message}`);return result.data;};
 const quoted=ids=>ids.length?ids.map(id=>`'${id}'::uuid`).join(','):'NULL::uuid';
 async function stage(activityId,command,input,connection=client){
-  return Promise.all(identities.map(async(identity,index)=>{
+  return settleCapacityClients(identities.map((identity,index)=>async()=>{
     const start=performance.now();
     const result=checked(await connection.rpc('hub_account_practice_command',{p_external_subject:identity.external_subject_reference,p_activity_id:activityId,p_command:command,p_input:input(index),p_idempotency_key:`${runId}:${command}:${index}`}),command);
     durations.push(performance.now()-start);return result;
-  }));
+  }),`Account practice stage failed: ${command}`);
 }
 try{
   const role=checked(await client.from('hub_roles').select('id').eq('code','postulante').single(),'role');
@@ -30,7 +33,7 @@ try{
     {id:creationId,module_id:moduleId,stable_code:'capacity-create',position:2,title:'Create account',activity_type:'quick_simulation',content:{policyStatus:'approved',executionKind:'account_creation',policyVersionId:'20000000-0000-4000-8000-000000000001'}},
   ]),'activities');
   checked(await client.from('hub_enrolments').insert(identities.map(identity=>({identity_id:identity.id,course_id:courseId}))),'enrolments');
-  const starts=await stage(labId,'start',()=>({}));assert.equal(new Set(starts.map(row=>row.id)).size,10);
+  const starts=await stage(labId,'start',()=>({}));assert.equal(new Set(starts.map(row=>row.id)).size,clients);
   const identifier=index=>`OS_Practi${String(index).padStart(3,'0')}`;
   await stage(labId,'validate',index=>({identifier:identifier(index)}));
   const creates=await stage(creationId,'create',index=>({identifier:identifier(index),password:'capacity-fixture-only'}));
@@ -38,10 +41,10 @@ try{
   const replays=await stage(creationId,'create',index=>({identifier:identifier(index),password:'capacity-fixture-only'}),makeClient());
   assert.deepEqual(replays,creates);
   const finishes=await stage(creationId,'confirm',index=>({identifier:identifier(index),password:'capacity-fixture-only',kiosk:'OrionStars'}));
-  assert.equal(new Set(finishes.map(row=>row.artifactId)).size,10);
+  assert.equal(new Set(finishes.map(row=>row.artifactId)).size,clients);
   assert.ok(finishes.every(row=>row.operation.status==='APPROVED'));
   const p95=[...durations].sort((a,b)=>a-b)[Math.ceil(durations.length*.95)-1];
-  console.log(JSON.stringify({gate:'10-concurrent-account-practice-clients',clients:10,commands:durations.length,errors:0,p95Milliseconds:Math.round(p95),scope:'Local database/REST practice commands and second-client retries; not a full browser/production load certification.'}));
+  summary={gate:`${clients}-concurrent-account-practice-clients`,clients,commands:durations.length,errors:0,p95Milliseconds:Math.round(p95),scope:'Local database/REST practice commands and second-client retries; not a full browser/production load certification.'};
 }finally{
   const ids=quoted(identities.map(row=>row.id));
   const sessions=checked(await client.from('hub_account_practice').select('session_id').in('identity_id',identities.map(row=>row.id)),'cleanup session inventory');
@@ -69,3 +72,4 @@ DELETE FROM trainee_sessions WHERE id IN (${sessionIds}); COMMIT;`;
   if(cleanup.status!==0)throw new Error(`Exact-ID local fixture cleanup failed: ${cleanup.stderr}`);
   const remaining=checked(await client.from('hub_identities').select('id').in('id',identities.map(row=>row.id)),'cleanup verification');assert.equal(remaining.length,0);
 }
+console.log(JSON.stringify({...summary,cleanupPassed:true}));

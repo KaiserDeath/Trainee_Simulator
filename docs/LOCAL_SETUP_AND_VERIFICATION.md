@@ -688,6 +688,31 @@ establish a legal retention/compliance certification or full hosted recovery.
 
 `shared/account-id-rules` extracts framework-independent normalization, segmented construction, pattern generation, and answer validation. Policies are supplied by the caller. The package contains no default game catalogue, real initials, family assignments, password rules, or approved scoring formulas.
 
+## Local capacity and existing-worker reinforcement
+
+The two capacity commands default to ten concurrent synthetic clients. Set
+`TREZ_LOCAL_CAPACITY_CLIENTS` to an integer from 1 to 100 to select a larger
+isolated workload; this changes verification only, not product permissions,
+enrollment limits or production traffic. Both retain the loopback/named-container
+guard and exact-ID fixture cleanup. CI runs both at 100 clients.
+
+```powershell
+$env:TREZ_LOCAL_CAPACITY_CLIENTS='100'
+npm run verify:local:capacity
+npm run verify:local:assessment-capacity
+Remove-Item Env:TREZ_LOCAL_CAPACITY_CLIENTS
+```
+
+Practice verifies distinct artifacts and retries from a second client. Native
+final assessment runs two rounds per learner: complete actual practical work,
+officially submit, reopen through the reasoned TRAINER command, and officially
+submit a reassessment in a new three-attempt set. The first official attempt row
+must remain byte-for-byte unchanged. In-flight clients drain before cleanup even
+on failure; temporary reopening events and policy heads are also verified clean.
+Success summaries are emitted after cleanup, and native p95 measures runtime RPCs
+only. Neither workload includes real browser/Auth/hosted concurrency or human
+learning outcomes. See `outputs/hub-reinforcement-capacity-2026-11-04/REPORT.md`.
+
 ## Current characterization boundary
 
 The backend tests describe current prototype scoring and request validation. They are deliberately named as characterization tests. They do not approve operation states, account formulas, password policies, financial rules, escalation behavior, or formal Hub scoring.

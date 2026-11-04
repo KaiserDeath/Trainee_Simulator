@@ -1,7 +1,15 @@
 {
   "version": 1,
   "audiences": ["newLearners", "existingEmployees"],
-  "rollout": {"totalLearnerLimit": null, "verifiedConcurrentLearners": 10},
+  "rollout": {
+    "totalLearnerLimit": null,
+    "initialConcurrentLearnerTarget": 10,
+    "capacityEvidence": {
+      "localConcurrentLearners": 100,
+      "hostedConcurrentLearners": null,
+      "report": "outputs/hub-reinforcement-capacity-2026-11-04/REPORT.md"
+    }
+  },
   "positions": {
     "training": {"label": "Capacitador", "requiredHubRole": "TRAINER"}
   },

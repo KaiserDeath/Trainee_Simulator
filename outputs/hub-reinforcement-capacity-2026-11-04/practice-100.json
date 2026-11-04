@@ -1,0 +1,9 @@
+{
+  "gate": "100-concurrent-account-practice-clients",
+  "clients": 100,
+  "commands": 500,
+  "errors": 0,
+  "p95Milliseconds": 226,
+  "scope": "Local database/REST practice commands and second-client retries; not a full browser/production load certification.",
+  "cleanupPassed": true
+}

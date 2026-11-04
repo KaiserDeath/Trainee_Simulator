@@ -1,0 +1,13 @@
+{
+  "gate": "100-concurrent-native-final-assessment-clients",
+  "clients": 100,
+  "roundsPerClient": 2,
+  "officialResults": 200,
+  "originalResultsPreserved": 100,
+  "runtimeCommands": 2128,
+  "practicalActions": 1528,
+  "errors": 0,
+  "runtimeP95Milliseconds": 812,
+  "scope": "Local REST/database native final execution, retries, official submission and reasoned TRAINER reinforcement with synthetic prerequisite fixtures; not browser/Auth/hosted load certification.",
+  "cleanupPassed": true
+}

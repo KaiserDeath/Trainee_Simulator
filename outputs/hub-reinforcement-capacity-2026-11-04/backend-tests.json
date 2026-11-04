@@ -1,0 +1,7 @@
+{
+  "tests": 246,
+  "passed": 246,
+  "failed": 0,
+  "command": "npm run test:backend",
+  "logSha256": "350f2bd77c729385337d08790626d2927f4feb2c9cef6c8e5ff82c93947d702d"
+}

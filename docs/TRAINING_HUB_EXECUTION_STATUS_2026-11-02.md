@@ -382,3 +382,23 @@ student cap. Release configuration separates population, pilot participation and
 concurrency; current cohorts allow 100 members each. Larger simultaneous use
 requires new capacity evidence. Preserve prior completions/results; use repeat
 practice and controlled TRAINER reassessment for reinforcement.
+
+### Larger local workloads and reinforcement verification (2026-11-04)
+
+Local practice and native-final runners now accept 1–100 synthetic concurrent
+clients, defaulting to ten; CI selects 100. Client failures drain all in-flight
+work before exact fixture cleanup. Reassessment exercises two officially
+submitted finals per learner, with a reasoned TRAINER reopening between them,
+a fresh three-attempt set and an unchanged original official attempt row.
+
+The 100-client runs passed: 500 practice RPCs; 2,128 native runtime RPCs; 1,528
+practical actions; 200 official results; all 100 original rows preserved. Local
+p95 was 226 ms practice and 812 ms native runtime RPCs. Cleanup restored the
+empty fixture baseline, including reopening events and policy heads. All 246
+backend tests passed. See `outputs/hub-reinforcement-capacity-2026-11-04/REPORT.md`.
+
+This is local database/REST evidence, not hosted browser/Auth capacity or a human
+competency result. Release configuration now separates the initial ten-person
+concurrency target from local stress evidence; hosted capacity remains unknown.
+Curriculum decisions, the approved-policy hosted journey and the real supervised
+pilot remain pending; no real policy or learner record changed in this increment.

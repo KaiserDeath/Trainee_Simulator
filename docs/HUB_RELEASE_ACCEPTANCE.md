@@ -40,8 +40,11 @@ passwords, session cookies or answer keys in committed evidence.
 ## Supervised pilot
 
 The Hub serves new learners **and existing employees receiving reinforcement**.
-Ten is the initial pilot size and verified concurrency target, not a total-user
-limit. The release plan has no total-student cap. The current application permits
+Ten is the initial supervised-pilot/concurrency target, not a total-user limit.
+Local REST/database stress verification has passed 100 simultaneous clients,
+including two officially submitted final assessments per client and preserved
+original results after TRAINER reopening. This does not certify hosted concurrency.
+The release plan has no total-student cap. The current application permits
 up to 100 learners per cohort (`backend/src/hub/hubCohortService.js`); larger
 populations can use multiple cohorts. That per-cohort bound is not evidence of
 100 simultaneous native assessments. Verify larger concurrency before increasing

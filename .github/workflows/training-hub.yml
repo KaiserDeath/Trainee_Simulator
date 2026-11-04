@@ -68,7 +68,11 @@ jobs:
       - run: npm run verify:local:workspace
       - run: npm run verify:local:media
       - run: npm run verify:local:capacity
+        env:
+          TREZ_LOCAL_CAPACITY_CLIENTS: '100'
       - run: npm run verify:local:assessment-capacity
+        env:
+          TREZ_LOCAL_CAPACITY_CLIENTS: '100'
       - run: npm run verify:local:formal-browser
       - run: npm run verify:local:recovery
       - name: Stop disposable Supabase
