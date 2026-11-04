@@ -1,10 +1,16 @@
 # Trez Training Hub — Development Plan
 
-Status: Proposed for execution approval
+Status: Foundation implemented; release acceptance pending; next design/architecture phase planned
 Company: Trez
 Prepared: 2026-08-20
+Updated: 2026-11-04
 Primary repository: `C:/Users/OS/PROYECTOS/Simulador-dos`
 Account-structure reference application: `C:/Users/OS/PROYECTOS/Evaluations`
+
+Current execution roadmap: [Hub design and architecture upgrade plan](HUB_DESIGN_ARCHITECTURE_UPGRADE_PLAN.md).
+That roadmap governs the next increment. The original milestones below retain
+their historical sequence; they are not a claim that foundation work is still
+unimplemented or that production acceptance is complete.
 
 ## 1. Objective
 
@@ -629,6 +635,10 @@ The remaining decisions or owners are:
 9. Exact Module 9 scope.
 
 ## 15. Immediate implementation backlog after plan approval
+
+Historical foundation backlog: consult the current roadmap linked above before
+starting work. Do not repeat implemented identity, persistence, localization or
+assessment infrastructure merely because it appears in this original sequence.
 
 The first execution increment should be limited to foundation work:
 

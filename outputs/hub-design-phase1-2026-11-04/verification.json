@@ -1,0 +1,35 @@
+{
+  "scope": "Standalone design preview with fictional data; no product or hosted verification",
+  "checks": [
+    "home/en: heading, 1440/320px reflow and automated accessibility scan",
+    "catalog/en: heading, 1440/320px reflow and automated accessibility scan",
+    "module/en: heading, 1440/320px reflow and automated accessibility scan",
+    "trainer/en: heading, 1440/320px reflow and automated accessibility scan",
+    "home/es: heading, 1440/320px reflow and automated accessibility scan",
+    "catalog/es: heading, 1440/320px reflow and automated accessibility scan",
+    "module/es: heading, 1440/320px reflow and automated accessibility scan",
+    "trainer/es: heading, 1440/320px reflow and automated accessibility scan",
+    "Search, availability filter, empty/reset state, language switch preserves filter inputs",
+    "Navigation heading focus, browser Back/Forward, sample-only feedback and manual update",
+    "No JavaScript errors or external HTTP requests"
+  ],
+  "screenshots": [
+    "home-en-1440.png",
+    "home-en-320.png",
+    "catalog-en-1440.png",
+    "catalog-en-320.png",
+    "module-en-1440.png",
+    "module-en-320.png",
+    "trainer-en-1440.png",
+    "trainer-en-320.png",
+    "home-es-1440.png",
+    "home-es-320.png",
+    "catalog-es-1440.png",
+    "catalog-es-320.png",
+    "module-es-1440.png",
+    "module-es-320.png",
+    "trainer-es-1440.png",
+    "trainer-es-320.png"
+  ],
+  "passed": true
+}
