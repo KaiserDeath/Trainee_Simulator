@@ -64,6 +64,8 @@ export const reviewHubContentVersion = async (id,body) => api.post(`/hub/admin/c
 export const getHubCoachingNotes = (id,cursor) => api.get(`/hub/workspace/postulantes/${id}/notes`,{params:cursor?{cursor}:{}});
 export const getHubCoachingEvidence = (id) => api.get(`/hub/workspace/postulantes/${id}/evidence`);
 export const saveHubCoachingNote = async (id,body) => api.post(`/hub/workspace/postulantes/${id}/notes`,body,await withHubCsrf());
+export const getHubCoachingRetention=(id,cursor)=>api.get(`/hub/workspace/postulantes/${id}/retention`,{params:cursor?{cursor}:{}});
+export const changeHubCoachingRetention=async(id,body)=>api.post(`/hub/workspace/postulantes/${id}/retention`,body,await withHubCsrf());
 export const commandHubAccountPractice = async (id,command,body) => api.post(`/hub/activities/${id}/account-practice/${command}`,body,await withHubCsrf());
 export const commandHubCredentialPractice = async (id,command,body) => api.post(`/hub/activities/${id}/credential-practice/${command}`,body,await withHubCsrf());
 export const commandHubExceptionPractice = async (id,command,body) => api.post(`/hub/activities/${id}/exception-practice/${command}`,body,await withHubCsrf());

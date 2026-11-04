@@ -54,6 +54,10 @@ function checked(result) {
     ['HUB_SEPARATE_APPROVER_REQUIRED',409,'A different administrator must review this proposal.'],
     ['HUB_VERIFICATION_EVIDENCE_REQUIRED',409,'Choose a later completed attempt for this learner as verification evidence.'],
     ['HUB_MEDIA_UPLOAD_EXPIRED',410,'This upload registration expired. Attach a new asset version.'],
+    ['HUB_COACHING_DISPOSED',410,'This coaching record was disposed under its retention policy. Refresh the notes.'],
+    ['HUB_RETENTION_PROTECTED',409,'This note is protected by its age, status, linked evidence or a retention hold. Refresh the preview.'],
+    ['HUB_RETENTION_HOLD_EXISTS',409,'An active retention hold already protects this learner.'],
+    ['HUB_RETENTION_STATE_CONFLICT',409,'This retention request changed. Refresh the preview before proceeding.'],
     ['HUB_INVALID_INPUT',400,'The requested change is invalid.'],
   ];
   const match = errors.find(([code]) => message.includes(code));
@@ -137,10 +141,24 @@ export function createHubWorkspaceService({ client }) {
       const rows = checked(await query) || [];
       const notes = rows.slice(0,50);
       const revisions = notes.length ? await readAllById(() => client.from('hub_coaching_note_revisions').select('*').in('note_id',notes.map(row=>row.id))) : [];
+      const deadlines=notes.length?checked(await client.from('hub_coaching_retention_deadlines').select('id,retention_until').in('id',notes.map(row=>row.id))):[];
       return {
-        notes:notes.map(note=>({ ...note, revisions:revisions.filter(row=>row.note_id===note.id).sort((a,b)=>b.revision-a.revision) })),
+        notes:notes.filter(note=>deadlines.some(row=>row.id===note.id)&&revisions.some(row=>row.note_id===note.id)).map(note=>({ ...note,retention_until:deadlines.find(row=>row.id===note.id).retention_until,revisions:revisions.filter(row=>row.note_id===note.id).sort((a,b)=>b.revision-a.revision) })),
         nextCursor:rows.length>50?notes.at(-1).id:null,
       };
+    },
+    async retentionPreview(identity,learnerId,cursor){
+      await actor(identity,['trainer','rrhh']);workspaceUuid(learnerId);if(cursor)workspaceUuid(cursor);
+      return checked(await client.rpc('hub_coaching_retention_preview',{p_external_subject:identity.subjectId,p_learner_id:learnerId,p_cursor:cursor||null}));
+    },
+    async retentionCommand(identity,learnerId,body){
+      await actor(identity,['trainer']);workspaceUuid(learnerId);
+      if(!['hold','release','request','cancel','approve'].includes(body.command)||typeof body.reason!=='string'||body.reason.trim().length<5||body.reason.length>500||typeof body.idempotencyKey!=='string'||!body.idempotencyKey.trim()||body.idempotencyKey.length>200)throw new HubError(400,'HUB_VALIDATION_ERROR','Choose a retention action, a brief reason (5–500 characters), and a retry key.');
+      const target=workspaceUuid(body.targetId,true);
+      if((body.command==='hold'&&target)||(body.command!=='hold'&&!target))throw new HubError(400,'HUB_VALIDATION_ERROR','Choose the record for this action.');
+      const result=await client.rpc('hub_coaching_retention_command',{p_external_subject:identity.subjectId,p_learner_id:learnerId,p_command:body.command,p_target_id:target,p_reason:body.reason.trim(),p_idempotency_key:body.idempotencyKey});
+      if(String(result.error?.message||'').includes('HUB_SEPARATE_APPROVER_REQUIRED'))throw new HubError(409,'HUB_SEPARATE_APPROVER_REQUIRED','A different active TRAINER must approve permanent coaching disposal.');
+      return checked(result);
     },
     async saveNote(identity,learnerId,body) {
       await actor(identity,['trainer']);

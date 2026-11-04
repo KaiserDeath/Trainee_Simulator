@@ -209,6 +209,36 @@ test('TRAINER saves a private note, reloads it, and starts a versioned revision'
   await expect(page.getByText('Review the game history before acting.').first()).toBeVisible();await page.getByRole('button',{name:'Add revision'}).click();await expect(page.getByRole('textbox',{name:'Coaching note',exact:true})).toHaveValue('Review the game history before acting.');
 });
 
+for(const own of [true,false])test(`coaching retention ${own?'prevents self-approval':'retries disposal safely and removes disposed text'}`,async({page})=>{
+  await staff(page,'TRAINER');
+  if(!own)await page.setViewportSize({width:390,height:844});
+  const noteId='10000000-0000-4000-8000-000000007701',requestId='10000000-0000-4000-8000-000000007702';
+  const author='10000000-0000-4000-8000-000000007703',reviewer='10000000-0000-4000-8000-000000007704';
+  let disposed=false;const writes=[];
+  await page.route(`**/api/hub/workspace/postulantes/${learnerId}/evidence`,route=>json(route,{attempts:[]}));
+  await page.route(`**/api/hub/workspace/postulantes/${learnerId}/notes`,route=>json(route,{notes:[{id:noteId,retention_until:'2025-01-01T12:00:00Z',revisions:[{id:'revision',revision:1,status:'closed',body:'Old private coaching text',created_at:'2023-01-01T12:00:00Z'}]}],nextCursor:null}));
+  await page.route(`**/api/hub/workspace/postulantes/${learnerId}/retention`,route=>{
+    if(route.request().method()==='POST'){
+      writes.push(route.request().postDataJSON());disposed=true;
+      if(writes.length===1)return route.abort('failed');
+      return json(route,{id:requestId,note_id:noteId,status:'disposed',disposed_revisions:1});
+    }
+    return json(route,{viewerId:own?author:reviewer,notes:disposed?[]:[{noteId,latestRevision:1,retainUntil:'2025-01-01T12:00:00Z',eligible:true,blockers:[]}],holds:[],requests:disposed?[]:[{id:requestId,note_id:noteId,requested_by:author,reason:'Closed note beyond retention'}],receipts:disposed?[{id:requestId,note_id:noteId,status:'disposed',disposed_revisions:1}]:[],nextCursor:null});
+  });
+  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
+  await page.getByRole('button',{name:'Open retention preview',exact:true}).click();
+  if(own){await expect(page.getByRole('button',{name:'Review disposal',exact:true})).toBeDisabled();await expect(page.getByText('Another TRAINER must approve this request.',{exact:true})).toBeVisible();return;}
+  await page.getByRole('button',{name:'Review disposal',exact:true}).click();
+  const reason=page.getByRole('textbox',{name:'Brief reason (do not copy coaching text)',exact:true});await expect(reason).toBeFocused();await reason.fill('Independent review of eligibility completed');
+  await expectReadableWorkspace(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:'../outputs/hub-coaching-retention-mobile.png',fullPage:true});
+  await page.getByRole('button',{name:'Approve and dispose',exact:true}).click();await expect(page.getByText('The retention action could not be recorded. Retry.',{exact:true})).toBeVisible();
+  await expect(reason).toHaveValue('Independent review of eligibility completed');
+  await page.getByRole('button',{name:'Approve and dispose',exact:true}).click();await expect(page.getByText('Retention action recorded.',{exact:true})).toBeVisible();
+  expect(writes).toHaveLength(2);expect(writes[0].idempotencyKey).toBe(writes[1].idempotencyKey);expect(writes[1].command).toBe('approve');
+  await expect(page.getByText('Old private coaching text',{exact:true})).toHaveCount(0);
+});
+
 test('TRAINER publishes a replacement evaluation policy with a reason and revision check',async({page})=>{
   await staff(page,'TRAINER');let submitted;
   const policy={id:'10000000-0000-4000-8000-000000000401',title:'Orion checkpoint',position:1,revision:3,publication_status:'published',duration_minutes:30,theory_weight:20,practical_weight:80,history_review_days:7,history_record_limit:null,selected_game_family_keys:['orion-stars'],theory_item_codes:['verification-first'],required_action_codes:['CREATE_ACCOUNT'],practical_item_weights:{CREATE_ACCOUNT:80}};

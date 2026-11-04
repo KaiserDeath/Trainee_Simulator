@@ -50,7 +50,8 @@ DO $$ DECLARE item RECORD; n BIGINT; h TEXT; BEGIN
 END $$;
 SELECT jsonb_build_object(
   'tables',(SELECT jsonb_agg(to_jsonb(r) ORDER BY name) FROM recovery_rows r),
-  'security',(SELECT jsonb_agg(jsonb_build_object('table',c.relname,'rls',c.relrowsecurity,'forceRls',c.relforcerowsecurity,'acl',coalesce(c.relacl,acldefault('r',c.relowner))::text,'owner',pg_get_userbyid(c.relowner)) ORDER BY c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r'),
+  'security',(SELECT jsonb_agg(jsonb_build_object('table',c.relname,'rls',c.relrowsecurity,'forceRls',c.relforcerowsecurity,'acl',coalesce(c.relacl,acldefault('r',c.relowner))::text,'owner',pg_get_userbyid(c.relowner)) ORDER BY c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN('r','v')),
+  'views',(SELECT coalesce(jsonb_agg(jsonb_build_object('name',c.relname,'definition',pg_get_viewdef(c.oid,TRUE),'options',c.reloptions) ORDER BY c.relname),'[]') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='v'),
   'policies',(SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY schemaname,tablename,policyname),'[]') FROM pg_policies p WHERE schemaname IN('public','storage')),
   'functions',(SELECT md5(string_agg(pg_get_functiondef(p.oid)||coalesce(p.proacl::text,'')||pg_get_userbyid(p.proowner),E'\\n' ORDER BY p.oid::regprocedure::text)) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind IN('f','p')),
   'triggers',(SELECT jsonb_agg(pg_get_triggerdef(t.oid) ORDER BY c.relname,t.tgname) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal),
@@ -74,13 +75,13 @@ try {
   assert.deepEqual(recovered, before, 'Restored records, schema or access restrictions differ from the backup source');
   assert.deepEqual(manifest('postgres'), before, 'Source changed during rehearsal; rerun with other local writers stopped');
   report.tableCount = before.tables.length;
-  report.checks.push('All public table hashes/counts, Auth users, Storage metadata, functions, triggers, constraints, indexes, sequences, RLS and table/function privileges match');
+  report.checks.push('All public table hashes/counts, Auth users, Storage metadata, views, functions, triggers, constraints, indexes, sequences, RLS and table/view/function privileges match');
   // Exercise recovered functions and their authorization/immutable-evidence rules.
-  for (const file of ['hubWorkspace.sql', 'hubEvaluationRuntime.sql', 'hubBackendEvaluation.sql', 'hubCustomerEvaluation.sql', 'hubEvaluationPolicyVersions.sql', 'hubFinalEvaluation.sql', 'hubMixedPractice.sql', 'hubCohorts.sql']) {
+  for (const file of ['hubWorkspace.sql', 'hubEvaluationRuntime.sql', 'hubBackendEvaluation.sql', 'hubCustomerEvaluation.sql', 'hubEvaluationPolicyVersions.sql', 'hubFinalEvaluation.sql', 'hubMixedPractice.sql', 'hubCohorts.sql', 'hubCoachingRetention.sql']) {
     sql(restoredDatabase, readFileSync(new URL(`../backend/test/integration/${file}`, import.meta.url), 'utf8'));
   }
   assert.deepEqual(manifest(restoredDatabase), before, 'Transactional recovery fixtures left changes behind');
-  report.checks.push('Recovered database passed all eight transactional Hub workspace/evaluation/cohort scenarios; fixtures rolled back');
+  report.checks.push('Recovered database passed all nine transactional Hub workspace/evaluation/cohort/retention scenarios; fixtures rolled back');
 
   // A clean developer stack may have no learner history. Build real retained
   // records only in the restored copy, then prove a second backup recovers them.

@@ -1,5 +1,6 @@
 import { useRef,useState } from 'react';
 import { getHubPostulanteAccounts,getHubCoachingNotes,getHubCoachingEvidence,saveHubCoachingNote } from '../../api/client';
+import HubCoachingRetention from './HubCoachingRetention';
 
 const blank={noteId:null,attemptId:'',expectedRevision:0,body:'',status:'open',verificationAttemptId:''};
 export default function HubCoachingWorkspace({ canEdit,locale='en' }){
@@ -49,12 +50,13 @@ export default function HubCoachingWorkspace({ canEdit,locale='en' }){
     </fieldset></form>}
     {learnerId&&notes.length===0&&!busy&&<p>{es?'Sin notas guardadas.':'No saved coaching notes.'}</p>}
     <ul className="hub-version-list">{notes.map(note=>{const latest=note.revisions[0];return <li key={note.id}>
-      <strong>{latest.status} · v{latest.revision}</strong><p className="hub-note-body">{latest.body}</p><small>{new Date(latest.created_at).toLocaleString()} · {es?'Retención hasta':'Retain until'} {new Date(note.retention_until).toLocaleDateString()}</small>
+      <p><small>{es?'Nota':'Note'} {note.id.slice(0,8)}…{note.id.slice(-4)}</small></p><strong>{latest.status} · v{latest.revision}</strong><p className="hub-note-body">{latest.body}</p><p><small>{new Date(latest.created_at).toLocaleString()} · {es?'Retención mínima hasta':'Minimum retention until'} {new Date(note.retention_until).toLocaleDateString()}</small></p>
       {note.attempt_id&&<p>{es?'Intento':'Attempt'}: {note.attempt_id}</p>}
       {latest.verification_attempt_id&&<p>{es?'Evidencia de verificación':'Verification evidence'}: {latest.verification_attempt_id}</p>}
       {canEdit&&<button type="button" disabled={busy} onClick={()=>edit(note)}>{es?'Añadir revisión':'Add revision'}</button>}
       <details><summary>{es?'Historial':'Revision history'}</summary>{note.revisions.map(revision=><article key={revision.id}><strong>v{revision.revision} · {revision.status}</strong><p className="hub-note-body">{revision.body}</p><small>{new Date(revision.created_at).toLocaleString()}</small></article>)}</details>
     </li>;})}</ul>
     {cursor&&<button type="button" disabled={busy} onClick={more}>{es?'Cargar más notas':'Load more notes'}</button>}
+    {learnerId&&<HubCoachingRetention key={learnerId} learnerId={learnerId} canEdit={canEdit} locale={locale} onDisposed={id=>{setNotes(current=>current.filter(note=>note.id!==id));setForm(current=>current.noteId===id?blank:current);retry.current=null;}}/>}
   </section>;
 }

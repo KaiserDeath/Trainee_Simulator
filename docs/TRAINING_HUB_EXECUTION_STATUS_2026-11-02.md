@@ -241,3 +241,50 @@ commit; no hosted deletion or scheduler-log acceptance is claimed here.
 Two-year historical evidence/coaching disposal still needs a complete dependency
 and hold policy before enabling deletion. Hosted file/backup recovery and
 accessibility/content acceptance also remain open.
+
+### Reviewed two-year coaching disposal (2026-11-03)
+
+Main `79c9e83` CI passed. Implemented the first historical-text disposal path in
+the existing private Coaching workspace. The displayed minimum retention date
+now includes two calendar years after the latest revision, preserving a recent
+revision even when its original note is older. Closed/verified status, elapsed
+retention, absence of an active coaching hold and completed/expired linked
+attempts are required. Open cases and missing/active linked evidence remain
+protected. TRAINER manages reasoned learner-wide coaching holds; RRHH reads.
+ADMIN/Postulante cannot access these private workflows.
+
+A reasoned request and a different active TRAINER's approval are required.
+Approval revalidates age, holds and the current revision fingerprint under the
+same per-learner lock as edits. Cancellation preserves text. The approved
+transaction removes the exact note/revisions, retaining content-free disposal
+receipts and hashed retry markers. An ancient create retry cannot recreate the
+text. Ordinary append-only protections stay in place; inherited direct-write
+grants on coaching tables were removed. Scores, attempt budgets, progress,
+linked evidence and unrelated notes are unchanged. There is no automatic
+historical coaching purge.
+
+Fresh migration/seed replay, all nine transactional workspace/retention suites,
+real local Auth/API checks and the recovered-database gate passed. The Auth gate
+checks CSRF/role denial, independent approval, exact retry, disposed-text retry
+denial and concurrent revision/disposal serialization. Browser tests cover
+self-approval, uncertain responses, retained input/retry key, removal of disposed
+text, phone-width contrast/focus and absence of horizontal overflow. The mobile
+render was visually inspected and metadata spacing corrected. Full foundation
+passed 240 backend, 12 shared-rule, 61 database-safety and 58 browser checks,
+lint/build. Final UI adjustments passed lint/build and three focused browser
+checks. The existing build-size warning remains.
+
+Applied migration `20261103210000_coaching_retention_disposal.sql` transactionally
+with its ledger entry to the active hosted project. Before/after: zero coaching
+notes/revisions, four identities and four draft formal evaluations. A read-only
+service-role REST preview for an existing trainer/learner passed. Direct coaching
+deletion, browser disposal execution and direct access to the old save function
+are denied. No hosted coaching text was disposed. Evidence:
+`outputs/hub-coaching-retention-2026-11-03/REPORT.md`, `hosted-preview.json`,
+`auth-verification.txt`, `workspace-verification.txt` and `recovery.json`.
+
+Hosted authenticated disposal and deployment acceptance are not established by
+the schema/REST preview. Formal assessment evidence disposal still needs its
+own dependency-preserving path; hosted file/backup recovery, accessibility and
+curriculum/publication acceptance remain open. Live-table text deletion does
+not remove existing backups or exported copies and is not a compliance claim.

@@ -1,0 +1,5 @@
+
+> trez-training-hub-workspace@0.0.0 verify:local:workspace
+> node scripts/verify-local-workspace.mjs
+
+Local workspace verification passed: content/coaching, Orion continuity/reset/exceptions, durable delivery/recovery, four assessment runtimes, official curriculum gates, immutable policy/question versions, deadline/retry rules, private evidence, cohort assignments, target dates, paging, progress preservation and governed coaching retention/disposal. All fixtures rolled back.

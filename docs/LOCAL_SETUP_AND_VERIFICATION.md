@@ -537,7 +537,7 @@ must already exist; it does not export their passwords.
 
 The command restores into a new randomly named database and compares all public
 table hashes/counts, Auth users, Storage metadata, functions, triggers,
-constraints, indexes, sequences, row security and privileges. Eight transactional
+constraints, indexes, sequences, row security and privileges. Nine transactional
 Hub integration suites run against that recovered database. It then creates
 retained formal results, lesson snapshots, private coaching revisions and an
 Auth credential fixture only in the recovered copy. A second backup/restore must
@@ -591,6 +591,53 @@ Output contains counts only. No user-facing HTTP cleanup endpoint is exposed.
 `npm run verify:local:media` exercises real private Storage, concurrent leases,
 completion racing cleanup, failure/backoff, crash recovery, expired retries and
 all reference protections. Its clock-age fixtures and credentials are local-only.
+
+## Governed coaching retention and disposal
+
+In TRAINER/RRHH **Coaching**, select a learner and open **Retention preview**.
+This loads metadata manually, in 50-note pages; it does not expose coaching text
+in the preview. The ordinary note list shows matching note identifiers and an
+effective minimum retention date. That date is the greatest of the original
+deadline, note creation plus two calendar years, and every revision's creation
+plus two years. A new revision therefore protects an old note for another two
+years without rewriting its immutable original metadata.
+
+Only closed/verified notes whose effective deadline has elapsed can be proposed
+for disposal. Open cases, active learner coaching holds, and linked attempts
+whose completion/retention is missing or still protected block the action.
+TRAINER can place/release a learner-wide coaching hold with an operational
+reason. RRHH reads; ADMIN and Postulante have no private-retention access.
+
+A TRAINER submits an eligible note for review. A different active TRAINER must
+approve with a reason. Self-approval is rejected by the database. Approval
+rechecks eligibility and the exact preview fingerprint; holds, recent revisions,
+or changed revisions prevent stale approval. Requests may be cancelled without
+removing text. The UI preserves reason and retry key after uncertain responses.
+The final review form identifies the note and explicitly says the removal is
+permanent. There is no automatic coaching deletion worker.
+
+The approved transaction deletes only that note and its revisions. It preserves
+minimal request/event receipts and hashed author/retry-key markers, containing
+no copied coaching body. Old create retries are rejected after disposal, rather
+than recreating deleted text. Do not copy coaching text into operational reasons.
+Assessment results, attempt limits, learning progress, linked evidence and other
+notes remain unchanged. Existing copies/exports and backup retention are outside
+this live-table disposal operation.
+
+The service role has SELECT-only access to coaching tables. Ordinary mutation
+guards remain active. The transaction-scoped delete exception requires both the
+review function's definer identity and its exact executing request; setting a
+session marker alone is insufficient. New revisions, holds and approvals share
+a per-learner database lock. The original save function is unavailable to the
+service role, preventing bypass of disposed-key checks.
+
+`npm run verify:local:workspace` includes transactional age/hold/linked-evidence,
+stale-preview, immutable-receipt, retry and authorization tests.
+`npm run verify:local:hub:auth` checks actual Auth/cookies/CSRF, independent
+approval and a real concurrent revision/disposal race. The nine-suite database
+recovery gate repeats retention tests against the recovered database. Age is
+advanced only inside guarded local fixtures. Formal assessment evidence disposal
+is still separate: it must preserve consumed-attempt and readiness semantics.
 
 ## Shared Account ID rule boundary
 

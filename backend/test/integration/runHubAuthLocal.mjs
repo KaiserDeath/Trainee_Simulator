@@ -79,6 +79,12 @@ async function cleanupDatabase() {
   const fixtureVersions = `SELECT v.id FROM public.hub_content_versions v WHERE v.author_identity_id IN (${fixtureIdentities}) OR v.reviewed_by_identity_id IN (${fixtureIdentities})`;
   const sql = `BEGIN;
 SET LOCAL session_replication_role = replica;
+DELETE FROM public.hub_coaching_retention_events WHERE learner_id IN (${fixtureIdentities});
+DELETE FROM public.hub_coaching_disposal_keys WHERE author_id IN (${fixtureIdentities}) OR request_id IN(SELECT id FROM public.hub_coaching_disposal_requests WHERE learner_id IN (${fixtureIdentities}));
+DELETE FROM public.hub_coaching_disposal_requests WHERE learner_id IN (${fixtureIdentities});
+DELETE FROM public.hub_coaching_retention_holds WHERE learner_id IN (${fixtureIdentities});
+DELETE FROM public.hub_coaching_note_revisions WHERE note_id IN(SELECT id FROM public.hub_coaching_notes WHERE learner_identity_id IN (${fixtureIdentities}));
+DELETE FROM public.hub_coaching_notes WHERE learner_identity_id IN (${fixtureIdentities});
 DELETE FROM public.hub_cohort_events WHERE cohort_id IN(SELECT id FROM public.hub_cohorts WHERE created_by IN (${fixtureIdentities}));
 DELETE FROM public.hub_cohort_members WHERE cohort_id IN(SELECT id FROM public.hub_cohorts WHERE created_by IN (${fixtureIdentities}));
 DELETE FROM public.hub_cohorts WHERE created_by IN (${fixtureIdentities});
@@ -684,6 +690,40 @@ try {
     body: { currentPassword: trainee.identity.username, newPassword: 'NotAllowed123' },
   });
   assert.equal(postulantePasswordChange.status, 403);
+
+  const reviewer=await createDirectLocalStaff(accountInputs.trainer,'retentionreviewer');
+  const notesPath=`/workspace/postulantes/${trainee.identity.id}/notes`;
+  const retentionPath=`/workspace/postulantes/${trainee.identity.id}/retention`;
+  const staffPost=(session,path,body)=>request(path,{jar:session.jar,csrf:session.csrf,method:'POST',body});
+  const noteBody={noteId:null,attemptId:null,expectedRevision:0,body:'Private real-Auth disposal fixture',status:'closed',verificationAttemptId:null,idempotencyKey:`${runId}:retention-note`};
+  const noteCreated=await staffPost(trainer.session,notesPath,noteBody);assert.equal(noteCreated.status,200,JSON.stringify(noteCreated.body));
+  const disposedNoteId=noteCreated.body.note.id;
+  const ageNote=id=>{assert.match(id,/^[0-9a-f-]{36}$/);const result=spawnSync('docker',['exec','-i','supabase_db_simulador-dos-local','psql','-U','postgres','-d','postgres','-v','ON_ERROR_STOP=1'],{input:`BEGIN;SET LOCAL session_replication_role=replica;UPDATE hub_coaching_notes SET created_at=now()-interval '3 years',retention_until=now()-interval '1 year' WHERE id='${id}';UPDATE hub_coaching_note_revisions SET created_at=now()-interval '3 years' WHERE note_id='${id}';COMMIT;`,encoding:'utf8',windowsHide:true});assert.equal(result.status,0,result.stderr);};
+  ageNote(disposedNoteId);
+  assert.equal((await request(retentionPath)).status,401);
+  for(const session of [adminA,trainee.session])assert.equal((await request(retentionPath,{jar:session.jar})).status,403);
+  assert.equal((await request(retentionPath,{jar:auditor.session.jar})).status,200);
+  const disposalBody={command:'request',targetId:disposedNoteId,reason:'Closed and beyond the retention window',idempotencyKey:`${runId}:retention-request`};
+  assert.equal((await request(retentionPath,{jar:trainer.session.jar,method:'POST',body:disposalBody})).status,403);
+  assert.equal((await staffPost(auditor.session,retentionPath,disposalBody)).status,403);
+  const requested=await staffPost(trainer.session,retentionPath,disposalBody);assert.equal(requested.status,200,JSON.stringify(requested.body));
+  const approvalBody={command:'approve',targetId:requested.body.id,reason:'Independent review confirms eligibility',idempotencyKey:`${runId}:retention-approve`};
+  assert.equal((await staffPost(trainer.session,retentionPath,approvalBody)).status,409);
+  const approval=await staffPost(reviewer.session,retentionPath,approvalBody);assert.equal(approval.status,200,JSON.stringify(approval.body));assert.equal(approval.body.status,'disposed');
+  assert.deepEqual((await staffPost(reviewer.session,retentionPath,approvalBody)).body,approval.body);
+  assert.equal((await staffPost(trainer.session,notesPath,noteBody)).status,410);
+  assert.equal((await request(notesPath,{jar:trainer.session.jar})).body.notes.some(row=>row.id===disposedNoteId),false);
+  // A real concurrent revision and approval serialize on the learner. Either
+  // the revision protects the note, or disposal prevents that stale edit.
+  const racingBody={...noteBody,idempotencyKey:`${runId}:retention-race-root`};
+  const racing=await staffPost(trainer.session,notesPath,racingBody);assert.equal(racing.status,200);ageNote(racing.body.note.id);
+  const raceRequest=await staffPost(trainer.session,retentionPath,{...disposalBody,targetId:racing.body.note.id,idempotencyKey:`${runId}:retention-race-request`});assert.equal(raceRequest.status,200);
+  const [editRace,disposeRace]=await Promise.all([
+    staffPost(trainer.session,notesPath,{...racingBody,noteId:racing.body.note.id,expectedRevision:1,body:'A new revision must remain protected',idempotencyKey:`${runId}:retention-race-edit`}),
+    staffPost(reviewer.session,retentionPath,{...approvalBody,targetId:raceRequest.body.id,idempotencyKey:`${runId}:retention-race-approve`}),
+  ]);
+  if(disposeRace.status===200)assert.equal(editRace.status,404);else{assert.equal(disposeRace.status,409);assert.equal(editRace.status,200);}
+  console.log('Real local Auth coaching retention passed: role/CSRF denial, independent approval, exact retry, disposed-text replay denial and concurrent edit/disposal safety.');
 
   const changedTrainerPassword = `${trainer.identity.username}Changed`;
   const trainerPasswordChange = await request('/auth/password', {

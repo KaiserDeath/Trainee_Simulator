@@ -1,0 +1,12 @@
+{
+  "target": "active hosted database and service-role REST; read-only preview",
+  "passed": true,
+  "identities": 4,
+  "notes": 0,
+  "revisions": 0,
+  "draftEvaluations": 4,
+  "previewNotes": 0,
+  "previewHolds": 0,
+  "previewRequests": 0,
+  "hostedDisposalPerformed": false
+}

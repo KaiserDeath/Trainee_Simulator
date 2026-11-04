@@ -26,7 +26,10 @@ test('workspace role matrix rejects learner/private access, RRHH writes and trai
       ['RRHH','POST','/postulantes/id/notes',403],['TRAINER','POST','/activities/id/versions',403],
       ['TRAINER','GET','/catalog',200],['RRHH','GET','/postulantes/id/notes',200],
       ['TRAINER','POST','/postulantes/id/notes',200],['ADMIN','POST','/activities/id/versions',200],
+      ['ADMIN','GET','/postulantes/id/retention',403],['POSTULANTE','GET','/postulantes/id/retention',403],
+      ['RRHH','POST','/postulantes/id/retention',403],['RRHH','GET','/postulantes/id/retention',200],
+      ['TRAINER','POST','/postulantes/id/retention',200],
     ])assert.equal((await fetch(base+path,{method,headers:{'x-test-role':role}})).status,status,`${role} ${method} ${path}`);
-    assert.deepEqual(calls,['catalog','notes','saveNote','createInstruction']);
+    assert.deepEqual(calls,['catalog','notes','saveNote','createInstruction','retentionPreview','retentionCommand']);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });

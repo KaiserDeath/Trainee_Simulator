@@ -1,0 +1,6 @@
+
+> trez-training-hub-workspace@0.0.0 verify:local:hub:auth
+> node scripts/run-local-hub-auth-verification.mjs
+
+Real local Auth coaching retention passed: role/CSRF denial, independent approval, exact retry, disposed-text replay denial and concurrent edit/disposal safety.
+Local Supabase Auth verification passed: username/password login, HTTP-only JWT cookies, CSRF, generated usernames, exclusive roles, locale policy, global TRAINER/RRHH Postulante visibility, assessment defaults/reporting, staff password controls, course assignment, retention, two-person publishing, read-only RRHH evidence reporting with redaction and explicit lineage, deactivation, and logout.

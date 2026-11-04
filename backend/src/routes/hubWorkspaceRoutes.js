@@ -13,5 +13,7 @@ export function createHubWorkspaceRouter({ service }) {
   router.get('/postulantes/:id/evidence',requireHubRole('TRAINER','RRHH'),run(req=>service.evidence(req.hubIdentity,req.params.id)));
   router.get('/postulantes/:id/notes',requireHubRole('TRAINER','RRHH'),run(req=>service.notes(req.hubIdentity,req.params.id,req.query.cursor)));
   router.post('/postulantes/:id/notes',requireHubRole('TRAINER'),run(req=>service.saveNote(req.hubIdentity,req.params.id,req.body || {})));
+  router.get('/postulantes/:id/retention',requireHubRole('TRAINER','RRHH'),run(req=>service.retentionPreview(req.hubIdentity,req.params.id,req.query.cursor)));
+  router.post('/postulantes/:id/retention',requireHubRole('TRAINER'),run(req=>service.retentionCommand(req.hubIdentity,req.params.id,req.body||{})));
   return router;
 }
