@@ -402,3 +402,25 @@ competency result. Release configuration now separates the initial ten-person
 concurrency target from local stress evidence; hosted capacity remains unknown.
 Curriculum decisions, the approved-policy hosted journey and the real supervised
 pilot remain pending; no real policy or learner record changed in this increment.
+
+### Consistent English/Spanish Hub (2026-11-04)
+
+The user superseded the English-only learner boundary with English and Spanish
+throughout the Hub. Added one persisted per-account language context for all
+roles and sign-in; localized controls, validation, messages, dates and statuses;
+and kept form inputs/selected answers stable across switches. English uses
+Participant and Spanish uses Participante/Capacitador; permission codes remain.
+
+Exact-source curriculum companions cover the current 15 modules and four seed
+questions. Private question translations remain on authorized server response
+routes rather than in the public frontend bundle. Original snapshots, answer
+IDs, policy rules and grades are unchanged. English source authoring is labeled;
+new authored text, free-text notes, raw records and media are not automatically
+translated. Both languages and pack revision 2026-11-04.1 now require curriculum
+sign-off before release acceptance.
+
+Full foundation passed 251 backend, 12 shared, 61 safety, three language-unit and
+72 browser checks, plus lint/build. The actual local Auth/browser assessment gate
+passed Spanish login/lesson delivery, language switching without changing answer
+IDs, 100/80 scoring, budgets, official submission, reopening and disposal with
+exact fixture cleanup. See `outputs/hub-language-2026-11-04/REPORT.md`.

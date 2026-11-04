@@ -1,3 +1,5 @@
+import {hubMessage} from '../../i18n/hubLocale';
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import {useRef,useState} from 'react';
 import {getHubCohorts,getHubAssignableCourses,getHubPostulanteAccounts,saveHubCohort} from '../../api/client';
 
@@ -5,6 +7,7 @@ const empty=()=>({id:null,title:'',courseId:'',dueOn:'',revision:0});
 const targetLabel=(date,locale)=>date?new Intl.DateTimeFormat(locale==='es'?'es-PE':'en-US',{dateStyle:'long',timeZone:'UTC'}).format(new Date(`${date}T00:00:00Z`)):'No target date';
 
 export default function HubCohorts({canManage=false,locale='en'}) {
+  const {t} = useHubLocale();
   const [open,setOpen]=useState(false);
   const [cohorts,setCohorts]=useState([]);
   const [courses,setCourses]=useState([]);
@@ -26,7 +29,7 @@ export default function HubCohorts({canManage=false,locale='en'}) {
         setCourses(courseResponse.data.courses||[]);setLearners(learnerResponse.data.postulantes||[]);
       }
       setCohorts(response.data.cohorts||[]);setNextCursor(response.data.nextCursor);setCursor(after);setOpen(true);
-    } catch(e){setError(e.response?.data?.error?.message||'Cohorts could not be loaded.');}
+    } catch(e){setError(e.response?.data?.error?.message||hubMessage("Cohorts could not be loaded."));}
     finally{setBusy(false);}
   }
   async function save(event) {
@@ -37,40 +40,40 @@ export default function HubCohorts({canManage=false,locale='en'}) {
     try {
       await saveHubCohort(form.id,{...body,idempotencyKey:retry.current.key});
       setForm(empty());setSelected([]);retry.current=null;
-      await load();setNotice('Cohort saved. Existing learning progress and assessment results are preserved.');
-    } catch(e){setError(e.response?.data?.error?.message||'The save could not be confirmed. Retry the same form safely.');}
+      await load();setNotice(hubMessage("Cohort saved. Existing learning progress and assessment results are preserved."));
+    } catch(e){setError(e.response?.data?.error?.message||hubMessage("The save could not be confirmed. Retry the same form safely."));}
     finally{setBusy(false);}
   }
   function edit(cohort){setForm(cohort);setSelected([]);setNotice('');}
-  return <section className="hub-workspace-panel" aria-label={canManage?'Cohort management':'My training groups'}>
-    <h2>{canManage?'Cohorts and target dates':'My training groups'}</h2>
-    <p>Target dates help plan training. Practice access and assessment deadlines follow their existing rules.</p>
-    <button type="button" disabled={busy} onClick={()=>load(cursor)}>{open?'Update cohorts':'Open cohorts'}</button>
-    {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
+  return <section className="hub-workspace-panel" aria-label={canManage?t("Cohort management"):t("My training groups")}>
+    <h2>{canManage?t("Cohorts and target dates"):t("My training groups")}</h2>
+    <p>{t("Target dates help plan training. Practice access and assessment deadlines follow their existing rules.")}</p>
+    <button type="button" disabled={busy} onClick={()=>load(cursor)}>{open?t("Update cohorts"):t("Open cohorts")}</button>
+    {error&&<p role="alert">{t(error)}</p>}{notice&&<p role="status">{t(notice)}</p>}
     {open&&<>
-      {!cohorts.length&&<p>No cohorts on this page.</p>}
+      {!cohorts.length&&<p>{t("No cohorts on this page.")}</p>}
       <ul className="hub-version-list">{cohorts.map(cohort=><li key={cohort.id}>
-        <strong>{cohort.title}</strong> · {cohort.courseTitle} · {targetLabel(cohort.dueOn,locale)}
-        {cohort.dueOn&&cohort.dueOn<new Date().toLocaleDateString('en-CA',{timeZone:'America/Lima'})&&<span> · Target date passed</span>}
-        {canManage&&<><p>{cohort.members.length} / 100 learners</p><button type="button" disabled={busy} onClick={()=>edit(cohort)}>Edit {cohort.title}</button>
-          <details><summary>View cohort members</summary><ul>{cohort.members.map(member=><li key={member.id}>{member.displayName} · {member.status}</li>)}</ul></details></>}
+        <strong>{cohort.title}</strong> · {t(cohort.courseTitle)} · {t(targetLabel(cohort.dueOn,locale))}
+        {cohort.dueOn&&cohort.dueOn<new Date().toLocaleDateString('en-CA',{timeZone:'America/Lima'})&&<span>{t(" · Target date passed")}</span>}
+        {canManage&&<><p>{cohort.members.length}{t(" / 100 learners")}</p><button type="button" disabled={busy} onClick={()=>edit(cohort)}>{t("Edit ")}{cohort.title}</button>
+          <details><summary>{t("View cohort members")}</summary><ul>{cohort.members.map(member=><li key={member.id}>{member.displayName} · {t(member.status)}</li>)}</ul></details></>}
       </li>)}</ul>
-      {cursor&&<button disabled={busy} onClick={()=>load()}>First cohort page</button>}
-      {nextCursor&&<button disabled={busy} onClick={()=>load(nextCursor)}>Next cohort page</button>}
+      {cursor&&<button disabled={busy} onClick={()=>load()}>{t("First cohort page")}</button>}
+      {nextCursor&&<button disabled={busy} onClick={()=>load(nextCursor)}>{t("Next cohort page")}</button>}
       {canManage&&<form className="hub-workspace-form" onSubmit={save}>
-        <h3>{form.id?'Edit cohort and add learners':'Create cohort'}</h3>
-        <label>Cohort name<input required maxLength={200} value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
-        <label>Cohort course<select required disabled={Boolean(form.id)} value={form.courseId} onChange={e=>setForm({...form,courseId:e.target.value})}>
-          <option value="">Choose a course</option>{courses.map(course=><option key={course.id} value={course.id}>{course.title}</option>)}
+        <h3>{form.id?t("Edit cohort and add learners"):t("Create cohort")}</h3>
+        <label>{t("Cohort name")}<input required maxLength={200} value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
+        <label>{t("Cohort course")}<select required disabled={Boolean(form.id)} value={form.courseId} onChange={e=>setForm({...form,courseId:e.target.value})}>
+          <option value="">{t("Choose a course")}</option>{courses.map(course=><option key={course.id} value={course.id}>{t(course.title)}</option>)}
         </select></label>
-        <label>Target date<input type="date" min="2000-01-01" max="2100-12-31" value={form.dueOn||''} onChange={e=>setForm({...form,dueOn:e.target.value})}/></label>
-        <fieldset disabled={busy}><legend>{form.id?'Add learners (existing members remain)':'Select learners (at most 100)'}</legend>
+        <label>{t("Target date")}<input type="date" min="2000-01-01" max="2100-12-31" value={form.dueOn||''} onChange={e=>setForm({...form,dueOn:e.target.value})}/></label>
+        <fieldset disabled={busy}><legend>{form.id?t("Add learners (existing members remain)"):t("Select learners (at most 100)")}</legend>
           {learners.filter(learner=>learner.status!=='inactive').map(learner=><label key={learner.id}>
             <input type="checkbox" checked={selected.includes(learner.id)} onChange={e=>setSelected(e.target.checked?[...selected,learner.id]:selected.filter(id=>id!==learner.id))}/>{learner.displayName||learner.username}
           </label>)}
         </fieldset>
-        <button type="submit" disabled={busy||selected.length>100||(!form.id&&!selected.length)}>Save cohort</button>
-        {form.id&&<button type="button" disabled={busy} onClick={()=>{setForm(empty());setSelected([]);}}>Cancel cohort edit</button>}
+        <button type="submit" disabled={busy||selected.length>100||(!form.id&&!selected.length)}>{t("Save cohort")}</button>
+        {form.id&&<button type="button" disabled={busy} onClick={()=>{setForm(empty());setSelected([]);}}>{t("Cancel cohort edit")}</button>}
       </form>}
     </>}
   </section>;

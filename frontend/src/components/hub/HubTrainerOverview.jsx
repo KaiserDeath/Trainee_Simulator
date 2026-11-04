@@ -1,3 +1,4 @@
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import { useState } from 'react';
 const COPY = {
   en: {
@@ -17,26 +18,10 @@ const COPY = {
       withdrawn: 'Withdrawn',
     },
   },
-  es: {
-    empty: 'No hay progreso disponible para Postulantes.',
-    caption: 'Progreso de todos los Postulantes',
-    learner: 'Participante',
-    course: 'Curso',
-    completed: 'Completado',
-    status: 'Estado',
-    notAssigned: 'Sin asignar',
-    unassigned: 'Sin asignar',
-    note: 'TRAINER y RRHH pueden administrar Postulantes y asignar cursos en la sección de administración.',
-    statuses: {
-      assigned: 'Asignado',
-      in_progress: 'En curso',
-      completed: 'Completado',
-      withdrawn: 'Retirado',
-    },
-  },
 };
 export default function HubTrainerOverview({ learners, locale = 'en' }) {
-  const copy = COPY[locale] || COPY.en;
+  const {t} = useHubLocale();
+  const copy = COPY.en;
   const [search, setSearch] = useState('');
   const visibleLearners = (learners || []).filter((learner) =>
     `${learner.displayName} ${learner.username || ''}`.toLowerCase().includes(search.trim().toLowerCase())
@@ -44,7 +29,7 @@ export default function HubTrainerOverview({ learners, locale = 'en' }) {
   const enrolments = (learners || []).flatMap((learner) => learner.enrolments || []);
 
   if (!learners?.length) {
-    return <p className="hub-empty-state">{copy.empty}</p>;
+    return <p className="hub-empty-state">{t(copy.empty)}</p>;
   }
 
   return (
@@ -55,18 +40,18 @@ export default function HubTrainerOverview({ learners, locale = 'en' }) {
           [locale === 'es' ? 'En curso' : 'In progress', enrolments.filter((item) => item.status === 'in_progress').length],
           [locale === 'es' ? 'Completados' : 'Completed courses', enrolments.filter((item) => item.status === 'completed').length],
           [locale === 'es' ? 'Sin curso' : 'Without a course', learners.filter((item) => !item.enrolments?.length).length],
-        ].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+        ].map(([label, value]) => <div key={label}><span>{t(label)}</span><strong>{value}</strong></div>)}
       </div>
-      <label className="hub-progress-search">{locale === 'es' ? 'Buscar progreso' : 'Search learner progress'}<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={locale === 'es' ? 'Nombre o usuario' : 'Name or username'} /></label>
-    <div className="hub-table-wrap">
+      <label className="hub-progress-search">{t("Search learner progress")}<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Name or username")} /></label>
+    <div className="hub-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}>
       <table className="hub-trainer-table">
-        <caption>{copy.caption}</caption>
+        <caption>{t(copy.caption)}</caption>
         <thead>
           <tr>
-            <th scope="col">{copy.learner}</th>
-            <th scope="col">{copy.course}</th>
-            <th scope="col">{copy.completed}</th>
-            <th scope="col">{copy.status}</th>
+            <th scope="col">{t(copy.learner)}</th>
+            <th scope="col">{t(copy.course)}</th>
+            <th scope="col">{t(copy.completed)}</th>
+            <th scope="col">{t(copy.status)}</th>
           </tr>
         </thead>
         <tbody>
@@ -76,9 +61,9 @@ export default function HubTrainerOverview({ learners, locale = 'en' }) {
               return [(
                 <tr key={`${learner.id}-unassigned`}>
                   <th scope="row">{learner.displayName}</th>
-                  <td>{copy.notAssigned}</td>
+                  <td>{t(copy.notAssigned)}</td>
                   <td>0 / 0</td>
-                  <td>{copy.unassigned}</td>
+                  <td>{t(copy.unassigned)}</td>
                 </tr>
               )];
             }
@@ -89,17 +74,17 @@ export default function HubTrainerOverview({ learners, locale = 'en' }) {
               return (
                 <tr key={`${learner.id}-${enrolment.id}`}>
                   <th scope="row">{learner.displayName}</th>
-                  <td>{enrolment.course?.title}</td>
+                  <td>{t(enrolment.course?.title)}</td>
                   <td><div className="hub-progress-cell"><span>{complete} / {activities.length}</span><progress aria-label={`${learner.displayName}: ${copy.completed}`} value={complete} max={activities.length || 1} /></div></td>
-                  <td><span className={`hub-status-pill hub-status-${enrolment.status}`}>{copy.statuses[enrolment.status] || enrolment.status}</span></td>
+                  <td><span className={`hub-status-pill hub-status-${enrolment.status}`}>{t(copy.statuses[enrolment.status] || enrolment.status)}</span></td>
                 </tr>
               );
             });
           })}
-          {!visibleLearners.length && <tr><td colSpan="4" className="hub-empty-state">{locale === 'es' ? 'No hay coincidencias.' : 'No learners match your search.'}</td></tr>}
+          {!visibleLearners.length && <tr><td colSpan="4" className="hub-empty-state">{t("No learners match your search.")}</td></tr>}
         </tbody>
       </table>
-      <p className="hub-readonly-note">{copy.note}</p>
+      <p className="hub-readonly-note">{t(copy.note)}</p>
     </div>
     </div>
   );

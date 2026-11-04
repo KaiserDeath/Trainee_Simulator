@@ -55,9 +55,12 @@ Module 3 Account Creation uses the existing Account ID Lab at `C:/Users/OS/PROYE
 The guide supplies workflow evidence, while the following direct Trez decisions
 govern how the Hub delivers and audits that workflow:
 
-- POSTULANTE learning content and locale are English only;
-- TRAINER, ADMIN, and RRHH experiences are approved for delivery in
-  English and Spanish;
+- As explicitly revised by the user on 2026-11-04, all Hub roles, including
+  learners, offer English and Spanish throughout the interface and supported
+  curriculum. This supersedes the earlier English-only learner boundary;
+- Display translations preserve canonical identifiers, answer IDs, stored
+  snapshots and grading. User-authored names, notes and original media are not
+  silently rewritten;
 - TRAINER and RRHH see and manage every Postulante, including course assignment;
 - RRHH may read every Postulante's Hub module-completion status and the
   original simulator operation/failure evidence needed for audit. Those report

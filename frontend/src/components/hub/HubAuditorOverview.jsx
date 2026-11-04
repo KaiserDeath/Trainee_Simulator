@@ -1,3 +1,4 @@
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 const STATUS_LABELS = {
   assigned: 'Assigned',
   not_started: 'Not started',
@@ -18,15 +19,16 @@ const displayValue = (value) => {
 };
 
 function LineageNotice({ lineage, compact = false }) {
+  const {t} = useHubLocale();
   const linked = lineage?.status === 'linked';
   return (
     <p className={`hub-lineage ${linked ? 'is-linked' : 'is-unlinked'}`}>
-      <strong>{linked ? 'Explicit Hub link' : 'Unlinked legacy simulator session'}</strong>
+      <strong>{linked ? t("Explicit Hub link") : t("Unlinked legacy simulator session")}</strong>
       {!compact && (
         <span>
           {linked
-            ? 'Identity linkage comes only from a durable Hub attempt reference.'
-            : 'The legacy participant name is a historical label only; no Hub identity is inferred.'}
+            ? t("Identity linkage comes only from a durable Hub attempt reference.")
+            : t("The legacy participant name is a historical label only; no Hub identity is inferred.")}
         </span>
       )}
     </p>
@@ -34,68 +36,72 @@ function LineageNotice({ lineage, compact = false }) {
 }
 
 function PageControls({ label, pageInfo, canGoBack, onPrevious, onNext }) {
+  const {t} = useHubLocale();
   if (!canGoBack && !pageInfo?.nextCursor) return null;
   return (
-    <nav className="hub-audit-pagination" aria-label={`${label} pages`}>
-      <button type="button" disabled={!canGoBack} onClick={onPrevious}>Previous</button>
-      <button type="button" disabled={!pageInfo?.nextCursor} onClick={onNext}>Next</button>
+    <nav className="hub-audit-pagination" aria-label={t("{0} pages", [label])}>
+      <button type="button" disabled={!canGoBack} onClick={onPrevious}>{t("Previous")}</button>
+      <button type="button" disabled={!pageInfo?.nextCursor} onClick={onNext}>{t("Next")}</button>
     </nav>
   );
 }
 
 function AttemptSummary({ attempt, onSelectAttempt }) {
+  const {t} = useHubLocale();
   return (
     <li>
-      <span>Attempt {attempt.attemptNumber || '—'}</span>
+      <span>{t("Attempt ")}{attempt.attemptNumber || '—'}</span>
       <span>{labelStatus(attempt.status)}</span>
       <LineageNotice lineage={attempt.lineage} compact />
-      <button type="button" onClick={() => onSelectAttempt(attempt.id)}>View evidence</button>
+      <button type="button" onClick={() => onSelectAttempt(attempt.id)}>{t("View evidence")}</button>
     </li>
   );
 }
 
 function LearnerSummary({ trainee, onSelectTrainee }) {
+  const {t} = useHubLocale();
   const identity = trainee.identity || {};
   return (
     <article className="hub-audit-card">
       <header>
         <div>
-          <p className="hub-eyebrow">Hub Postulante</p>
-          <h3>{identity.displayName || 'Unnamed Hub identity'}</h3>
+          <p className="hub-eyebrow">{t("Hub Postulante")}</p>
+          <h3>{identity.displayName || t("Unnamed Hub identity")}</h3>
         </div>
         <span className="hub-status">{labelStatus(identity.status)}</span>
       </header>
-      <button type="button" onClick={() => onSelectTrainee(identity.id)}>View learning record</button>
+      <button type="button" onClick={() => onSelectTrainee(identity.id)}>{t("View learning record")}</button>
     </article>
   );
 }
 
 function LearningRecordReport({ record, history, onPrevious, onNext, onSelectAttempt }) {
+  const {t} = useHubLocale();
   if (!record) return null;
   const modules = record.moduleRecords || [];
   const attempts = record.attempts || [];
   const pageInfo = record.pageInfo || {};
   return (
     <section className="hub-audit-report" aria-labelledby="hub-learning-record-title">
-      <p className="hub-eyebrow">Read-only Hub progress</p>
-      <h3 id="hub-learning-record-title">Postulante module record</h3>
-      <p>{record.postulante?.displayName || 'Unnamed Hub identity'}</p>
-      <div className="hub-table-wrap">
+      <p className="hub-eyebrow">{t("Read-only Hub progress")}</p>
+      <h3 id="hub-learning-record-title">{t("Postulante module record")}</h3>
+      <p>{record.postulante?.displayName || t("Unnamed Hub identity")}</p>
+      <div className="hub-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}>
         <table className="hub-trainer-table">
-          <caption>Module completion status</caption>
+          <caption>{t("Module completion status")}</caption>
           <thead>
             <tr>
-              <th scope="col">Course</th>
-              <th scope="col">Module</th>
-              <th scope="col">Enrolment</th>
-              <th scope="col">Module status</th>
+              <th scope="col">{t("Course")}</th>
+              <th scope="col">{t("Module")}</th>
+              <th scope="col">{t("Enrolment")}</th>
+              <th scope="col">{t("Module status")}</th>
             </tr>
           </thead>
           <tbody>
             {modules.map((recordItem) => (
               <tr key={`${recordItem.enrolment?.id}-${recordItem.module?.id}`}>
-                <th scope="row">{recordItem.course?.title || 'Untitled course'}</th>
-                <td>{recordItem.module?.title || 'Untitled module'}</td>
+                <th scope="row">{t(recordItem.course?.title || t("Untitled course"))}</th>
+                <td>{t(recordItem.module?.title || t("Untitled module"))}</td>
                 <td>{labelStatus(recordItem.enrolment?.status)}</td>
                 <td>{labelStatus(recordItem.module?.status)}</td>
               </tr>
@@ -104,24 +110,24 @@ function LearningRecordReport({ record, history, onPrevious, onNext, onSelectAtt
         </table>
       </div>
       <PageControls
-        label="Module completion record"
+        label={t("Module completion record")}
         pageInfo={pageInfo.moduleRecords}
         canGoBack={history.moduleCursor.length > 0}
         onPrevious={() => onPrevious('moduleRecords')}
         onNext={() => onNext('moduleRecords')}
       />
       <section className="hub-audit-enrolment">
-        <h4>Attempt summaries</h4>
+        <h4>{t("Attempt summaries")}</h4>
         {attempts.length ? (
           <ul className="hub-audit-attempts">
             {attempts.map((attempt) => (
               <AttemptSummary key={attempt.id} attempt={attempt} onSelectAttempt={onSelectAttempt} />
             ))}
           </ul>
-        ) : <p className="hub-empty-state">No Hub attempts were returned.</p>}
+        ) : <p className="hub-empty-state">{t("No Hub attempts were returned.")}</p>}
       </section>
       <PageControls
-        label="Hub attempt summary"
+        label={t("Hub attempt summary")}
         pageInfo={pageInfo.attempts}
         canGoBack={history.attemptCursor.length > 0}
         onPrevious={() => onPrevious('attempts')}
@@ -132,11 +138,12 @@ function LearningRecordReport({ record, history, onPrevious, onNext, onSelectAtt
 }
 
 function KeyValueReport({ title, value }) {
+  const {t}=useHubLocale();
   const entries = value && typeof value === 'object' ? Object.entries(value) : [];
   if (!entries.length) return null;
   return (
     <section className="hub-audit-metrics">
-      <h4>{title}</h4>
+      <h4>{t(title)}</h4>
       <dl>
         {entries.map(([key, item]) => (
           <div key={key}>
@@ -150,44 +157,46 @@ function KeyValueReport({ title, value }) {
 }
 
 function FailurePoint({ failure }) {
+  const {t} = useHubLocale();
   if (!failure || typeof failure !== 'object') return displayValue(failure);
   return (
     <>
-      <strong>{failure.label || 'Validation failure'}</strong>
-      <span>Expected: {displayValue(failure.expected)}</span>
-      <span>Reported: {displayValue(failure.sent)}</span>
+      <strong>{t(failure.label || t("Validation failure"))}</strong>
+      <span>{t("Expected: ")}{displayValue(failure.expected)}</span>
+      <span>{t("Reported: ")}{displayValue(failure.sent)}</span>
     </>
   );
 }
 
 function OperationReport({ report, history, onPrevious, onNext }) {
+  const {t} = useHubLocale();
   if (!report) return null;
   const session = report.session || {};
   return (
     <section className="hub-audit-report" aria-labelledby="hub-operation-report-title">
-      <p className="hub-eyebrow">Read-only simulator evidence</p>
-      <h3 id="hub-operation-report-title">Operation and failure report</h3>
-      <p>Legacy session label: <strong>{session.traineeName || 'Unnamed legacy session'}</strong></p>
+      <p className="hub-eyebrow">{t("Read-only simulator evidence")}</p>
+      <h3 id="hub-operation-report-title">{t("Operation and failure report")}</h3>
+      <p>{t("Legacy session label: ")}<strong>{session.traineeName || t("Unnamed legacy session")}</strong></p>
       <LineageNotice lineage={session.lineage} />
       <div className="hub-audit-metric-grid">
-        <KeyValueReport title="Performance" value={report.performance} />
-        <KeyValueReport title="Operation breakdown" value={report.operationBreakdown} />
+        <KeyValueReport title={t("Performance")} value={report.performance} />
+        <KeyValueReport title={t("Operation breakdown")} value={report.operationBreakdown} />
       </div>
-      <div className="hub-table-wrap">
+      <div className="hub-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}>
         <table className="hub-trainer-table">
-          <caption>Sanitized operation outcomes and validation failures</caption>
+          <caption>{t("Sanitized operation outcomes and validation failures")}</caption>
           <thead>
             <tr>
-              <th scope="col">Operation</th>
-              <th scope="col">Status</th>
-              <th scope="col">Result</th>
-              <th scope="col">Failure points</th>
+              <th scope="col">{t("Operation")}</th>
+              <th scope="col">{t("Status")}</th>
+              <th scope="col">{t("Result")}</th>
+              <th scope="col">{t("Failure points")}</th>
             </tr>
           </thead>
           <tbody>
             {(report.operations || []).map((operation) => (
               <tr key={operation.id}>
-                <th scope="row">{operation.type}</th>
+                <th scope="row">{t(operation.type)}</th>
                 <td>{labelStatus(operation.status)}</td>
                 <td>{displayValue(operation.sentResult ?? operation.expectedResult)}</td>
                 <td>
@@ -199,7 +208,7 @@ function OperationReport({ report, history, onPrevious, onNext }) {
                         </li>
                       ))}
                     </ul>
-                  ) : 'No reported failure points'}
+                  ) : t("No reported failure points")}
                 </td>
               </tr>
             ))}
@@ -207,14 +216,14 @@ function OperationReport({ report, history, onPrevious, onNext }) {
         </table>
       </div>
       <PageControls
-        label="Simulator operation"
+        label={t("Simulator operation")}
         pageInfo={report.pageInfo?.operations}
         canGoBack={history.operationCursor.length > 0}
         onPrevious={() => onPrevious('operations')}
         onNext={() => onNext('operations')}
       />
       <section className="hub-audit-log" aria-labelledby="hub-audit-log-title">
-        <h4 id="hub-audit-log-title">Action audit log</h4>
+        <h4 id="hub-audit-log-title">{t("Action audit log")}</h4>
         {(report.auditLog || []).length ? (
           <ol>
             {report.auditLog.map((entry) => (
@@ -225,10 +234,10 @@ function OperationReport({ report, history, onPrevious, onNext }) {
               </li>
             ))}
           </ol>
-        ) : <p>No audit actions were returned.</p>}
+        ) : <p>{t("No audit actions were returned.")}</p>}
       </section>
       <PageControls
-        label="Simulator audit action"
+        label={t("Simulator audit action")}
         pageInfo={report.pageInfo?.auditLog}
         canGoBack={history.actionCursor.length > 0}
         onPrevious={() => onPrevious('auditLog')}
@@ -239,11 +248,12 @@ function OperationReport({ report, history, onPrevious, onNext }) {
 }
 
 function EvidenceTable({ title, caption, rows, renderRow, columns }) {
+  const {t} = useHubLocale();
   return (
     <section className="hub-audit-evidence-section">
-      <h4>{title}</h4>
+      <h4>{t(title)}</h4>
       {rows.length ? (
-        <div className="hub-table-wrap">
+        <div className="hub-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}>
           <table className="hub-trainer-table">
             <caption>{caption}</caption>
             <thead>
@@ -252,12 +262,13 @@ function EvidenceTable({ title, caption, rows, renderRow, columns }) {
             <tbody>{rows.map(renderRow)}</tbody>
           </table>
         </div>
-      ) : <p className="hub-empty-state">No records were returned for this evidence category.</p>}
+      ) : <p className="hub-empty-state">{t("No records were returned for this evidence category.")}</p>}
     </section>
   );
 }
 
 function AttemptEvidenceReport({ attempt, history, onPrevious, onNext }) {
+  const {t} = useHubLocale();
   if (!attempt) return null;
   const summary = attempt.attempt || {};
   const activities = attempt.activityAttempts || [];
@@ -267,13 +278,13 @@ function AttemptEvidenceReport({ attempt, history, onPrevious, onNext }) {
 
   return (
     <section className="hub-audit-report" aria-labelledby="hub-attempt-evidence-title">
-      <p className="hub-eyebrow">Read-only Hub evidence</p>
-      <h3 id="hub-attempt-evidence-title">Attempt evidence</h3>
-      <p>Attempt {summary.attemptNumber || '—'} · {labelStatus(summary.status)}</p>
+      <p className="hub-eyebrow">{t("Read-only Hub evidence")}</p>
+      <h3 id="hub-attempt-evidence-title">{t("Attempt evidence")}</h3>
+      <p>{t("Attempt ")}{summary.attemptNumber || '—'} · {labelStatus(summary.status)}</p>
       <LineageNotice lineage={summary.lineage} />
 
       <EvidenceTable
-        title="Activity attempts"
+        title={t("Activity attempts")}
         caption="Sanitized activity-attempt state"
         rows={activities}
         columns={['Activity', 'Status', 'State']}
@@ -286,7 +297,7 @@ function AttemptEvidenceReport({ attempt, history, onPrevious, onNext }) {
         )}
       />
       <PageControls
-        label="Activity attempt evidence"
+        label={t("Activity attempt evidence")}
         pageInfo={pageInfo.activityAttempts}
         canGoBack={history.activityCursor.length > 0}
         onPrevious={() => onPrevious('activityAttempts')}
@@ -294,7 +305,7 @@ function AttemptEvidenceReport({ attempt, history, onPrevious, onNext }) {
       />
 
       <EvidenceTable
-        title="Evidence events"
+        title={t("Evidence events")}
         caption="Sanitized immutable evidence events"
         rows={events}
         columns={['Sequence', 'Event', 'Payload']}
@@ -307,7 +318,7 @@ function AttemptEvidenceReport({ attempt, history, onPrevious, onNext }) {
         )}
       />
       <PageControls
-        label="Evidence event"
+        label={t("Evidence event")}
         pageInfo={pageInfo.evidenceEvents}
         canGoBack={history.evidenceCursor.length > 0}
         onPrevious={() => onPrevious('evidenceEvents')}
@@ -315,7 +326,7 @@ function AttemptEvidenceReport({ attempt, history, onPrevious, onNext }) {
       />
 
       <EvidenceTable
-        title="Attempt artifacts"
+        title={t("Attempt artifacts")}
         caption="Sanitized durable attempt artifacts"
         rows={artifacts}
         columns={['Artifact', 'Created', 'Payload']}
@@ -328,7 +339,7 @@ function AttemptEvidenceReport({ attempt, history, onPrevious, onNext }) {
         )}
       />
       <PageControls
-        label="Attempt artifact"
+        label={t("Attempt artifact")}
         pageInfo={pageInfo.artifacts}
         canGoBack={history.artifactCursor.length > 0}
         onPrevious={() => onPrevious('artifacts')}
@@ -364,16 +375,17 @@ export default function HubAuditorOverview({
   onAttemptPrevious,
   onAttemptNext,
 }) {
+  const {t} = useHubLocale();
   const trainees = overview?.postulantes || [];
   const sessions = overview?.legacySimulatorSessions || [];
   const pageInfo = overview?.pageInfo || {};
 
   return (
     <div className="hub-auditor-overview">
-      <p className="hub-readonly-note">Read-only reporting. This view has no assignment, progress, scoring, or simulator mutation controls.</p>
+      <p className="hub-readonly-note">{t("Read-only reporting. This view has no assignment, progress, scoring, or simulator mutation controls.")}</p>
 
       <section aria-labelledby="hub-auditor-progress-title">
-        <h3 id="hub-auditor-progress-title">Hub module completion</h3>
+        <h3 id="hub-auditor-progress-title">{t("Hub module completion")}</h3>
         {trainees.length
           ? trainees.map((trainee) => (
               <LearnerSummary
@@ -382,9 +394,9 @@ export default function HubAuditorOverview({
                 onSelectTrainee={onSelectTrainee}
               />
             ))
-          : <p className="hub-empty-state">No Postulante progress was returned.</p>}
+          : <p className="hub-empty-state">{t("No Postulante progress was returned.")}</p>}
         <PageControls
-          label="Hub Postulante"
+          label={t("Hub Postulante")}
           pageInfo={pageInfo.postulantes}
           canGoBack={traineeCanGoBack}
           onPrevious={onTraineePrevious}
@@ -393,25 +405,23 @@ export default function HubAuditorOverview({
       </section>
 
       <section className="hub-audit-legacy" aria-labelledby="hub-legacy-sessions-title">
-        <h3 id="hub-legacy-sessions-title">Legacy simulator sessions</h3>
+        <h3 id="hub-legacy-sessions-title">{t("Legacy simulator sessions")}</h3>
         {sessions.length ? (
           <ul>
             {sessions.map((session) => (
               <li key={session.id}>
                 <div>
-                  <strong>{session.traineeName || 'Unnamed legacy session'}</strong>
+                  <strong>{session.traineeName || t("Unnamed legacy session")}</strong>
                   <span>{labelStatus(session.status)}</span>
                   <LineageNotice lineage={session.lineage} />
                 </div>
-                <button type="button" onClick={() => onSelectSession(session.id)}>
-                  View operation report
-                </button>
+                <button type="button" onClick={() => onSelectSession(session.id)}>{t("View operation report")}</button>
               </li>
             ))}
           </ul>
-        ) : <p className="hub-empty-state">No legacy simulator sessions were returned.</p>}
+        ) : <p className="hub-empty-state">{t("No legacy simulator sessions were returned.")}</p>}
         <PageControls
-          label="Legacy simulator session"
+          label={t("Legacy simulator session")}
           pageInfo={pageInfo.legacySimulatorSessions}
           canGoBack={sessionCanGoBack}
           onPrevious={onSessionPrevious}
@@ -419,7 +429,7 @@ export default function HubAuditorOverview({
         />
       </section>
 
-      {reportLoading && <p className="hub-page-notice" role="status">Loading read-only operation report…</p>}
+      {reportLoading && <p className="hub-page-notice" role="status">{t("Loading read-only operation report…")}</p>}
       {reportError && <p className="hub-inline-notice" role="alert">{reportError}</p>}
       <LearningRecordReport
         record={learningRecord}

@@ -1,6 +1,8 @@
 {
   "version": 1,
   "audiences": ["newLearners", "existingEmployees"],
+  "requiredLocales": ["en", "es"],
+  "translationRevision": "2026-11-04.1",
   "rollout": {
     "totalLearnerLimit": null,
     "initialConcurrentLearnerTarget": 10,
@@ -19,7 +21,7 @@
   },
   "pilot": {"maximumLearners": 10, "maximumConcurrentLearners": 10, "capacityEvidence": null, "cohortId": null, "learnerUsernames": []},
   "acceptance": {
-    "curriculum": {"approvedBy": null, "approvedAt": null, "reviewedPolicyDigests": []},
+    "curriculum": {"approvedBy": null, "approvedAt": null, "reviewedPolicyDigests": [], "reviewedTranslationRevision": null},
     "hostedJourney": {"verifiedBy": null, "verifiedAt": null, "evidence": null},
     "supervisedPilot": {"completedBy": null, "completedAt": null, "evidence": null}
   }

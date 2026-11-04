@@ -1,3 +1,9 @@
+import {hubText} from '../i18n/hubLocale';
+import {hubServerMessage} from '../i18n/hubLocale';
+import {hubMessage} from '../i18n/hubLocale';
+import {useHubLocale} from '../i18n/HubLocaleContext';
+import {HubLocaleProvider,HubLanguageSwitch} from '../i18n/HubLanguageProvider';
+import {hubValidationMessage} from '../i18n/hubLocale';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   completeHubActivity,
@@ -52,30 +58,15 @@ const STAFF_VIEW_COPY = {
     simulatorLink: 'Open Operator Simulator',
     auditorView: 'RRHH view',
   },
-  es: {
-    brandSubtitle: 'Vista preliminar de la base',
-    currentIdentity: 'Identidad actual del servidor',
-    serverIdentity: 'Identidad del servidor',
-    signOut: 'Cerrar sesión',
-    administratorView: 'Vista ADMIN',
-    trainerView: 'Vista de formador',
-    progressTitle: 'Progreso de todos los Postulantes',
-    visibilityUnavailable: 'No se pudo cargar el progreso de Postulantes.',
-    languageLabel: 'Idioma / Language',
-    footerStatus: 'Nombre provisional del producto — sujeto a validación de Trez',
-    simulatorLink: 'Abrir Simulador de Operadores',
-    auditorView: 'Vista RRHH',
-  },
 };
 
 const unavailableCopy = (error) => {
   const status = error?.response?.status;
-  const serverMessage = error?.response?.data?.error?.message || error?.response?.data?.message;
 
   if (status === 401) {
     return {
-      title: 'Server identity required',
-      message: serverMessage || 'The Hub could not establish an authenticated server session. Use the identity access process selected by Trez when it becomes available.',
+      title: 'Sign in to continue',
+      message: 'Sign in with your assigned username and password.',
       canSignIn: true,
     };
   }
@@ -83,13 +74,13 @@ const unavailableCopy = (error) => {
   if (status === 403) {
     return {
       title: 'Hub access unavailable',
-      message: serverMessage || 'Your server identity does not have an assigned Hub role or learning path.',
+      message: 'Your account does not have Hub access. Contact your trainer.',
     };
   }
 
   return {
     title: 'Training Hub is not configured',
-    message: serverMessage || 'Authentication and identity provisioning must be configured by Trez before this Hub can load assigned training.',
+    message: 'Training is temporarily unavailable. Try again or contact your trainer.',
   };
 };
 
@@ -164,7 +155,12 @@ const identityRoles = (identity) => {
   return roles.map((role) => String(role).toUpperCase());
 };
 
-export default function HubPage() {
+export default function HubPage(){return <HubLocaleProvider><HubScreen/></HubLocaleProvider>;}
+
+function HubScreen() {
+  const {t,locale,setIdentity} = useHubLocale();
+  const localizeValidity=event=>event.target.setCustomValidity?.(t(hubValidationMessage(event.target.validity)));
+  const clearValidity=event=>event.target.setCustomValidity?.('');
   const [context, setContext] = useState(null);
   const [staffSection,setStaffSection]=useState(()=>window.location.hash.replace('#hub-',''));
   useEffect(()=>{const change=()=>{if(window.location.hash!=='#hub-main-content')setStaffSection(window.location.hash.replace('#hub-',''));};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change);},[]);
@@ -181,7 +177,6 @@ export default function HubPage() {
   const [password, setPassword] = useState('');
   const [loginStatus, setLoginStatus] = useState('');
   const [signingIn, setSigningIn] = useState(false);
-  const [staffLanguagePreference, setStaffLanguagePreference] = useState('en');
   const [auditorOverview, setAuditorOverview] = useState(null);
   const [auditorOverviewCursors, setAuditorOverviewCursors] = useState({
     postulanteCursor: null,
@@ -259,9 +254,7 @@ export default function HubPage() {
 
         setContext(nextContext);
         const roles = identityRoles(nextContext.identity);
-        if (roles.includes(ADMIN_ROLE) || roles.includes(TRAINER_ROLE) || roles.includes(RRHH_ROLE)) {
-          setStaffLanguagePreference(nextContext.identity.preferredLocale === 'es' ? 'es' : 'en');
-        }
+        setIdentity(nextContext.identity);
         if (roles.includes(POSTULANTE_ROLE)) {
           await loadPath();
         } else if (roles.includes(TRAINER_ROLE) || roles.includes(RRHH_ROLE)) {
@@ -297,7 +290,7 @@ export default function HubPage() {
 
     load();
     return () => { cancelled = true; };
-  }, [loadAuditorOverview, loadPath]);
+  }, [loadAuditorOverview, loadPath,setIdentity]);
 
   const changeAuditorOverviewPage = async (stream, direction) => {
     const cursorKey = stream === 'postulantes' ? 'postulanteCursor' : 'sessionCursor';
@@ -334,8 +327,8 @@ export default function HubPage() {
     } catch (detailError) {
       setAuditorReport(null);
       setAuditorDetailError(
-        detailError?.response?.data?.error?.message ||
-        'The read-only simulator report could not be loaded.'
+        hubServerMessage(detailError?.response?.data?.error?.message ||
+        hubMessage("The read-only simulator report could not be loaded."), hubMessage("The read-only simulator report could not be loaded."))
       );
     } finally {
       setAuditorDetailLoading(false);
@@ -380,8 +373,8 @@ export default function HubPage() {
     } catch (detailError) {
       setAuditorLearningRecord(null);
       setAuditorDetailError(
-        detailError?.response?.data?.error?.message ||
-        'The read-only Postulante record could not be loaded.'
+        hubServerMessage(detailError?.response?.data?.error?.message ||
+        hubMessage("The read-only Postulante record could not be loaded."), hubMessage("The read-only Postulante record could not be loaded."))
       );
     } finally {
       setAuditorDetailLoading(false);
@@ -433,8 +426,8 @@ export default function HubPage() {
     } catch (detailError) {
       setAuditorAttempt(null);
       setAuditorDetailError(
-        detailError?.response?.data?.error?.message ||
-        'The read-only Hub attempt evidence could not be loaded.'
+        hubServerMessage(detailError?.response?.data?.error?.message ||
+        hubMessage("The read-only Hub attempt evidence could not be loaded."), hubMessage("The read-only Hub attempt evidence could not be loaded."))
       );
     } finally {
       setAuditorDetailLoading(false);
@@ -501,12 +494,12 @@ export default function HubPage() {
       }
       await loadPath();
       pendingCompletionKeys.current.delete(activity.id);
-      setNotice(`${activity.title} progress was saved.`);
+      setNotice(hubMessage("{0} progress was saved.", [hubText(activity.title)]));
     } catch (completionError) {
       setNotice(
-        completionError?.response?.data?.error?.message ||
+        hubServerMessage(completionError?.response?.data?.error?.message ||
         completionError?.response?.data?.message ||
-        'Progress could not be saved. Retry will safely reuse the same request.'
+        hubMessage("Progress could not be saved. Retry will safely reuse the same request."), hubMessage("Progress could not be saved. Retry will safely reuse the same request."))
       );
     } finally {
       setBusyActivityId(null);
@@ -521,7 +514,7 @@ export default function HubPage() {
       await loginHub(username, password);
       window.location.assign('/hub');
     } catch (loginError) {
-      setLoginStatus(loginError?.response?.data?.error?.message || 'The username or password is incorrect.');
+      setLoginStatus(hubServerMessage(loginError?.response?.data?.error?.message || hubMessage("The username or password is incorrect."), hubMessage("The username or password is incorrect.")));
     } finally {
       setSigningIn(false);
     }
@@ -534,11 +527,11 @@ export default function HubPage() {
 
   if (loading) {
     return (
-      <main className="hub-state-page hub-light-theme">
+      <main className="hub-state-page hub-light-theme" lang={locale} onInvalidCapture={localizeValidity} onInputCapture={clearValidity}>
         <div className="hub-state-card" role="status">
           <span className="hub-loader" aria-hidden="true" />
-          <h1>Loading assigned training</h1>
-          <p>The Hub is requesting identity and progress from the server.</p>
+          <h1>{t("Loading assigned training")}</h1>
+          <p>{t("The Hub is requesting identity and progress from the server.")}</p>
         </div>
       </main>
     );
@@ -546,15 +539,16 @@ export default function HubPage() {
 
   if (error) {
     return (
-      <main className="hub-state-page hub-light-theme">
+      <main className="hub-state-page hub-light-theme" lang={locale} onInvalidCapture={localizeValidity} onInputCapture={clearValidity}>
         <div className="hub-state-card">
-          <span className="hub-brand-mark" aria-hidden="true">T</span>
-          <p className="hub-eyebrow">Trez Training Hub</p>
-          <h1>{error.title}</h1>
-          <p>{error.message}</p>
+          <HubLanguageSwitch/>
+          <span className="hub-brand-mark" aria-hidden="true">{t("T")}</span>
+          <p className="hub-eyebrow">{t("Trez Training Hub")}</p>
+          <h1>{t(error.title)}</h1>
+          <p>{t(hubServerMessage(error.message))}</p>
           {error.canSignIn && (
             <form className="hub-auth-form" onSubmit={handleLogin}>
-              <label htmlFor="hub-sign-in-username">Username</label>
+              <label htmlFor="hub-sign-in-username">{t("Username")}</label>
               <input
                 id="hub-sign-in-username"
                 autoComplete="username"
@@ -562,7 +556,7 @@ export default function HubPage() {
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
               />
-              <label htmlFor="hub-sign-in-password">Password</label>
+              <label htmlFor="hub-sign-in-password">{t("Password")}</label>
               <input
                 id="hub-sign-in-password"
                 type="password"
@@ -572,13 +566,13 @@ export default function HubPage() {
                 onChange={(event) => setPassword(event.target.value)}
               />
               <button className="hub-primary-button" type="submit" disabled={signingIn}>
-                {signingIn ? 'Signing in…' : 'Sign in'}
+                {signingIn ? t("Signing in…") : t("Sign in")}
               </button>
-              {loginStatus && <p role="status">{loginStatus}</p>}
-              <small>TRAINER and RRHH create Postulante accounts; ADMIN creates TRAINER accounts. Email addresses are not used to sign in.</small>
+              {loginStatus && <p role="status">{t(loginStatus)}</p>}
+              <small>{t("TRAINER and RRHH create Postulante accounts; ADMIN creates TRAINER accounts. Email addresses are not used to sign in.")}</small>
             </form>
           )}
-          <a className="hub-secondary-link" href="/">Return to Operator Simulator</a>
+          <a className="hub-secondary-link" href="/">{t("Return to Operator Simulator")}</a>
         </div>
       </main>
     );
@@ -590,16 +584,9 @@ export default function HubPage() {
   const isAdministrator = roles.includes(ADMIN_ROLE) && !roles.includes(POSTULANTE_ROLE);
   const isAuditor = roles.includes(RRHH_ROLE) && !roles.includes(POSTULANTE_ROLE);
   const canManagePostulantes = isTrainer || isAuditor;
-  const canSwitchStaffLanguage = canManagePostulantes || isAdministrator;
-  const staffLanguage = canSwitchStaffLanguage ? staffLanguagePreference : 'en';
-  const staffCopy = STAFF_VIEW_COPY[staffLanguage];
-  const displayedRoles = roles.map((role) => {
-    if (staffLanguage !== 'es') return role;
-    if (role === ADMIN_ROLE) return 'ADMIN';
-    if (role === TRAINER_ROLE) return 'FORMADOR';
-    if (role === RRHH_ROLE) return 'RRHH';
-    return role;
-  });
+  const staffLanguage = locale;
+  const staffCopy = STAFF_VIEW_COPY.en;
+  const displayedRoles = roles.map(role=>t(role));
   const course = path?.course || {};
   const availableSections=isAdministrator?['people','policies','curriculum','media','profile']:isTrainer?['curriculum','media','coaching','groups','progress','management','profile']:['coaching','groups','management','auditor-title','profile'];
   const activeSection=availableSections.includes(staffSection)?staffSection:(isAdministrator?'people':'management');
@@ -610,74 +597,57 @@ export default function HubPage() {
   }
 
   return (
-    <div className={`hub-app-shell hub-light-theme${isTrainer ? ' hub-staff-console' : ''}`} lang={staffLanguage}>
-      <a className="hub-skip-link" href="#hub-main-content">Skip to workspace</a>
+    <div className={`hub-app-shell hub-light-theme${isTrainer ? ' hub-staff-console' : ''}`} lang={staffLanguage} onInvalidCapture={localizeValidity} onInputCapture={clearValidity}>
+      <a className="hub-skip-link" href="#hub-main-content">{t("Skip to workspace")}</a>
       <header className="hub-topbar">
         <a className="hub-brand" href="/hub">
-          <span className="hub-brand-mark" aria-hidden="true">T</span>
-          <span><strong>Trez Training Hub</strong><small>{staffCopy.brandSubtitle}</small></span>
+          <span className="hub-brand-mark" aria-hidden="true">{t("T")}</span>
+          <span><strong>{t("Trez Training Hub")}</strong><small>{t(staffCopy.brandSubtitle)}</small></span>
         </a>
         <div className="hub-header-actions">
-          {canSwitchStaffLanguage && (
-            <div className="hub-language-switch" role="group" aria-label={staffCopy.languageLabel}>
-              <button
-                type="button"
-                aria-pressed={staffLanguagePreference === 'en'}
-                onClick={() => setStaffLanguagePreference('en')}
-              >
-                English
-              </button>
-              <button
-                type="button"
-                aria-pressed={staffLanguagePreference === 'es'}
-                onClick={() => setStaffLanguagePreference('es')}
-              >
-                Español
-              </button>
-            </div>
-          )}
-          <div className="hub-identity" aria-label={staffCopy.currentIdentity}>
+          <HubLanguageSwitch/>
+          <div className="hub-identity" aria-label={t(staffCopy.currentIdentity)}>
             <span>{identity.displayName || identity.name || staffCopy.serverIdentity}</span>
             <small>{identity.username ? `${identity.username} · ` : ''}{displayedRoles.join(', ')}</small>
-            <button type="button" onClick={handleLogout}>{staffCopy.signOut}</button>
+            <button type="button" onClick={handleLogout}>{t(staffCopy.signOut)}</button>
           </div>
         </div>
       </header>
 
       <div className={(isAdministrator||canManagePostulantes)?'hub-workspace-layout':'hub-learner-workspace'}>
-      {(isAdministrator||canManagePostulantes)&&<aside className="hub-sidebar" aria-label="Workspace navigation">
-        <p className="hub-sidebar-label">{staffLanguage==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</p>
-        <nav aria-label="Hub tools">
-          {isAdministrator&&<a href="#hub-people" aria-current={activeSection==='people'?'page':undefined} onClick={event=>chooseSection(event,'people')}>{staffLanguage==='es'?'Personas y acceso':'People & access'}</a>}
-          {isAdministrator&&<a href="#hub-policies" aria-current={activeSection==='policies'?'page':undefined} onClick={event=>chooseSection(event,'policies')}>{staffLanguage==='es'?'Reglas de cuentas':'Account policies'}</a>}
-          {(isAdministrator||isTrainer)&&<a href="#hub-curriculum" aria-current={activeSection==='curriculum'?'page':undefined} onClick={event=>chooseSection(event,'curriculum')}>{staffLanguage==='es'?'Contenido de formación':'Training content'}</a>}
-          {(isAdministrator||isTrainer)&&<a href="#hub-media" aria-current={activeSection==='media'?'page':undefined} onClick={event=>chooseSection(event,'media')}>{staffLanguage==='es'?'Biblioteca de recursos':'Media library'}</a>}
-          {canManagePostulantes&&<a href="#hub-coaching" aria-current={activeSection==='coaching'?'page':undefined} onClick={event=>chooseSection(event,'coaching')}>{staffLanguage==='es'?'Seguimiento y notas':'Coaching'}</a>}
-          {canManagePostulantes&&<a href="#hub-groups" aria-current={activeSection==='groups'?'page':undefined} onClick={event=>chooseSection(event,'groups')}>{staffLanguage==='es'?'Grupos y fechas':'Cohorts & dates'}</a>}
-          {isTrainer&&<a href="#hub-progress" aria-current={activeSection==='progress'?'page':undefined} onClick={event=>chooseSection(event,'progress')}>{staffLanguage==='es'?'Progreso de participantes':'Learner progress'}</a>}
-          {canManagePostulantes&&<a href="#hub-management" aria-current={activeSection==='management'?'page':undefined} onClick={event=>chooseSection(event,'management')}>{staffLanguage==='es'?'Evaluaciones y reportes':'People, evaluations & reports'}</a>}
-          {isAuditor&&<a href="#hub-auditor-title" aria-current={activeSection==='auditor-title'?'page':undefined} onClick={event=>chooseSection(event,'auditor-title')}>{staffLanguage==='es'?'Auditoría de RRHH':'RRHH audit'}</a>}
-          <a href="#hub-profile" aria-current={activeSection==='profile'?'page':undefined} onClick={event=>chooseSection(event,'profile')}>{staffLanguage==='es'?'Contraseña y seguridad':'Password & security'}</a>
+      {(isAdministrator||canManagePostulantes)&&<aside className="hub-sidebar" aria-label={t("Workspace navigation")}>
+        <p className="hub-sidebar-label">{t("WORKSPACE")}</p>
+        <nav aria-label={t("Hub tools")}>
+          {isAdministrator&&<a href="#hub-people" aria-current={activeSection==='people'?'page':undefined} onClick={event=>chooseSection(event,'people')}>{t("People & access")}</a>}
+          {isAdministrator&&<a href="#hub-policies" aria-current={activeSection==='policies'?'page':undefined} onClick={event=>chooseSection(event,'policies')}>{t("Account policies")}</a>}
+          {(isAdministrator||isTrainer)&&<a href="#hub-curriculum" aria-current={activeSection==='curriculum'?'page':undefined} onClick={event=>chooseSection(event,'curriculum')}>{t("Training content")}</a>}
+          {(isAdministrator||isTrainer)&&<a href="#hub-media" aria-current={activeSection==='media'?'page':undefined} onClick={event=>chooseSection(event,'media')}>{t("Media library")}</a>}
+          {canManagePostulantes&&<a href="#hub-coaching" aria-current={activeSection==='coaching'?'page':undefined} onClick={event=>chooseSection(event,'coaching')}>{t("Coaching")}</a>}
+          {canManagePostulantes&&<a href="#hub-groups" aria-current={activeSection==='groups'?'page':undefined} onClick={event=>chooseSection(event,'groups')}>{t("Cohorts & dates")}</a>}
+          {isTrainer&&<a href="#hub-progress" aria-current={activeSection==='progress'?'page':undefined} onClick={event=>chooseSection(event,'progress')}>{t("Learner progress")}</a>}
+          {canManagePostulantes&&<a href="#hub-management" aria-current={activeSection==='management'?'page':undefined} onClick={event=>chooseSection(event,'management')}>{t("People, evaluations & reports")}</a>}
+          {isAuditor&&<a href="#hub-auditor-title" aria-current={activeSection==='auditor-title'?'page':undefined} onClick={event=>chooseSection(event,'auditor-title')}>{t("RRHH audit")}</a>}
+          <a href="#hub-profile" aria-current={activeSection==='profile'?'page':undefined} onClick={event=>chooseSection(event,'profile')}>{t("Password & security")}</a>
         </nav>
-        <p className="hub-sidebar-help">{staffLanguage==='es'?'Selecciona una sección para acceder a tus herramientas.':'Choose a section to focus on the tools you need.'}</p>
+        <p className="hub-sidebar-help">{t("Choose a section to focus on the tools you need.")}</p>
       </aside>}
       <main className="hub-main" id="hub-main-content" tabIndex={-1}>
-        {(isAdministrator||canManagePostulantes)&&<div className="hub-workspace-intro"><p className="hub-eyebrow">{staffLanguage==='es'?'FORMACIÓN DE OPERADORES':'OPERATOR TRAINING'}</p><h1>{isAdministrator?(staffLanguage==='es'?'Administración del Hub':'Hub administration'):(staffLanguage==='es'?'Tu espacio de formación':'Your training workspace')}</h1><p>{isAdministrator?(staffLanguage==='es'?'Gestiona el acceso, las reglas y el contenido de formación.':'Manage staff access, account policies and training content.'):(staffLanguage==='es'?'Organiza participantes, revisa evidencias y acompaña su progreso.':'Organize learners, review evidence and support their progress.')}</p></div>}
+        {(isAdministrator||canManagePostulantes)&&<div className="hub-workspace-intro"><p className="hub-eyebrow">{t("OPERATOR TRAINING")}</p><h1>{isAdministrator?(t("Hub administration")):(t("Your training workspace"))}</h1><p>{isAdministrator?(t("Manage staff access, account policies and training content.")):(t("Organize learners, review evidence and support their progress."))}</p></div>}
         {!assessmentOpen&&!isTrainer && !isAuditor && !isAdministrator && <section className="hub-course-hero" aria-labelledby="hub-course-title">
           <div>
-            <p className="hub-eyebrow">Assigned course</p>
-            <h1 id="hub-course-title">{course.title || 'Operator foundations'}</h1>
-            {course.description && <p>{course.description}</p>}
+            <p className="hub-eyebrow">{t("Assigned course")}</p>
+            <h1 id="hub-course-title">{t(course.title || t("Operator foundations"))}</h1>
+            {course.description && <p>{t(course.description)}</p>}
           </div>
-          <ProgressBar progress={path?.progress} label="Course progress" />
+          <ProgressBar progress={path?.progress} label={t("Course progress")} />
           {(course.provisional || course.scored === false) && (
-            <p className="hub-course-classification">Provisional · Non-scored foundation</p>
+            <p className="hub-course-classification">{t("Provisional · Non-scored foundation")}</p>
           )}
         </section>}
 
-        {notice && <p className="hub-page-notice" role="status">{notice}</p>}
-        {!assessmentOpen&&roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">Open free operator simulator</a></p>}
-        {isTrainer && <p><a className="hub-secondary-link" href="/trainer">Open simulator session reports</a></p>}
+        {notice && <p className="hub-page-notice" role="status">{t(notice)}</p>}
+        {!assessmentOpen&&roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">{t("Open free operator simulator")}</a></p>}
+        {isTrainer && <p><a className="hub-secondary-link" href="/trainer">{t("Open simulator session reports")}</a></p>}
 
         {isAdministrator && <div id="hub-people" hidden={activeSection!=='people'} className="hub-section-anchor"><HubAdministratorConfiguration onSaved={(displayName)=>setContext(current=>({...current,identity:{...current.identity,displayName}}))}/><HubAdminAccounts /></div>}
         {isAdministrator && <div id="hub-policies" hidden={activeSection!=='policies'} className="hub-section-anchor"><HubPolicyStudio locale={staffLanguage} /></div>}
@@ -688,13 +658,11 @@ export default function HubPage() {
 
         {isTrainer && (
           <section id="hub-progress" hidden={activeSection!=='progress'} className="hub-trainer-section hub-section-anchor" aria-labelledby="hub-trainer-title">
-            <p className="hub-eyebrow">{staffCopy.trainerView}</p>
-            <h2 id="hub-trainer-title">{staffCopy.progressTitle}</h2>
+            <p className="hub-eyebrow">{t(staffCopy.trainerView)}</p>
+            <h2 id="hub-trainer-title">{t(staffCopy.progressTitle)}</h2>
             {trainerUnavailable ? (
               <p className="hub-inline-notice" role="status">
-                {staffLanguage === 'es'
-                  ? staffCopy.visibilityUnavailable
-                  : trainerUnavailable.serverMessage || staffCopy.visibilityUnavailable}
+                {t(staffCopy.visibilityUnavailable)}
               </p>
             ) : (
               <HubTrainerOverview learners={trainerLearners || []} locale={staffLanguage} />
@@ -706,8 +674,8 @@ export default function HubPage() {
 
         {isAuditor && (
           <section hidden={activeSection!=='auditor-title'} className="hub-trainer-section" aria-labelledby="hub-auditor-title">
-            <p className="hub-eyebrow">{staffCopy.auditorView}</p>
-            <h2 id="hub-auditor-title">RRHH reporting</h2>
+            <p className="hub-eyebrow">{t(staffCopy.auditorView)}</p>
+            <h2 id="hub-auditor-title">{t("RRHH reporting")}</h2>
             <HubAuditorOverview
               overview={auditorOverview}
               report={auditorReport}
@@ -754,8 +722,8 @@ export default function HubPage() {
       </main>
       </div>
       <footer className="hub-footer">
-        <span>{staffCopy.footerStatus}</span>
-        <a href="/">{staffCopy.simulatorLink}</a>
+        <span>{t(staffCopy.footerStatus)}</span>
+        <a href="/">{t(staffCopy.simulatorLink)}</a>
       </footer>
     </div>
   );

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import {hubDisplayTranslationMiddleware} from '../hub/hubDisplayTranslations.js';
 import { HubError } from '../hub/HubError.js';
 
 import {
@@ -53,6 +54,7 @@ export function createHubRouter({
 
   router.use(authenticateHub(identityVerifier));
   router.use(csrfProtection.middleware);
+  router.use(hubDisplayTranslationMiddleware);
   if(cohortService)router.use('/cohorts',createHubCohortRouter({service:cohortService}));
   if(mediaService)router.use('/media',createHubMediaRouter({service:mediaService}));
   router.get('/scored-evaluations/attempts/:attemptId/runtime',requireHubRole(HUB_ROLES.POSTULANTE),asyncRoute(async(req,res)=>{

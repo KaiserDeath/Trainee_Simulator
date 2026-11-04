@@ -642,7 +642,7 @@ backed by Supabase Auth JWT sessions; TRAINER/RRHH-created Postulantes and
 ADMIN-created TRAINER accounts with
 generated usernames and initial password equal to username; the role/visibility
 boundary in ADR 0001; assigned courses; ADMIN-authored content with a different
-ADMIN required for approval; two-year retention; English-only POSTULANTE content;
+ADMIN required for approval; two-year retention; English-only POSTULANTE content (superseded on 2026-11-04 by English/Spanish throughout);
 English/Spanish TRAINER, ADMIN, and RRHH experiences; global TRAINER/RRHH
 Postulante management; and read-only RRHH reporting across all Postulantes for module completion and
 sanitized original simulator operation/failure evidence. Implementation of

@@ -24,7 +24,7 @@ Status date: 2026-08-21.
   creation, profile update, deactivation, and course assignment.
 - Governance records and APIs for a two-year attempt-retention date and content
   versions that require approval by an administrator other than the author.
-- English-only POSTULANTE locale policy, English/Spanish TRAINER, ADMIN, and RRHH
+- earlier English-only POSTULANTE (superseded on 2026-11-04 by English/Spanish throughout) locale policy, English/Spanish TRAINER, ADMIN, and RRHH
   policy/content-version storage, and an English/Spanish
   administrator/RRHH progress shell.
 - Service-role-backed, `RRHH`-only read endpoints for the paged Postulante
@@ -79,7 +79,7 @@ made by the repository.
   their own password; POSTULANTE reset/change is unavailable.
 - Content requires an author and a different approving ADMIN.
 - Attempts, evidence, reports, and audit records are retained for two years.
-- POSTULANTE content is English only. TRAINER, ADMIN, and RRHH support English
+- The earlier English-only POSTULANTE policy was superseded on 2026-11-04 by English/Spanish throughout. TRAINER, ADMIN, and RRHH support English
   and Spanish.
 - RRHH reads every Postulante's module-completion status plus sanitized original
   simulator operation/failure evidence through GET-only reporting routes; its

@@ -1,7 +1,11 @@
+import {hubServerMessage} from '../../i18n/hubLocale';
+import {hubMessage} from '../../i18n/hubLocale';
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import {useState} from 'react';
 import {publishHubEvaluationPolicy} from '../../api/client';
 
 export default function HubEvaluationPolicyEditor({evaluation,onPublished}){
+  const {t} = useHubLocale();
   const [open,setOpen]=useState(false);const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');
   const [form,setForm]=useState(null);
   const begin=()=>{
@@ -20,20 +24,20 @@ export default function HubEvaluationPolicyEditor({evaluation,onPublished}){
       configuration.theory_item_codes=form.questions.split('\n').map(value=>value.trim()).filter(Boolean);
       configuration.practical_item_weights=Object.fromEntries(Object.entries(form.weights).map(([key,value])=>[key,Number(value)]));
       const response=await publishHubEvaluationPolicy(evaluation.id,{expectedRevision:evaluation.revision,configuration,rationale:form.rationale});
-      onPublished(response.data.evaluation);setOpen(false);setNotice(`Policy version ${response.data.evaluation.revision} published. Existing attempts keep their original rules.`);
-    }catch(error){setNotice(error?.response?.data?.error?.message||'The new policy could not be published.');}finally{setBusy(false);}
+      onPublished(response.data.evaluation);setOpen(false);setNotice(hubMessage("Policy version {0} published. Existing attempts keep their original rules.", [response.data.evaluation.revision]));
+    }catch(error){setNotice(hubServerMessage(error?.response?.data?.error?.message||hubMessage("The new policy could not be published."), hubMessage("The new policy could not be published.")));}finally{setBusy(false);}
   };
   return <div className="hub-workspace-panel">
-    {!open&&<button type="button" disabled={busy} onClick={begin}>Create policy version</button>}
-    {open&&<form onSubmit={publish}><fieldset disabled={busy}><legend>New policy for {evaluation.title}</legend>
-      <p>Publish a complete replacement for future attempts. The required action sequence, three-attempt limit and 100% pass rule remain enforced.</p>
-      {[['duration_minutes','Duration in minutes'],['theory_weight','Theory weight'],['practical_weight','Practical weight'],['history_review_days','History review days'],['history_record_limit','Recent record limit']].map(([key,label])=><label key={key}>{label}<input type="number" value={form[key]} onChange={change(key)}/></label>)}
-      <label>Verified family codes, one per line<textarea value={form.families} onChange={change('families')}/></label>
-      <label>Published question codes, one per line<textarea value={form.questions} onChange={change('questions')}/></label>
-      <fieldset><legend>Practical action weights</legend>{(evaluation.required_action_codes||[]).map(code=><label key={code}>{code.replaceAll('_',' ')}<input type="number" min="0.01" step="0.01" required value={form.weights[code]??''} onChange={event=>setForm(current=>({...current,weights:{...current.weights,[code]:event.target.value}}))}/></label>)}</fieldset>
-      <label>Publication reason<textarea required minLength={5} maxLength={2000} value={form.rationale} onChange={change('rationale')}/></label>
-      <button type="submit">Publish new policy version</button><button type="button" onClick={()=>setOpen(false)}>Cancel editing</button>
+    {!open&&<button type="button" disabled={busy} onClick={begin}>{t("Create policy version")}</button>}
+    {open&&<form onSubmit={publish}><fieldset disabled={busy}><legend>{t("New policy for ")}{t(evaluation.title)}</legend>
+      <p>{t("Publish a complete replacement for future attempts. The required action sequence, three-attempt limit and 100% pass rule remain enforced.")}</p>
+      {[['duration_minutes','Duration in minutes'],['theory_weight','Theory weight'],['practical_weight','Practical weight'],['history_review_days','History review days'],['history_record_limit','Recent record limit']].map(([key,label])=><label key={key}>{t(label)}<input type="number" value={form[key]} onChange={change(key)}/></label>)}
+      <label>{t("Verified family codes, one per line")}<textarea value={form.families} onChange={change('families')}/></label>
+      <label>{t("Published question codes, one per line")}<textarea value={form.questions} onChange={change('questions')}/></label>
+      <fieldset><legend>{t("Practical action weights")}</legend>{(evaluation.required_action_codes||[]).map(code=><label key={code}>{code.replaceAll('_',' ')}<input type="number" min="0.01" step="0.01" required value={form.weights[code]??''} onChange={event=>setForm(current=>({...current,weights:{...current.weights,[code]:event.target.value}}))}/></label>)}</fieldset>
+      <label>{t("Publication reason")}<textarea required minLength={5} maxLength={2000} value={form.rationale} onChange={change('rationale')}/></label>
+      <button type="submit">{t("Publish new policy version")}</button><button type="button" onClick={()=>setOpen(false)}>{t("Cancel editing")}</button>
     </fieldset></form>}
-    {notice&&<p role="status">{notice}</p>}
+    {notice&&<p role="status">{t(notice)}</p>}
   </div>;
 }

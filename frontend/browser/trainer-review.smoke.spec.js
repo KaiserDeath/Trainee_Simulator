@@ -79,11 +79,13 @@ test('report failure retries without exposing stale data', async ({ page }) => {
 
 test('trainer stays idle until Update and loads statistics only on demand', async ({ page }) => {
   const reads = [];
-  page.on('request', request => { if (request.url().includes('/api/')) reads.push(new URL(request.url()).pathname); });
+  page.on('request', request => { const path=new URL(request.url()).pathname;if(path.startsWith('/api/'))reads.push(path); });
   await page.clock.install();
   await fixture(page);
   await expect(page.getByRole('region', { name: 'Operation review' })).toBeVisible();
   expect(reads.filter(path => path.endsWith('/operation-time-stats'))).toHaveLength(0);
+  await expect(page.getByText('Loading audit log...', {exact:true})).toHaveCount(0);
+  await expect(page.getByRole('cell',{name:'Operation Started',exact:true,includeHidden:true}).first()).toBeAttached();
   const before = reads.length;
   await page.clock.fastForward(120000);
   expect(reads).toHaveLength(before);

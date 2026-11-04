@@ -1,8 +1,12 @@
+import {hubServerMessage} from '../../i18n/hubLocale';
+import {hubMessage} from '../../i18n/hubLocale';
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import { useState } from 'react';
 
 import { changeHubPassword } from '../../api/client';
 
 export default function HubPasswordPanel() {
+  const {t} = useHubLocale();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [notice, setNotice] = useState('');
@@ -16,21 +20,21 @@ export default function HubPasswordPanel() {
       await changeHubPassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
-      setNotice('Password changed.');
+      setNotice(hubMessage("Password changed."));
     } catch (error) {
-      setNotice(error?.response?.data?.error?.message || 'Password could not be changed.');
+      setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("Password could not be changed."), hubMessage("Password could not be changed.")));
     } finally {
       setBusy(false);
     }
   };
 
   return <details className="hub-password-panel">
-    <summary>Change my password</summary>
+    <summary>{t("Change my password")}</summary>
     <form className="hub-account-form" onSubmit={submit}>
-      <label>Current password<input type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
-      <label>New password<input type="password" autoComplete="new-password" required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
-      <button className="hub-primary-button" type="submit" disabled={busy}>{busy ? 'Changing…' : 'Change password'}</button>
+      <label>{t("Current password")}<input type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
+      <label>{t("New password")}<input type="password" autoComplete="new-password" required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
+      <button className="hub-primary-button" type="submit" disabled={busy}>{busy ? t("Changing…") : t("Change password")}</button>
     </form>
-    {notice && <p role="status">{notice}</p>}
+    {notice && <p role="status">{t(notice)}</p>}
   </details>;
 }

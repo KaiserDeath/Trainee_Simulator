@@ -590,7 +590,7 @@ Each rollout step must define success metrics, rollback triggers, a support owne
 Trez approved username/password authentication backed by Supabase Auth JWT
 sessions, later revised so TRAINER/RRHH create and manage all Postulantes while
 ADMIN creates TRAINER accounts, assigned-course delivery, separate-author content approval, two-year
-retention, English-only POSTULANTE content, English/Spanish TRAINER, ADMIN, and
+retention, English-only POSTULANTE content (superseded on 2026-11-04 by English/Spanish throughout), English/Spanish TRAINER, ADMIN, and
 RRHH experiences, and read-only RRHH reporting across all Postulantes to module
 completion and sanitized original simulator
 operation/failure evidence on 2026-08-21. The local implementation and guarded

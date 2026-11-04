@@ -6,6 +6,12 @@ const api = axios.create({
   withCredentials: true,
 })
 
+api.interceptors.response.use(response=>{
+  const translations=response.config.url?.startsWith('/hub/')&&response.data?.displayTranslations?.es;
+  if(translations&&typeof translations==='object')window.dispatchEvent(new CustomEvent('trez-hub-translations',{detail:translations}));
+  return response;
+});
+
 let hubCsrfToken = null;
 
 export const getHubCsrf = async () => {

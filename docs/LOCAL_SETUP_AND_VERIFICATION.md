@@ -243,13 +243,20 @@ The authentication gate covers:
 - content submission followed by approval from a different administrator, with
   self-approval rejected.
 
-The current language boundary is narrower than a translated product UI.
-POSTULANTE learning content and locale are English only. TRAINER, ADMIN, and
-RRHH experiences are approved for English and Spanish; identity
-and content-version storage support both locale codes. The implemented progress
-shell can switch trainer and administrator experiences between English and
-Spanish without translating server-authored course titles. Content-authoring
-and account-administration surfaces are not all complete.
+The user revised the language boundary on 2026-11-04: English and Spanish now
+apply to all Hub roles and supported learner content. One context controls the
+interface, accessible labels, validation, notices, status labels and dates.
+Selection persists per account on the device; a guest selection survives login.
+Canonical lesson and question snapshots remain unchanged. Authorized responses
+carry only matching display translations; private question companions are
+restricted to authorized runtime/question/evidence routes and are absent from
+the public frontend bundle. No translation changes identifiers or answer values.
+English source authoring is identified explicitly; user-authored names, free-text
+notes and original uploaded media retain their content. New/changed authored
+text needs its own reviewed translation rather than an automatic rewrite.
+`npm run verify:foundation` includes language catalog/interpolation/privacy checks
+and bilingual browser checks. The real formal-browser gate also switches a
+captured answer between languages and verifies unchanged grading and replay.
 
 ### RRHH acceptance boundary
 

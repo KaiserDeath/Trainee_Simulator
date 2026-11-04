@@ -54,8 +54,10 @@ Trez approved the following on 2026-08-21:
   may reset another staff account to its username. POSTULANTE password change
   and reset are unavailable. No password complexity, email recovery, lockout,
   or broader recovery policy is invented beyond Supabase's configured checks.
-- POSTULANTE learning content is English only. TRAINER, ADMIN, and RRHH
-  experiences are bilingual in English and Spanish.
+- Language amendment, explicitly requested on 2026-11-04: all Hub roles and
+  supported learner content offer English and Spanish. The earlier English-only
+  learner boundary is superseded. Locale changes grant no roles and change no
+  scoring rules or canonical evidence identifiers.
 - Legacy simulator sessions that are not explicitly linked to a Hub identity
   remain identified as unlinked. The system must not infer identity lineage from
   the mutable/free-text legacy trainee name.

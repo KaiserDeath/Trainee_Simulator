@@ -1,3 +1,5 @@
+import {hubText} from '../../i18n/hubLocale';
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import HubActivityRenderer from './HubActivityRenderer';
 
 const progressValues = (progress = {}) => ({
@@ -19,16 +21,17 @@ const moduleProgress = (module) => {
 };
 
 function ProgressBar({ progress, label }) {
+  const {t}=useHubLocale();
   const values = progressValues(progress);
   const text = values.total > 0
-    ? `${values.completed} of ${values.total} activities complete`
-    : 'No activities assigned';
+    ? t(values.total===1?'{0} of {1} activity complete':'{0} of {1} activities complete',[values.completed,values.total])
+    : t('No activities assigned');
 
   return (
     <div className="hub-progress-block">
       <div className="hub-progress-label">
-        <span>{label}</span>
-        <span>{text}</span>
+        <span>{t(label)}</span>
+        <span>{t(text)}</span>
       </div>
       <div
         className="hub-progress-track"
@@ -46,15 +49,16 @@ function ProgressBar({ progress, label }) {
 }
 
 function Prerequisites({ prerequisites = [] }) {
-  if (!prerequisites.length) return <p className="hub-prerequisite-empty">No prerequisites</p>;
+  const {t} = useHubLocale();
+  if (!prerequisites.length) return <p className="hub-prerequisite-empty">{t("No prerequisites")}</p>;
 
   return (
-    <ul className="hub-prerequisites" aria-label="Module prerequisites">
+    <ul className="hub-prerequisites" aria-label={t("Module prerequisites")}>
       {prerequisites.map((prerequisite) => (
         <li key={prerequisite.id || prerequisite.title}>
           <span aria-hidden="true">{prerequisite.completed ? '✓' : '○'}</span>
-          <span>{prerequisite.title}</span>
-          <span>{prerequisite.completed ? 'Complete' : 'Required'}</span>
+          <span>{t(prerequisite.title)}</span>
+          <span>{prerequisite.completed ? t("Complete") : t("Required")}</span>
         </li>
       ))}
     </ul>
@@ -62,17 +66,18 @@ function Prerequisites({ prerequisites = [] }) {
 }
 
 export default function HubLearningPath({ path, selectedModuleId, onSelectModule, busyActivityId, onCompleteActivity }) {
+  const {t} = useHubLocale();
   const modules = path.modules || [];
   const selectedModule = modules.find((module) => module.id === selectedModuleId) || modules[0];
 
   if (!selectedModule) {
-    return <p className="hub-empty-state">No learning modules are currently assigned.</p>;
+    return <p className="hub-empty-state">{t("No learning modules are currently assigned.")}</p>;
   }
 
   return (
     <div className="hub-learning-layout">
-      <nav className="hub-module-nav" aria-label="Assigned learning path">
-        <h2>Assigned path</h2>
+      <nav className="hub-module-nav" aria-label={t("Assigned learning path")}>
+        <h2>{t("Assigned path")}</h2>
         <ol>
           {modules.map((module, index) => {
             const active = module.id === selectedModule.id;
@@ -86,8 +91,8 @@ export default function HubLearningPath({ path, selectedModuleId, onSelectModule
                 >
                   <span className="hub-module-number">{module.order ?? index + 1}</span>
                   <span>
-                    <strong>{module.title}</strong>
-                    <small>{module.locked ? 'Prerequisite required' : module.completed ? 'Completed' : 'Available'}</small>
+                    <strong>{t(module.title)}</strong>
+                    <small>{module.locked ? t("Prerequisite required") : module.completed ? t("Completed") : t("Available")}</small>
                   </span>
                 </button>
               </li>
@@ -97,26 +102,25 @@ export default function HubLearningPath({ path, selectedModuleId, onSelectModule
       </nav>
 
       <section className="hub-module-detail" aria-labelledby="hub-module-title">
-        <span className="hub-eyebrow">Module {selectedModule.order}</span>
-        <h2 id="hub-module-title">{selectedModule.title}</h2>
-        {selectedModule.summary && <p className="hub-module-summary">{selectedModule.summary}</p>}
+        <span className="hub-eyebrow">{t("Module ")}{selectedModule.order}</span>
+        <h2 id="hub-module-title">{t(selectedModule.title)}</h2>
+        {selectedModule.summary && <p className="hub-module-summary">{t(selectedModule.summary)}</p>}
 
         <div className="hub-module-metadata">
           <div>
-            <h3>Prerequisites</h3>
+            <h3>{t("Prerequisites")}</h3>
             <Prerequisites prerequisites={selectedModule.prerequisites} />
           </div>
-          <ProgressBar progress={selectedModule.progress || moduleProgress(selectedModule)} label={`${selectedModule.title} progress`} />
+          <ProgressBar progress={selectedModule.progress || moduleProgress(selectedModule)} label={t("{0} progress", [hubText(selectedModule.title)])} />
         </div>
 
         {(selectedModule.provisional || selectedModule.scored === false) && (
           <p className="hub-provisional" role="note">
-            {selectedModule.provisional ? 'Provisional learning content' : 'Validated learning content'} · {selectedModule.scored === false ? 'Non-scored' : 'Scoring status assigned by server'}. Business validation is still required before provisional material can be used for formal assessment.
-          </p>
+            {selectedModule.provisional ? t("Provisional learning content") : t("Validated learning content")} · {selectedModule.scored === false ? t("Non-scored") : t("Scoring status assigned by server")}{t(". Business validation is still required before provisional material can be used for formal assessment.")}</p>
         )}
 
         {selectedModule.locked ? (
-          <p className="hub-inline-notice" role="status">Complete the listed prerequisites to open this module.</p>
+          <p className="hub-inline-notice" role="status">{t("Complete the listed prerequisites to open this module.")}</p>
         ) : (
           <div className="hub-activity-list">
             {(selectedModule.activities || []).map((activity) => (

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const config=JSON.parse(fs.readFileSync(new URL('../config/hub-release-acceptance.json',import.meta.url),'utf8'));
 assert.equal(config.version,1);
+assert.deepEqual(config.requiredLocales,['en','es']);
 const pending=[];
 for(const [key,assignment] of Object.entries(config.responsibilities)){
   const position=config.positions[assignment.position];assert.ok(position,`Unknown position for ${key}`);
@@ -26,6 +27,7 @@ for(const [gate,record] of Object.entries(config.acceptance)){
   else assert.ok(Number.isFinite(Date.parse(when)),`Invalid date for ${gate}`);
   if(gate==='curriculum'){
     if(record.reviewedPolicyDigests.length!==4)pending.push('curriculum: all four reviewed policy digests required');
+    if(record.reviewedTranslationRevision!==config.translationRevision)pending.push('curriculum: review English and Spanish display pack '+config.translationRevision);
   }else if(!record.evidence)pending.push(`${gate}: evidence reference required`);
 }
 console.log(JSON.stringify({status:pending.length?'pending':'recorded; verify authenticated evidence before release',pending},null,2));

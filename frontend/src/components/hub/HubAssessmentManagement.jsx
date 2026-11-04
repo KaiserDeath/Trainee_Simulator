@@ -1,3 +1,7 @@
+import {hubText} from '../../i18n/hubLocale';
+import {hubServerMessage} from '../../i18n/hubLocale';
+import {hubMessage} from '../../i18n/hubLocale';
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import HubAttemptHistory from './HubAttemptHistory';
 import HubReportBreakdown from './HubReportBreakdown';
 import HubEvaluationPolicyEditor from './HubEvaluationPolicyEditor';
@@ -25,6 +29,7 @@ const OPERATION_TYPES = ['ADD CREDITS', 'WITHDRAW CREDITS', 'CREATE ACCOUNT', 'R
 const emptyFilters = { postulanteId: '', from: '', to: '', status: '', result: '', scoreMin: '', scoreMax: '', operationType: '', category: '', game: '', failure: '', durationMin: '', durationMax: '', settingsRevision: '' };
 
 export default function HubAssessmentManagement({ canEditEvaluations = false }) {
+  const {locale,t} = useHubLocale();
   const [accounts, setAccounts] = useState([]);
   const [courses, setCourses] = useState([]);
   const [courseSelections, setCourseSelections] = useState({});
@@ -64,7 +69,7 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
         setCourses(courseResponse.data.courses || []);
         setSettings(settingsResponse.data.settings);
       })
-      .catch(() => { if (active) setNotice('Assessment administration could not be loaded.'); });
+      .catch(() => { if (active) setNotice(hubMessage("Assessment administration could not be loaded.")); });
     return () => { active = false; };
   }, []);
   const openWorkspace=async(id)=>{
@@ -73,13 +78,13 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
     try{
       if(id==='reports'){const response=await getHubAssessmentReport(filters);if(request===workspaceRequest.current)setReport(response.data);}
       else{const response=await getHubScoredEvaluationPolicies();if(request===workspaceRequest.current)setEvaluationPolicies(response.data);}
-    }catch(error){if(request===workspaceRequest.current)setNotice(error?.response?.data?.error?.message||'This workspace could not be loaded.');}finally{if(request===workspaceRequest.current)setBusy(false);}
+    }catch(error){if(request===workspaceRequest.current)setNotice(hubServerMessage(error?.response?.data?.error?.message||hubMessage("This workspace could not be loaded."), hubMessage("This workspace could not be loaded.")));}finally{if(request===workspaceRequest.current)setBusy(false);}
   };
 
   const create = async (event) => {
     event.preventDefault(); setBusy(true); setNotice('');
-    try { const response = await createHubPostulante(newAccount); setNotice(`Postulante created. Username and initial password: ${response.data.identity.username}`); setNewAccount({ firstName: '', surname: '' }); await load(); }
-    catch (error) { setNotice(error?.response?.data?.error?.message || 'The Postulante could not be created.'); }
+    try { const response = await createHubPostulante(newAccount); setNotice(hubMessage("Postulante created. Username and initial password: {0}", [response.data.identity.username])); setNewAccount({ firstName: '', surname: '' }); await load(); }
+    catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The Postulante could not be created."), hubMessage("The Postulante could not be created."))); }
     finally { setBusy(false); }
   };
 
@@ -88,25 +93,25 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
   };
   const saveAccount = async (event) => {
     event.preventDefault();setBusy(true);setNotice('');
-    try { await updateHubPostulante(editingAccount.id, { firstName:editingAccount.firstName.trim(), surname:editingAccount.surname.trim() }); await load();setEditingAccount(null);setNotice('Postulante updated.'); }
-    catch (error) { setNotice(error?.response?.data?.error?.message || 'The Postulante could not be updated.'); }
+    try { await updateHubPostulante(editingAccount.id, { firstName:editingAccount.firstName.trim(), surname:editingAccount.surname.trim() }); await load();setEditingAccount(null);setNotice(hubMessage("Postulante updated.")); }
+    catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The Postulante could not be updated."), hubMessage("The Postulante could not be updated."))); }
     finally { setBusy(false); }
   };
 
   const deactivate = async (account) => {
     if (!window.confirm(`Deactivate ${account.displayName}?`)) return;
     setBusy(true);
-    try { await deactivateHubPostulante(account.id); setNotice('Postulante deactivated.'); await load(); }
-    catch (error) { setNotice(error?.response?.data?.error?.message || 'The Postulante could not be deactivated.'); }
+    try { await deactivateHubPostulante(account.id); setNotice(hubMessage("Postulante deactivated.")); await load(); }
+    catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The Postulante could not be deactivated."), hubMessage("The Postulante could not be deactivated."))); }
     finally { setBusy(false); }
   };
 
   const assignCourse = async (account) => {
     const courseId = courseSelections[account.id] || courses[0]?.id;
-    if (!courseId) { setNotice('No course is available to assign.'); return; }
+    if (!courseId) { setNotice(hubMessage("No course is available to assign.")); return; }
     setBusy(true); setNotice('');
-    try { await assignHubCourse(account.id, courseId); setNotice(`Course assigned to ${account.displayName}.`); }
-    catch (error) { setNotice(error?.response?.data?.error?.message || 'The course could not be assigned.'); }
+    try { await assignHubCourse(account.id, courseId); setNotice(hubMessage("Course assigned to {0}.", [account.displayName])); }
+    catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The course could not be assigned."), hubMessage("The course could not be assigned."))); }
     finally { setBusy(false); }
   };
 
@@ -117,8 +122,8 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
         durationMinutes: Number(settings.duration_minutes), minimumOperations: Number(settings.minimum_operations), maximumOperations: Number(settings.maximum_operations),
         operationTypes: settings.operation_types, advancedEnabled: settings.advanced_enabled,
       });
-      setSettings(response.data.settings); setNotice('Assessment settings saved. New attempts will use this configuration.');
-    } catch (error) { setNotice(error?.response?.data?.error?.message || 'Assessment settings could not be saved.'); }
+      setSettings(response.data.settings); setNotice(hubMessage("Assessment settings saved. New attempts will use this configuration."));
+    } catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("Assessment settings could not be saved."), hubMessage("Assessment settings could not be saved."))); }
     finally { setBusy(false); }
   };
 
@@ -141,8 +146,8 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
         historyRecordLimit: evaluation.history_record_limit === null || evaluation.history_record_limit === '' ? null : Number(evaluation.history_record_limit),
       });
       changeEvaluation(evaluation.id, response.data.evaluation);
-      setNotice(`${evaluation.title} settings saved. New attempts will retain this revision.`);
-    } catch (error) { setNotice(error?.response?.data?.error?.message || 'The scored evaluation settings could not be saved.'); }
+      setNotice(hubMessage("{0} settings saved. New attempts will retain this revision.", [hubText(evaluation.title)]));
+    } catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The scored evaluation settings could not be saved."), hubMessage("The scored evaluation settings could not be saved."))); }
     finally { setBusy(false); }
   };
 
@@ -161,13 +166,13 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
   const reopenEvaluation = async (evaluation, account) => {
     const reason = window.prompt(`Reason for reopening ${evaluation.title} for ${account.displayName}`);
     if (!reason?.trim()) return;
-    if (reason.trim().length > 500) { setNotice('The reopening reason must be 500 characters or fewer.'); return; }
+    if (reason.trim().length > 500) { setNotice(hubMessage("The reopening reason must be 500 characters or fewer.")); return; }
     setBusy(true); setNotice('');
     try {
       await reopenHubScoredEvaluation(evaluation.id, account.id, reason.trim());
-      setNotice(`${evaluation.title} reopened for ${account.displayName} with three new attempts.`);
+      setNotice(hubMessage("{0} reopened for {1} with three new attempts.", [hubText(evaluation.title), account.displayName]));
       await load();
-    } catch (error) { setNotice(error?.response?.data?.error?.message || 'The scored evaluation could not be reopened.'); }
+    } catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The scored evaluation could not be reopened."), hubMessage("The scored evaluation could not be reopened."))); }
     finally { setBusy(false); }
   };
 
@@ -176,14 +181,14 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
   const fetchReport = async (values) => {
     setBusy(true); setNotice('');
     try { setReport((await getHubAssessmentReport(values)).data); }
-    catch (error) { setNotice(error?.response?.data?.error?.message || 'The report could not be loaded. Please try again.'); }
+    catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The report could not be loaded. Please try again."), hubMessage("The report could not be loaded. Please try again."))); }
     finally { setBusy(false); }
   };
   const applyFilters = async (event) => { event.preventDefault(); await fetchReport(filters); };
   const exportCsv=async()=>{
     setBusy(true);setNotice('');try{
       const response=await getHubAssessmentCsv(report.filters||filters);const url=URL.createObjectURL(response.data);const link=document.createElement('a');link.href=url;link.download='training-assessment-report.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    }catch{setNotice('The filtered report could not be exported. Please retry.');}finally{setBusy(false);}
+    }catch{setNotice(hubMessage("The filtered report could not be exported. Please retry."));}finally{setBusy(false);}
   };
   const visibleAccounts = accounts.filter((account) =>
     (!accountStatus || account.status === accountStatus) &&
@@ -202,112 +207,112 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
 
   return <div className="hub-assessment-admin">
     <header className="hub-workspace-header">
-      <div><p className="hub-eyebrow">Training administration</p><h2>Trainer workspace</h2><p>Manage people, configure evaluations, and review results in one place.</p></div>
-      <div className="hub-workspace-summary"><strong>{accounts.filter((account) => account.status === 'active').length}</strong><span>Active Postulantes</span></div>
+      <div><p className="hub-eyebrow">{t("Training administration")}</p><h2>{t("Trainer workspace")}</h2><p>{t("Manage people, configure evaluations, and review results in one place.")}</p></div>
+      <div className="hub-workspace-summary"><strong>{accounts.filter((account) => account.status === 'active').length}</strong><span>{t("Active Postulantes")}</span></div>
     </header>
-    <nav className="hub-workspace-nav" aria-label="Training administration">
+    <nav className="hub-workspace-nav" aria-label={t("Training administration")}>
       {[
         ['people', 'Postulantes', 'Accounts & course assignments'],
         ['evaluations', 'Evaluations', 'Rules & attempt reopening'],
         ['reports', 'Reports', 'Results & performance'],
-      ].map(([id, label, description]) => <button type="button" key={id} aria-pressed={workspace === id} aria-controls={`hub-workspace-${id}`} onClick={() => openWorkspace(id)}><strong>{label}</strong><span>{description}</span></button>)}
+      ].map(([id, label, description]) => <button type="button" key={id} aria-pressed={workspace === id} aria-controls={`hub-workspace-${id}`} onClick={() => openWorkspace(id)}><strong>{t(label)}</strong><span>{t(description)}</span></button>)}
     </nav>
-    {notice && <p className="hub-page-notice" role="status">{notice}</p>}
+    {notice && <p className="hub-page-notice" role="status">{t(notice)}</p>}
     <div id="hub-workspace-people" hidden={workspace !== 'people'}>
     <section className="hub-admin-accounts" aria-labelledby="postulante-management-title">
-      <p className="hub-eyebrow">TRAINER / RRHH</p><h2 id="postulante-management-title">Postulante management</h2>
-      <form className="hub-account-form" onSubmit={create}><label>First name<input required value={newAccount.firstName} onChange={(event) => setNewAccount((value) => ({ ...value, firstName: event.target.value }))} /></label><label>First surname<input required value={newAccount.surname} onChange={(event) => setNewAccount((value) => ({ ...value, surname: event.target.value }))} /></label><button className="hub-primary-button" disabled={busy}>Create Postulante</button></form>
+      <p className="hub-eyebrow">{t("TRAINER / RRHH")}</p><h2 id="postulante-management-title">{t("Postulante management")}</h2>
+      <form className="hub-account-form" onSubmit={create}><label>{t("First name")}<input required value={newAccount.firstName} onChange={(event) => setNewAccount((value) => ({ ...value, firstName: event.target.value }))} /></label><label>{t("First surname")}<input required value={newAccount.surname} onChange={(event) => setNewAccount((value) => ({ ...value, surname: event.target.value }))} /></label><button className="hub-primary-button" disabled={busy}>{t("Create Postulante")}</button></form>
       {editingAccount&&<section className="hub-inline-account-editor" aria-labelledby="hub-edit-account-title">
-        <h3 id="hub-edit-account-title">Edit {editingAccount.displayName}</h3>
-        <p className="hub-readonly-note">Changing a name preserves the login username, assigned courses and training history.</p>
+        <h3 id="hub-edit-account-title">{t("Edit ")}{editingAccount.displayName}</h3>
+        <p className="hub-readonly-note">{t("Changing a name preserves the login username, assigned courses and training history.")}</p>
         <form className="hub-account-form" onSubmit={saveAccount}>
-          <label>Edit first name<input ref={editFirstName} required maxLength={120} value={editingAccount.firstName} onChange={event=>setEditingAccount({...editingAccount,firstName:event.target.value})}/></label>
-          <label>Edit surname<input required maxLength={120} value={editingAccount.surname} onChange={event=>setEditingAccount({...editingAccount,surname:event.target.value})}/></label>
-          <button className="hub-primary-button" disabled={busy||!editingAccount.firstName.trim()||!editingAccount.surname.trim()}>Save learner name</button>
-          <button className="hub-secondary-button" type="button" disabled={busy} onClick={()=>setEditingAccount(null)}>Cancel name edit</button>
+          <label>{t("Edit first name")}<input ref={editFirstName} required maxLength={120} value={editingAccount.firstName} onChange={event=>setEditingAccount({...editingAccount,firstName:event.target.value})}/></label>
+          <label>{t("Edit surname")}<input required maxLength={120} value={editingAccount.surname} onChange={event=>setEditingAccount({...editingAccount,surname:event.target.value})}/></label>
+          <button className="hub-primary-button" disabled={busy||!editingAccount.firstName.trim()||!editingAccount.surname.trim()}>{t("Save learner name")}</button>
+          <button className="hub-secondary-button" type="button" disabled={busy} onClick={()=>setEditingAccount(null)}>{t("Cancel name edit")}</button>
         </form>
       </section>}
       <div className="hub-directory-toolbar">
-        <label>Search Postulantes<input type="search" placeholder="Name or username" value={accountSearch} onChange={(event) => setAccountSearch(event.target.value)} /></label>
-        <label>Account status<select value={accountStatus} onChange={(event) => setAccountStatus(event.target.value)}><option value="active">Active</option><option value="">All statuses</option><option value="deactivated">Deactivated</option></select></label>
-        <p>{visibleAccounts.length} of {accounts.length} Postulantes</p>
+        <label>{t("Search Postulantes")}<input type="search" placeholder={t("Name or username")} value={accountSearch} onChange={(event) => setAccountSearch(event.target.value)} /></label>
+        <label>{t("Account status")}<select value={accountStatus} onChange={(event) => setAccountStatus(event.target.value)}><option value="active">{t("Active")}</option><option value="">{t("All statuses")}</option><option value="deactivated">{t("Deactivated")}</option></select></label>
+        <p>{visibleAccounts.length}{t(" of ")}{accounts.length}{t(" Postulantes")}</p>
       </div>
-      <div className="hub-account-table-wrap hub-mobile-directory"><table className="hub-trainer-table"><thead><tr><th>Username</th><th>Full name</th><th>Status</th><th>Course assignment</th><th>Actions</th></tr></thead><tbody>{visibleAccounts.map((account) => <tr key={account.id}><td data-label="Username">{account.username}</td><td data-label="Full name">{account.displayName}</td><td data-label="Status">{account.status}</td><td data-label="Course assignment" className="hub-directory-actions"><select aria-label={`Course for ${account.displayName}`} value={courseSelections[account.id] || courses[0]?.id || ''} onChange={(event) => setCourseSelections((current) => ({ ...current, [account.id]: event.target.value }))}>{courses.map((course) => <option value={course.id} key={course.id}>{course.title}{course.is_provisional ? ' (provisional)' : ''}</option>)}</select> <button type="button" onClick={() => assignCourse(account)} disabled={busy || account.status !== 'active' || courses.length === 0}>Assign</button></td><td data-label="Actions" className="hub-directory-actions"><button type="button" onClick={() => edit(account)} disabled={busy || account.status !== 'active'}>Edit</button> <button type="button" onClick={() => deactivate(account)} disabled={busy || account.status !== 'active'}>Deactivate</button></td></tr>)}{visibleAccounts.length === 0 && <tr><td colSpan="5" className="hub-empty-state">No Postulantes match. Try another name or account status.</td></tr>}</tbody></table></div>
+      <div className="hub-account-table-wrap hub-mobile-directory" tabIndex={0} role="region" aria-label={t("Table data")}><table className="hub-trainer-table"><thead><tr><th>{t("Username")}</th><th>{t("Full name")}</th><th>{t("Status")}</th><th>{t("Course assignment")}</th><th>{t("Actions")}</th></tr></thead><tbody>{visibleAccounts.map((account) => <tr key={account.id}><td data-label={t("Username")}>{account.username}</td><td data-label={t("Full name")}>{account.displayName}</td><td data-label={t("Status")}>{t(account.status)}</td><td data-label={t("Course assignment")} className="hub-directory-actions"><select aria-label={t("Course for {0}", [account.displayName])} value={courseSelections[account.id] || courses[0]?.id || ''} onChange={(event) => setCourseSelections((current) => ({ ...current, [account.id]: event.target.value }))}>{courses.map((course) => <option value={course.id} key={course.id}>{t(course.title)}{course.is_provisional ? t(" (provisional)") : ''}</option>)}</select> <button type="button" onClick={() => assignCourse(account)} disabled={busy || account.status !== 'active' || courses.length === 0}>{t("Assign")}</button></td><td data-label={t("Actions")} className="hub-directory-actions"><button type="button" onClick={() => edit(account)} disabled={busy || account.status !== 'active'}>{t("Edit")}</button> <button type="button" onClick={() => deactivate(account)} disabled={busy || account.status !== 'active'}>{t("Deactivate")}</button></td></tr>)}{visibleAccounts.length === 0 && <tr><td colSpan="5" className="hub-empty-state">{t("No Postulantes match. Try another name or account status.")}</td></tr>}</tbody></table></div>
     </section>
 
     </div>
     <div id="hub-workspace-evaluations" hidden={workspace !== 'evaluations'}>
-    {settings && <section className="hub-admin-accounts" aria-labelledby="assessment-settings-title"><p className="hub-eyebrow">Assessment</p><h2 id="assessment-settings-title">Final assessment settings</h2><p className="hub-readonly-note">These limits set the total operations in each assessment attempt. Simulator operations per minute are configured in the simulator dashboard.</p><form className="hub-account-form" onSubmit={saveSettings}>
-      <label>Duration (minutes)<input type="number" min="1" disabled={!canEditEvaluations} value={settings.duration_minutes} onChange={(event) => setSettings((value) => ({ ...value, duration_minutes: event.target.value }))} /></label>
-      <label>Minimum operations<input type="number" min="1" disabled={!canEditEvaluations} value={settings.minimum_operations} onChange={(event) => setSettings((value) => ({ ...value, minimum_operations: event.target.value }))} /></label>
-      <label>Maximum operations<input type="number" min="1" disabled={!canEditEvaluations} value={settings.maximum_operations} onChange={(event) => setSettings((value) => ({ ...value, maximum_operations: event.target.value }))} /></label>
-      <label><input type="checkbox" disabled={!canEditEvaluations} checked={settings.advanced_enabled} onChange={(event) => setSettings((value) => ({ ...value, advanced_enabled: event.target.checked }))} /> Advanced Settings</label>
-      {settings.advanced_enabled && <fieldset className="hub-checklist" disabled={!canEditEvaluations}><legend>Eligible operation types</legend>{OPERATION_TYPES.map((type) => <label key={type}><input type="checkbox" checked={settings.operation_types.includes(type)} onChange={() => toggleType(type)} /><span>{type}</span></label>)}</fieldset>}
-      {canEditEvaluations && <button className="hub-primary-button" disabled={busy}>Save settings</button>}
-    </form><p className="hub-readonly-note">Defaults are 30 minutes and 2–6 randomly generated operations. Configuration revision {settings.revision}; each attempt retains its exact snapshot.</p></section>}
+    {settings && <section className="hub-admin-accounts" aria-labelledby="assessment-settings-title"><p className="hub-eyebrow">{t("Assessment")}</p><h2 id="assessment-settings-title">{t("Final assessment settings")}</h2><p className="hub-readonly-note">{t("These limits set the total operations in each assessment attempt. Simulator operations per minute are configured in the simulator dashboard.")}</p><form className="hub-account-form" onSubmit={saveSettings}>
+      <label>{t("Duration (minutes)")}<input type="number" min="1" disabled={!canEditEvaluations} value={settings.duration_minutes} onChange={(event) => setSettings((value) => ({ ...value, duration_minutes: event.target.value }))} /></label>
+      <label>{t("Minimum operations")}<input type="number" min="1" disabled={!canEditEvaluations} value={settings.minimum_operations} onChange={(event) => setSettings((value) => ({ ...value, minimum_operations: event.target.value }))} /></label>
+      <label>{t("Maximum operations")}<input type="number" min="1" disabled={!canEditEvaluations} value={settings.maximum_operations} onChange={(event) => setSettings((value) => ({ ...value, maximum_operations: event.target.value }))} /></label>
+      <label><input type="checkbox" disabled={!canEditEvaluations} checked={settings.advanced_enabled} onChange={(event) => setSettings((value) => ({ ...value, advanced_enabled: event.target.checked }))} />{t(" Advanced Settings")}</label>
+      {settings.advanced_enabled && <fieldset className="hub-checklist" disabled={!canEditEvaluations}><legend>{t("Eligible operation types")}</legend>{OPERATION_TYPES.map((type) => <label key={type}><input type="checkbox" checked={settings.operation_types.includes(type)} onChange={() => toggleType(type)} /><span>{t(type)}</span></label>)}</fieldset>}
+      {canEditEvaluations && <button className="hub-primary-button" disabled={busy}>{t("Save settings")}</button>}
+    </form><p className="hub-readonly-note">{t("Defaults are 30 minutes and 2–6 randomly generated operations. Configuration revision ")}{settings.revision}{t("; each attempt retains its exact snapshot.")}</p></section>}
 
     <section className="hub-admin-accounts" aria-labelledby="scored-evaluations-title">
-      <p className="hub-eyebrow">Scored evaluations</p>
-      <h2 id="scored-evaluations-title">Four governed evaluations</h2>
-      <p className="hub-readonly-note">Every evaluation requires 100%. Each attempt set contains three attempts. POSTULANTE sees numerical scores but not detailed failure evidence; TRAINER and RRHH retain the complete audit history.</p>
+      <p className="hub-eyebrow">{t("Scored evaluations")}</p>
+      <h2 id="scored-evaluations-title">{t("Four governed evaluations")}</h2>
+      <p className="hub-readonly-note">{t("Every evaluation requires 100%. Each attempt set contains three attempts. POSTULANTE sees numerical scores but not detailed failure evidence; TRAINER and RRHH retain the complete audit history.")}</p>
       <div className="hub-evaluation-policy-grid">
         {(evaluationPolicies.evaluations || []).map((evaluation) => <article className="hub-evaluation-policy-card" key={evaluation.id}>
-          <header><div><span>Evaluation {evaluation.position}</span><h3>{evaluation.title}</h3></div><strong>{evaluation.publication_status}{evaluation.is_provisional ? ' · provisional' : ''}</strong></header>
+          <header><div><span>{t("Evaluation ")}{evaluation.position}</span><h3>{t(evaluation.title)}</h3></div><strong>{t(evaluation.publication_status)}{evaluation.is_provisional ? t(" · provisional") : ''}</strong></header>
           <div className="hub-account-form">
-            <label>Duration (minutes)<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.duration_minutes} onChange={(event) => changeEvaluation(evaluation.id, { duration_minutes: event.target.value })} /></label>
-            <label>Theory weight (%)<input type="number" min="0" max="100" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.theory_weight} onChange={(event) => changeEvaluation(evaluation.id, { theory_weight: event.target.value })} /></label>
-            <label>Practical weight (%)<input type="number" min="0" max="100" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.practical_weight} onChange={(event) => changeEvaluation(evaluation.id, { practical_weight: event.target.value })} /></label>
-            <label>History window (days)<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.history_review_days} onChange={(event) => changeEvaluation(evaluation.id, { history_review_days: event.target.value })} /></label>
-            <label>Optional recent-record limit<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.history_record_limit ?? ''} onChange={(event) => changeEvaluation(evaluation.id, { history_record_limit: event.target.value })} placeholder="All in window" /></label>
+            <label>{t("Duration (minutes)")}<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.duration_minutes} onChange={(event) => changeEvaluation(evaluation.id, { duration_minutes: event.target.value })} /></label>
+            <label>{t("Theory weight (%)")}<input type="number" min="0" max="100" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.theory_weight} onChange={(event) => changeEvaluation(evaluation.id, { theory_weight: event.target.value })} /></label>
+            <label>{t("Practical weight (%)")}<input type="number" min="0" max="100" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.practical_weight} onChange={(event) => changeEvaluation(evaluation.id, { practical_weight: event.target.value })} /></label>
+            <label>{t("History window (days)")}<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.history_review_days} onChange={(event) => changeEvaluation(evaluation.id, { history_review_days: event.target.value })} /></label>
+            <label>{t("Optional recent-record limit")}<input type="number" min="1" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'} value={evaluation.history_record_limit ?? ''} onChange={(event) => changeEvaluation(evaluation.id, { history_record_limit: event.target.value })} placeholder={t("All in window")} /></label>
           </div>
-          <p><strong>Attempts:</strong> 3 per set · <strong>Pass:</strong> 100% · <strong>Revision:</strong> {evaluation.revision}</p>
+          <p><strong>{t("Attempts:")}</strong>{t(" 3 per set · ")}<strong>{t("Pass:")}</strong> 100% · <strong>{t("Revision:")}</strong> {evaluation.revision}</p>
           <fieldset className="hub-checklist" disabled={!canEditEvaluations || evaluation.publication_status !== 'draft'}>
-            <legend>Verified game families</legend>
-            <label><input type="checkbox" checked={evaluation.game_family_selection_mode === 'all_verified'} onChange={(event) => changeEvaluation(evaluation.id, { game_family_selection_mode: event.target.checked ? 'all_verified' : 'selected_verified' })} /><span>Use every verified family by default</span></label>
-            {(evaluationPolicies.gameFamilies || []).map((family) => <label key={family.stable_key}><input type="checkbox" disabled={!canEditEvaluations || family.adapter_status !== 'verified' || evaluation.game_family_selection_mode === 'all_verified'} checked={(evaluation.selected_game_family_keys || []).includes(family.stable_key)} onChange={() => toggleEvaluationFamily(evaluation, family.stable_key)} /><span>{family.display_name} · {family.adapter_status}</span></label>)}
+            <legend>{t("Verified game families")}</legend>
+            <label><input type="checkbox" checked={evaluation.game_family_selection_mode === 'all_verified'} onChange={(event) => changeEvaluation(evaluation.id, { game_family_selection_mode: event.target.checked ? 'all_verified' : 'selected_verified' })} /><span>{t("Use every verified family by default")}</span></label>
+            {(evaluationPolicies.gameFamilies || []).map((family) => <label key={family.stable_key}><input type="checkbox" disabled={!canEditEvaluations || family.adapter_status !== 'verified' || evaluation.game_family_selection_mode === 'all_verified'} checked={(evaluation.selected_game_family_keys || []).includes(family.stable_key)} onChange={() => toggleEvaluationFamily(evaluation, family.stable_key)} /><span>{family.display_name} · {t(family.adapter_status)}</span></label>)}
           </fieldset>
-          {evaluation.required_action_codes?.length > 0 && <div><strong>Mandatory fixed sequence</strong><ol>{evaluation.required_action_codes.map((action) => <li key={action}>{action.replaceAll('_', ' ')}</li>)}</ol><p>Transaction Records defaults to all available movements in the previous seven days; TRAINER may change the history window or recent-record limit.</p></div>}
-          {canEditEvaluations && evaluation.publication_status === 'draft' && <button type="button" className="hub-primary-button" disabled={busy} onClick={() => saveEvaluation(evaluation)}>Save draft settings</button>}
+          {evaluation.required_action_codes?.length > 0 && <div><strong>{t("Mandatory fixed sequence")}</strong><ol>{evaluation.required_action_codes.map((action) => <li key={action}>{action.replaceAll('_', ' ')}</li>)}</ol><p>{t("Transaction Records defaults to all available movements in the previous seven days; TRAINER may change the history window or recent-record limit.")}</p></div>}
+          {canEditEvaluations && evaluation.publication_status === 'draft' && <button type="button" className="hub-primary-button" disabled={busy} onClick={() => saveEvaluation(evaluation)}>{t("Save draft settings")}</button>}
           {canEditEvaluations&&<HubEvaluationPolicyEditor evaluation={evaluation} onPublished={published=>changeEvaluation(evaluation.id,published)}/>}
         </article>)}
       </div>
       <HubQuestionBank canEdit={canEditEvaluations}/>
-      {(evaluationPolicies.attempts||[]).length>0&&<details><summary>Private recorded assessment actions</summary>{evaluationPolicies.attempts.map(attempt=><HubFormalEvidence key={attempt.id} attempt={attempt} label={evaluationById.get(attempt.evaluation_id)?.title||'Assessment'}/>)}</details>}
-      <h3>Attempt-set reopening</h3>
-      <div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>Postulante</th><th>Evaluation</th><th>Latest set</th><th>Status</th><th>Action</th></tr></thead><tbody>{accounts.flatMap((account) => (evaluationPolicies.evaluations || []).map((evaluation) => {
+      {(evaluationPolicies.attempts||[]).length>0&&<details><summary>{t("Private recorded assessment actions")}</summary>{evaluationPolicies.attempts.map(attempt=><HubFormalEvidence key={attempt.id} attempt={attempt} label={evaluationById.get(attempt.evaluation_id)?.title||t("Assessment")}/>)}</details>}
+      <h3>{t("Attempt-set reopening")}</h3>
+      <div className="hub-account-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}><table className="hub-trainer-table"><thead><tr><th>{t("Postulante")}</th><th>{t("Evaluation")}</th><th>{t("Latest set")}</th><th>{t("Status")}</th><th>{t("Action")}</th></tr></thead><tbody>{accounts.flatMap((account) => (evaluationPolicies.evaluations || []).map((evaluation) => {
         const set = latestAttemptSet(evaluation.id, account.id);
-        return <tr key={`${account.id}-${evaluation.id}`}><td>{account.displayName}</td><td>{evaluation.title}</td><td>{set?.set_number || '—'}</td><td>{set?.status || 'not started'}</td><td>{canEditEvaluations && set?.status === 'closed' ? <button type="button" disabled={busy} onClick={() => reopenEvaluation(evaluation, account)}>Reopen with reason</button> : '—'}</td></tr>;
+        return <tr key={`${account.id}-${evaluation.id}`}><td>{account.displayName}</td><td>{t(evaluation.title)}</td><td>{set?.set_number || '—'}</td><td>{set?.status || t("not started")}</td><td>{canEditEvaluations && set?.status === 'closed' ? <button type="button" disabled={busy} onClick={() => reopenEvaluation(evaluation, account)}>{t("Reopen with reason")}</button> : '—'}</td></tr>;
       }))}</tbody></table></div>
-      {(evaluationPolicies.attempts || []).length > 0 && <details><summary>Private TRAINER / RRHH scored-attempt evidence</summary><div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>Postulante</th><th>Evaluation</th><th>Attempt</th><th>Score</th><th>Item</th><th>Game family</th><th>Result</th><th>Detailed failure</th></tr></thead><tbody>{(evaluationPolicies.attempts || []).flatMap((attempt) => {
+      {(evaluationPolicies.attempts || []).length > 0 && <details><summary>{t("Private TRAINER / RRHH scored-attempt evidence")}</summary><div className="hub-account-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}><table className="hub-trainer-table"><thead><tr><th>{t("Postulante")}</th><th>{t("Evaluation")}</th><th>{t("Attempt")}</th><th>{t("Score")}</th><th>{t("Item")}</th><th>{t("Game family")}</th><th>{t("Result")}</th><th>{t("Detailed failure")}</th></tr></thead><tbody>{(evaluationPolicies.attempts || []).flatMap((attempt) => {
         const attemptSet = setById.get(attempt.attempt_set_id);
         const evidence = [...(evidenceByAttempt.get(attempt.id) || [])].sort((a, b) => (a.section.localeCompare(b.section) || (a.sequence_number || 0) - (b.sequence_number || 0)));
         const postulante = attemptSet?.postulante;
-        if (evidence.length === 0) return <tr key={attempt.id}><td>{postulante?.display_name || postulante?.username || attempt.identity_id}</td><td>{evaluationById.get(attempt.evaluation_id)?.title || attempt.evaluation_id}</td><td>{attempt.attempt_in_set}</td><td>{attempt.score ?? '—'}</td><td colSpan="4">No item evidence recorded{attempt.completion_reason === 'timed_out' ? ' (timed out)' : ''}.</td></tr>;
-        return evidence.map((item) => <tr key={item.id}><td>{postulante?.display_name || postulante?.username || attempt.identity_id}</td><td>{evaluationById.get(attempt.evaluation_id)?.title || attempt.evaluation_id}</td><td>{attempt.attempt_in_set}</td><td>{attempt.score ?? '—'}</td><td>{item.section}: {item.item_code.replaceAll('_', ' ')}</td><td>{item.game_family_key || '—'}</td><td>{item.is_correct ? 'Correct' : 'Failed'}</td><td>{failureText(item.failure_points)}</td></tr>);
+        if (evidence.length === 0) return <tr key={attempt.id}><td>{postulante?.display_name || postulante?.username || attempt.identity_id}</td><td>{t(evaluationById.get(attempt.evaluation_id)?.title || attempt.evaluation_id)}</td><td>{attempt.attempt_in_set}</td><td>{attempt.score ?? '—'}</td><td colSpan="4">{t("No item evidence recorded")}{attempt.completion_reason === 'timed_out' ? t(" (timed out)") : ''}.</td></tr>;
+        return evidence.map((item) => <tr key={item.id}><td>{postulante?.display_name || postulante?.username || attempt.identity_id}</td><td>{t(evaluationById.get(attempt.evaluation_id)?.title || attempt.evaluation_id)}</td><td>{attempt.attempt_in_set}</td><td>{attempt.score ?? '—'}</td><td>{item.section}: {item.item_code.replaceAll('_', ' ')}</td><td>{item.game_family_key || '—'}</td><td>{item.is_correct ? t("Correct") : t("Failed")}</td><td>{failureText(item.failure_points)}</td></tr>);
       })}</tbody></table></div></details>}
-      {(evaluationPolicies.reopenEvents || []).length > 0 && <details><summary>Private TRAINER / RRHH reopening audit</summary><div className="hub-account-table-wrap"><table className="hub-trainer-table"><thead><tr><th>When</th><th>Postulante ID</th><th>Reopened by</th><th>Reason</th></tr></thead><tbody>{evaluationPolicies.reopenEvents.map((event) => <tr key={event.id}><td>{new Date(event.created_at).toLocaleString()}</td><td>{event.identity_id}</td><td>{event.reopenedBy?.display_name || event.reopenedBy?.username}</td><td>{event.reason}</td></tr>)}</tbody></table></div></details>}
+      {(evaluationPolicies.reopenEvents || []).length > 0 && <details><summary>{t("Private TRAINER / RRHH reopening audit")}</summary><div className="hub-account-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}><table className="hub-trainer-table"><thead><tr><th>{t("When")}</th><th>{t("Postulante ID")}</th><th>{t("Reopened by")}</th><th>{t("Reason")}</th></tr></thead><tbody>{evaluationPolicies.reopenEvents.map((event) => <tr key={event.id}><td>{new Date(event.created_at).toLocaleString(locale==='es'?'es-PE':'en-US')}</td><td>{event.identity_id}</td><td>{event.reopenedBy?.display_name || event.reopenedBy?.username}</td><td>{event.reason}</td></tr>)}</tbody></table></div></details>}
     </section>
 
     </div>
     <div id="hub-workspace-reports" hidden={workspace !== 'reports'}>
-    <section className="hub-admin-accounts" aria-labelledby="assessment-report-title"><p className="hub-eyebrow">Reporting</p><h2 id="assessment-report-title">Assessment attempts and statistics</h2>
-      <p className="hub-readonly-note">Legacy and governed assessments share this report. A scored pass and an official submission are shown separately. Daily summary buckets use UTC; displayed timestamps and date filters use your browser time zone.</p>
-      <button type="button" disabled={busy} onClick={exportCsv}>Export filtered report CSV</button>
-      {report.truncated&&<p role="status">Showing the 500 most recent attempts in this learner/date window. Narrow the date range to review older results.</p>}
+    <section className="hub-admin-accounts" aria-labelledby="assessment-report-title"><p className="hub-eyebrow">{t("Reporting")}</p><h2 id="assessment-report-title">{t("Assessment attempts and statistics")}</h2>
+      <p className="hub-readonly-note">{t("Legacy and governed assessments share this report. A scored pass and an official submission are shown separately. Daily summary buckets use UTC; displayed timestamps and date filters use your browser time zone.")}</p>
+      <button type="button" disabled={busy} onClick={exportCsv}>{t("Export filtered report CSV")}</button>
+      {report.truncated&&<p role="status">{t("Showing the 500 most recent attempts in this learner/date window. Narrow the date range to review older results.")}</p>}
       <form className="hub-assessment-filters" onSubmit={applyFilters}>
-        <label>Postulante<select value={filters.postulanteId} onChange={updateFilter('postulanteId')}><option value="">All</option>{accounts.map((account) => <option value={account.id} key={account.id}>{account.displayName}</option>)}</select></label>
-        <label>From<input type="date" value={filters.from} onChange={updateFilter('from')} /></label><label>To<input type="date" value={filters.to} onChange={updateFilter('to')} /></label>
-        <label>Status<select value={filters.status} onChange={updateFilter('status')}><option value="">All</option>{['in_progress','passed','unsuccessful','timed_out','abandoned'].map((value) => <option key={value}>{value}</option>)}</select></label>
-        <label>Result<select value={filters.result} onChange={updateFilter('result')}><option value="">All</option><option value="passed">Passed</option><option value="unsuccessful">Unsuccessful</option></select></label>
-        <details className="hub-advanced-filters"><summary>More filters</summary><div className="hub-assessment-filters"><label>Operation<select value={filters.operationType} onChange={updateFilter('operationType')}><option value="">All</option>{OPERATION_TYPES.map((value) => <option key={value}>{value}</option>)}</select></label>
-        <label>Category<select value={filters.category} onChange={updateFilter('category')}><option value="">All</option><option value="movement">Movement</option><option value="request">Request</option></select></label>
-        <label>Game<input value={filters.game} onChange={updateFilter('game')} /></label><label>Failure<input value={filters.failure} onChange={updateFilter('failure')} /></label>
-        <label>Minimum score<input type="number" min="0" max="100" value={filters.scoreMin} onChange={updateFilter('scoreMin')} /></label><label>Maximum score<input type="number" min="0" max="100" value={filters.scoreMax} onChange={updateFilter('scoreMax')} /></label>
-        <label>Minimum minutes<input type="number" min="0" value={filters.durationMin} onChange={updateFilter('durationMin')} /></label><label>Maximum minutes<input type="number" min="0" value={filters.durationMax} onChange={updateFilter('durationMax')} /></label>
-        <label>Configuration revision<input type="number" min="1" value={filters.settingsRevision} onChange={updateFilter('settingsRevision')} /></label>
-        </div></details><div className="hub-filter-actions"><button className="hub-primary-button" disabled={busy}>{busy ? 'Loading…' : 'Apply filters'}</button><button type="button" disabled={busy} className="hub-secondary-button" onClick={() => { setFilters(emptyFilters); void fetchReport(emptyFilters); }}>Clear filters</button></div>
+        <label>{t("Postulante")}<select value={filters.postulanteId} onChange={updateFilter('postulanteId')}><option value="">{t("All")}</option>{accounts.map((account) => <option value={account.id} key={account.id}>{account.displayName}</option>)}</select></label>
+        <label>{t("From")}<input type="date" value={filters.from} onChange={updateFilter('from')} /></label><label>{t("To")}<input type="date" value={filters.to} onChange={updateFilter('to')} /></label>
+        <label>{t("Status")}<select value={filters.status} onChange={updateFilter('status')}><option value="">{t("All")}</option>{['in_progress','passed','unsuccessful','timed_out','abandoned'].map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+        <label>{t("Result")}<select value={filters.result} onChange={updateFilter('result')}><option value="">{t("All")}</option><option value="passed">{t("Passed")}</option><option value="unsuccessful">{t("Unsuccessful")}</option></select></label>
+        <details className="hub-advanced-filters"><summary>{t("More filters")}</summary><div className="hub-assessment-filters"><label>{t("Operation")}<select value={filters.operationType} onChange={updateFilter('operationType')}><option value="">{t("All")}</option>{OPERATION_TYPES.map((value) => <option key={value} value={value}>{t(value)}</option>)}</select></label>
+        <label>{t("Category")}<select value={filters.category} onChange={updateFilter('category')}><option value="">{t("All")}</option><option value="movement">{t("Movement")}</option><option value="request">{t("Request")}</option></select></label>
+        <label>{t("Game")}<input value={filters.game} onChange={updateFilter('game')} /></label><label>{t("Failure")}<input value={filters.failure} onChange={updateFilter('failure')} /></label>
+        <label>{t("Minimum score")}<input type="number" min="0" max="100" value={filters.scoreMin} onChange={updateFilter('scoreMin')} /></label><label>{t("Maximum score")}<input type="number" min="0" max="100" value={filters.scoreMax} onChange={updateFilter('scoreMax')} /></label>
+        <label>{t("Minimum minutes")}<input type="number" min="0" value={filters.durationMin} onChange={updateFilter('durationMin')} /></label><label>{t("Maximum minutes")}<input type="number" min="0" value={filters.durationMax} onChange={updateFilter('durationMax')} /></label>
+        <label>{t("Configuration revision")}<input type="number" min="1" value={filters.settingsRevision} onChange={updateFilter('settingsRevision')} /></label>
+        </div></details><div className="hub-filter-actions"><button className="hub-primary-button" disabled={busy}>{busy ? t("Loading…") : t("Apply filters")}</button><button type="button" disabled={busy} className="hub-secondary-button" onClick={() => { setFilters(emptyFilters); void fetchReport(emptyFilters); }}>{t("Clear filters")}</button></div>
       </form>
-      <div className="hub-assessment-stats">{[['Attempts',stats.attempts],['Postulantes',stats.uniquePostulantes],['Pass rate',`${stats.passRate || 0}%`],['First-attempt pass',`${stats.firstAttemptPassRate || 0}%`],['Average score',stats.averageScore ?? '—'],['Best score',stats.bestScore ?? '—'],['Latest score',stats.latestScore ?? '—'],['Average attempts to pass',stats.averageAttemptsToPass ?? '—'],['Average minutes',stats.averageDurationMinutes ?? '—'],['Timed out',stats.timedOut || 0],['Abandoned',stats.abandoned || 0],['Module ready',stats.moduleReadyPostulantes || 0]].map(([label,value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
+      <div className="hub-assessment-stats">{[['Attempts',stats.attempts],['Postulantes',stats.uniquePostulantes],['Pass rate',`${stats.passRate || 0}%`],['First-attempt pass',`${stats.firstAttemptPassRate || 0}%`],['Average score',stats.averageScore ?? '—'],['Best score',stats.bestScore ?? '—'],['Latest score',stats.latestScore ?? '—'],['Average attempts to pass',stats.averageAttemptsToPass ?? '—'],['Average minutes',stats.averageDurationMinutes ?? '—'],['Timed out',stats.timedOut || 0],['Abandoned',stats.abandoned || 0],['Module ready',stats.moduleReadyPostulantes || 0]].map(([label,value]) => <div key={label}><span>{t(label)}</span><strong>{value}</strong></div>)}</div>
       <HubAttemptHistory attempts={report.attempts || []} />
       <HubReportBreakdown statistics={stats} />
     </section>

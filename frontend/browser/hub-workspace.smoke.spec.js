@@ -112,7 +112,7 @@ test('mobile trainer assigns a course and retries an inline name edit without lo
   await expect(page.getByText('Try saving again.',{exact:true})).toBeVisible();
   await expect(page.getByLabel('Edit first name',{exact:true})).toHaveValue('Revised');
   await page.getByRole('button',{name:'Save learner name',exact:true}).click();
-  await expect(page.getByText('Postulante updated.',{exact:true})).toBeVisible();
+  await expect(page.getByText('Participant updated.',{exact:true})).toBeVisible();
   await expect(directory.getByText('Revised Learner',{exact:true})).toBeVisible();
   expect(patched).toEqual({firstName:'Revised',surname:'Learner'});
   await page.screenshot({path:'../outputs/hub-mobile-learner-account-cards.png',fullPage:true});
@@ -188,9 +188,9 @@ test('ADMIN edits an instruction draft and submits it through the publication wo
   await page.getByLabel('Lesson title').fill('Revised lesson');await page.getByLabel('Lesson text').fill('First paragraph\n\nSecond paragraph');
   await page.getByLabel('Reason for change').fill('Clarify operational verification');
   await page.getByRole('button',{name:'Create new draft'}).click();
-  await expect(page.getByText('v1 · draft',{exact:true})).toBeVisible();
+  await expect(page.getByText('v1 · Draft',{exact:true})).toBeVisible();
   expect(draft.instruction.paragraphs).toEqual(['First paragraph','Second paragraph']);expect(draft.instruction).not.toHaveProperty('surface');
-  await page.getByRole('button',{name:'Submit for review'}).click();await expect(page.getByText('v1 · pending_review',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Submit for review'}).click();await expect(page.getByText('v1 · Pending review',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Approve publication'})).toBeDisabled();
 });
 
@@ -202,10 +202,10 @@ test('TRAINER saves a private note, reloads it, and starts a versioned revision'
       submitted=route.request().postDataJSON();notes=[{id:'note-fixture',attempt_id:null,retention_until:'2028-11-02T12:00:00Z',revisions:[{id:'revision-fixture',revision:1,status:submitted.status,body:submitted.body,created_at:'2026-11-02T12:00:00Z'}]}];return json(route,{note:notes[0]});
     }return json(route,{notes,nextCursor:null});
   });
-  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
+  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
   await page.getByRole('textbox',{name:'Coaching note',exact:true}).fill('Review the game history before acting.');await page.getByRole('button',{name:'Save private note'}).click();
   await expect(page.getByText('Private note saved.')).toBeVisible();expect(submitted.expectedRevision).toBe(0);expect(submitted.idempotencyKey).toBeTruthy();
-  await page.reload();await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
+  await page.reload();await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
   await expect(page.getByText('Review the game history before acting.').first()).toBeVisible();await page.getByRole('button',{name:'Add revision'}).click();await expect(page.getByRole('textbox',{name:'Coaching note',exact:true})).toHaveValue('Review the game history before acting.');
 });
 
@@ -225,7 +225,7 @@ for(const own of [true,false])test(`coaching retention ${own?'prevents self-appr
     }
     return json(route,{viewerId:own?author:reviewer,notes:disposed?[]:[{noteId,latestRevision:1,retainUntil:'2025-01-01T12:00:00Z',eligible:true,blockers:[]}],holds:[],requests:disposed?[]:[{id:requestId,note_id:noteId,requested_by:author,reason:'Closed note beyond retention'}],receipts:disposed?[{id:requestId,note_id:noteId,status:'disposed',disposed_revisions:1}]:[],nextCursor:null});
   });
-  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Postulante',exact:true}).selectOption(learnerId);
+  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
   await page.getByRole('button',{name:'Open retention preview',exact:true}).click();
   if(own){await expect(page.getByRole('button',{name:'Review disposal',exact:true})).toBeDisabled();await expect(page.getByText('Another TRAINER must approve this request.',{exact:true})).toBeVisible();return;}
   await page.getByRole('button',{name:'Review disposal',exact:true}).click();

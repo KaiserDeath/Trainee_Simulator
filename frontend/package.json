@@ -11,7 +11,8 @@
     "test:browser": "playwright test --config browser/playwright.config.js",
     "test:production:auth": "npm run build && node --test browser/production-auth.test.mjs",
     "test:browser:install": "playwright install chromium",
-    "test:review": "node --test browser/trainer-review.unit.test.js"
+    "test:review": "node --test browser/trainer-review.unit.test.js",
+    "test:language": "node --test browser/hub-locale.unit.test.mjs"
   },
   "dependencies": {
     "@trez-training/account-id-rules": "file:../shared/account-id-rules",
@@ -26,6 +27,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@babel/parser": "7.29.13",
+    "@babel/traverse": "7.29.13",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.3.0",

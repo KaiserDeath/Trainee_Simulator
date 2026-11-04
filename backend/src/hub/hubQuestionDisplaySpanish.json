@@ -1,0 +1,18 @@
+{
+  "What must be verified before changing customer credits?": "¿Qué se debe verificar antes de modificar los créditos del cliente?",
+  "The exact customer, licensed game access, amount and relevant histories": "El cliente exacto, el acceso al juego con licencia, el importe y los historiales relevantes",
+  "Only the displayed customer name": "Solo el nombre del cliente que se muestra",
+  "Repeat the movement to discover its effect": "Repetir el movimiento para descubrir su efecto",
+  "A matching game movement already exists. What is the safe next step?": "Ya existe un movimiento coincidente en el juego. ¿Cuál es el siguiente paso seguro?",
+  "Perform the game movement again": "Realizar nuevamente el movimiento en el juego",
+  "Use the recorded evidence and the permitted Backend decision without posting it again": "Usar la evidencia registrada y la decisión permitida en el Backend sin ejecutar nuevamente el movimiento",
+  "Ignore the history": "Ignorar el historial",
+  "Which player should receive the assigned account operation?": "¿Qué jugador debe recibir la operación de cuenta asignada?",
+  "The first similarly named player": "El primer jugador con un nombre parecido",
+  "The most recently used player": "El jugador utilizado más recientemente",
+  "The exact verified player in the correct assigned game context": "El jugador exacto verificado en el contexto del juego asignado correcto",
+  "What password evidence may be retained in ordinary training reports?": "¿Qué evidencia sobre contraseñas se puede conservar en los reportes habituales de formación?",
+  "The password literal": "La contraseña completa",
+  "Only whether the required value was provided or matched": "Solo si el valor requerido se proporcionó o coincidió",
+  "A login token containing the credentials": "Un token de acceso que contenga las credenciales"
+}

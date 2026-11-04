@@ -1,3 +1,4 @@
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import { useMemo, useState } from 'react';
 
 import { validateAccountIdentifierAnswer } from '@trez-training/account-id-rules';
@@ -12,6 +13,7 @@ const approvedPolicyContext = (content = {}) => {
 };
 
 export default function HubAccountIdLabActivity({ activity, disabled, onComplete }) {
+  const {t} = useHubLocale();
   const context = useMemo(() => approvedPolicyContext(activity.content), [activity.content]);
   const [answer, setAnswer] = useState('');
   const [result, setResult] = useState(null);
@@ -19,8 +21,8 @@ export default function HubAccountIdLabActivity({ activity, disabled, onComplete
   if (!context) {
     return (
       <div className="hub-policy-block" role="status">
-        <strong>Approved game policy required</strong>
-        <p>{activity.content?.blockedReason || 'This rule activity is unavailable until Trez publishes an approved account-structure policy.'}</p>
+        <strong>{t("Approved game policy required")}</strong>
+        <p>{activity.content?.blockedReason || t("This rule activity is unavailable until Trez publishes an approved account-structure policy.")}</p>
         {activity.content?.requirements?.length > 0 && (
           <ul>{activity.content.requirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul>
         )}
@@ -48,23 +50,21 @@ export default function HubAccountIdLabActivity({ activity, disabled, onComplete
 
   return (
     <div className="hub-rule-lab">
-      <p className="hub-activity-intro">Use the server-assigned policy to construct the identifier for <strong>{context.customerUsername}</strong>.</p>
+      <p className="hub-activity-intro">{t("Use the server-assigned policy to construct the identifier for ")}<strong>{context.customerUsername}</strong>.</p>
       <dl>
-        <div><dt>Policy</dt><dd>{context.policy.label}</dd></div>
-        <div><dt>Version</dt><dd>{context.versionId}</dd></div>
+        <div><dt>{t("Policy")}</dt><dd>{t(context.policy.label)}</dd></div>
+        <div><dt>{t("Version")}</dt><dd>{context.versionId}</dd></div>
       </dl>
       <ol className="hub-rule-segments">
-        {context.policy.segments.map((segment) => <li key={segment.key}>{segment.label}</li>)}
+        {context.policy.segments.map((segment) => <li key={segment.key}>{t(segment.label)}</li>)}
       </ol>
-      <label>
-        Constructed identifier
-        <input value={answer} disabled={disabled} onChange={(event) => { setAnswer(event.target.value); setResult(null); }} />
+      <label>{t("Constructed identifier")}<input value={answer} disabled={disabled} onChange={(event) => { setAnswer(event.target.value); setResult(null); }} />
       </label>
       <div className="hub-inline-actions">
-        <button type="button" disabled={disabled || !answer.trim()} onClick={checkAnswer}>Check identifier</button>
-        <button className="hub-primary-button" type="button" disabled={disabled || !result?.correct} onClick={finish}>Complete rule practice</button>
+        <button type="button" disabled={disabled || !answer.trim()} onClick={checkAnswer}>{t("Check identifier")}</button>
+        <button className="hub-primary-button" type="button" disabled={disabled || !result?.correct} onClick={finish}>{t("Complete rule practice")}</button>
       </div>
-      {result && <p role="status">{result.correct ? 'Identifier matches the assigned policy.' : 'Identifier does not match the assigned policy.'}</p>}
+      {result && <p role="status">{result.correct ? t("Identifier matches the assigned policy.") : t("Identifier does not match the assigned policy.")}</p>}
     </div>
   );
 }

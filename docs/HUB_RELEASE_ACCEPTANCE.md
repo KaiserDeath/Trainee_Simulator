@@ -22,6 +22,8 @@ Review each of the four draft evaluations in the Hub policy editor. Retain
 100% passing, three attempts per set, 20/80 theory/practical weighting and
 verified adapters unless an explicit versioned policy decision changes them.
 Record the exact policy version/digest and the actual person's dated approval.
+Review both English and Spanish wording and record the reviewed display pack
+revision (`2026-11-04.1`). Language support does not constitute content approval.
 Publish using the existing authenticated policy workflow. Do not translate a
 job title or automated validation into a person's approval.
 

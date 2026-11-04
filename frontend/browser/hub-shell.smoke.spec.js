@@ -126,7 +126,7 @@ test('fails closed when the server has no configured identity provider', async (
   await page.goto('/hub');
 
   await expect(page.getByRole('heading', { name: 'Training Hub is not configured' })).toBeVisible();
-  await expect(page.getByText('Authentication provider is not configured.')).toBeVisible();
+  await expect(page.getByText('Training is temporarily unavailable. Try again or contact your trainer.')).toBeVisible();
   await expect(page.getByRole('textbox')).toHaveCount(0);
 });
 
@@ -151,7 +151,7 @@ test('submits username and password with CSRF when a session is required', async
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page.getByText('The username or password is incorrect.')).toBeVisible();
-  await expect(page.getByText('TRAINER and RRHH create Postulante accounts; ADMIN creates TRAINER accounts. Email addresses are not used to sign in.')).toBeVisible();
+  await expect(page.getByText('TRAINER and RRHH create Participant accounts; ADMIN creates TRAINER accounts. Email addresses are not used to sign in.')).toBeVisible();
   expect(request.body).toEqual({ username: 'Jperez', password: 'Jperez' });
   expect(request.csrf).toBe('browser-test-csrf');
 });
@@ -181,7 +181,7 @@ test('renders assigned modules, prerequisites, and completes an article through 
   await page.goto('/hub');
 
   await expect(page.getByRole('heading', { name: 'Operator foundations' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Español' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Español' })).toHaveCount(1);
   await expect(page.getByRole('heading', { name: 'Understanding the work' })).toBeVisible();
   await page.getByRole('button', { name: /Complete workflow orientation/ }).click();
   await expect(page.getByText('Provisional learning content')).toBeVisible();
@@ -632,8 +632,8 @@ test('ADMIN is limited to debugging and TRAINER account administration', async (
 
   await page.goto('/hub');
   await expect(page.getByRole('heading', { name: 'TRAINER account administration' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'All Postulante progress' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Postulante management' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'All Participant progress' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Participant management' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Español' }).click();
   await expect(page.getByText('Nombre provisional del producto — sujeto a validación de Trez')).toBeVisible();
   await expect(page.locator('.hub-app-shell')).toHaveAttribute('lang', 'es');
@@ -705,11 +705,11 @@ test('trainer can switch the progress view to Spanish', async ({ page }) => {
   await page.goto('/hub');
 
   await page.getByRole('link',{name:'Learner progress',exact:true}).click();
-  await expect(page.getByRole('heading', { name: 'All Postulante progress' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'All Participant progress' })).toBeVisible();
   await expect(page.getByText('Trainer view')).toBeVisible();
   await page.getByRole('button', { name: 'Español' }).click();
-  await expect(page.getByRole('heading', { name: 'Progreso de todos los Postulantes' })).toBeVisible();
-  await expect(page.getByText('Vista de formador')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Progreso de todos los participantes' })).toBeVisible();
+  await expect(page.getByText('Vista de capacitador')).toBeVisible();
   await expect(page.locator('.hub-app-shell')).toHaveAttribute('lang', 'es');
 });
 
@@ -721,7 +721,7 @@ test('trainer searches learner progress without changing course totals', async (
   ] } }));
   await page.goto('/hub');
   await page.getByRole('link',{name:'Learner progress',exact:true}).click();
-  const progress = page.getByRole('region', { name: 'All Postulante progress' });
+  const progress = page.getByRole('region', { name: 'All Participant progress' });
   await expect(progress.getByText('1 / 2', { exact: true })).toBeVisible();
   await page.getByLabel('Search learner progress').fill('atorres');
   await expect(progress.getByRole('rowheader', { name: 'Ana Torres' })).toBeVisible();
@@ -733,7 +733,7 @@ test('trainer searches learner progress without changing course totals', async (
   await page.screenshot({ path: '../outputs/trainer-progress-desktop.png', fullPage: true });
 });
 
-test('TRAINER manages all Postulantes, assigns a course, and saves advanced assessment settings', async ({ page }) => {
+test('TRAINER manages all Participants, assigns a course, and saves advanced assessment settings', async ({ page }) => {
   const postulantes = [{ id: 'postulante-1', username: 'Jperez', firstName: 'Juan', surname: 'Pérez', displayName: 'Juan Pérez', roles: ['POSTULANTE'], status: 'active' }];
   let settingsUpdate;
   let assignedCourse;
@@ -757,18 +757,18 @@ test('TRAINER manages all Postulantes, assigns a course, and saves advanced asse
   await page.route('**/api/hub/assessment/report**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ attempts: [], statistics: { attempts: 3, passRate: 67, latestScore: 100, progressOverTime: [{ date: '2026-08-27', attempts: 3, passed: 2 }] } }) }));
 
   await page.goto('/hub');
-  await expect(page.getByRole('heading', { name: 'Postulante management' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Participant management' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
   await page.getByRole('button', { name: 'Assign', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Course assigned to Juan Pérez.');
   expect(assignedCourse).toEqual({ courseId: 'course-1' });
 
-  await page.getByLabel('Search Postulantes', { exact: true }).fill('nobody');
-  await expect(page.getByText('No Postulantes match. Try another name or account status.')).toBeVisible();
-  await page.getByLabel('Search Postulantes', { exact: true }).fill('jperez');
+  await page.getByLabel('Search Participants', { exact: true }).fill('nobody');
+  await expect(page.getByText('No Participants match. Try another name or account status.')).toBeVisible();
+  await page.getByLabel('Search Participants', { exact: true }).fill('jperez');
   await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
   await page.getByRole('button', { name: 'Evaluations Rules & attempt reopening' }).click();
-  await expect(page.getByRole('heading', { name: 'Postulante management' })).not.toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Participant management' })).not.toBeVisible();
   await page.getByLabel('Duration (minutes)').fill('45');
   await page.getByLabel('Advanced Settings').check();
   await page.getByRole('checkbox', { name: 'RESET PASSWORD' }).uncheck();
@@ -787,11 +787,11 @@ test('TRAINER manages all Postulantes, assigns a course, and saves advanced asse
   await page.getByRole('button', { name: 'Clear filters' }).click();
   await clearRequest;
   await expect(page.getByLabel('Minimum score', { exact: true })).toHaveValue('');
-  await page.getByRole('button', { name: 'Postulantes Accounts & course assignments' }).click();
+  await page.getByRole('button', { name: 'Participants Accounts & course assignments' }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: '../outputs/trainer-ux-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole('button', { name: 'Postulantes Accounts & course assignments' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Participants Accounts & course assignments' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: '../outputs/trainer-ux-mobile.png', fullPage: true });
 });
@@ -831,7 +831,7 @@ test('trainer reports keep account histories separate and expose chronological a
   await page.screenshot({ path: '../outputs/trainer-reports-mobile.png', fullPage: true });
 });
 
-test('ADMIN does not request TRAINER Postulante visibility', async ({ page }) => {
+test('ADMIN does not request TRAINER Participant visibility', async ({ page }) => {
   let trainerVisibilityRequests = 0;
   await page.route('**/api/hub/context', (route) => route.fulfill({
     status: 200,
@@ -1009,7 +1009,7 @@ test('RRHH reads Hub completion and sanitized legacy failure reports without mut
   await expect(page.getByRole('heading', { name: 'RRHH reporting' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Hub module completion' })).toBeVisible();
   await page.getByRole('button', { name: 'View learning record' }).click();
-  await expect(page.getByRole('heading', { name: 'Postulante module record' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Participant module record' })).toBeVisible();
   await expect(page.getByText('Server-authored Module One')).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Completed', exact: true })).toBeVisible();
   await expect(page.getByText('Unlinked legacy simulator session').first()).toBeVisible();

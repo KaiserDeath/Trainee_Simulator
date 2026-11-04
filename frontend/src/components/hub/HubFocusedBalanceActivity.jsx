@@ -1,3 +1,5 @@
+import {hubMessage} from '../../i18n/hubLocale';
+import {useHubLocale} from '../../i18n/HubLocaleContext';
 import { useMemo, useState } from 'react';
 
 import {
@@ -36,6 +38,7 @@ const instructionsFor = (activity) => activity.content?.instructions || [
 ];
 
 export default function HubFocusedBalanceActivity({ activity, disabled, onComplete }) {
+  const {t} = useHubLocale();
   const [view, setView] = useState(null);
   const [selectedGame, setSelectedGame] = useState('orion-stars');
   const [selectedAccountId, setSelectedAccountId] = useState('');
@@ -61,7 +64,7 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
       setView(nextView);
       setSelectedAccountId(nextView.accounts?.[0]?.id || '');
     } catch (startError) {
-      setError(startError?.response?.data?.error?.message || 'The focused game surface could not be opened.');
+      setError(startError?.response?.data?.error?.message || hubMessage("The focused game surface could not be opened."));
     } finally {
       setBusy(false);
     }
@@ -79,7 +82,7 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
         observedAvailableBalance: Number(observedAvailableBalance),
       });
     } catch (submitError) {
-      setError(submitError?.response?.data?.error?.message || 'The observed balance could not be recorded.');
+      setError(submitError?.response?.data?.error?.message || hubMessage("The observed balance could not be recorded."));
     } finally {
       setBusy(false);
     }
@@ -87,9 +90,9 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
 
   return (
     <div className="hub-focused-balance">
-      <nav className="hub-game-tabs" aria-label="Game practice">
-        <span className="hub-game-tabs-label">Game</span>
-        <div className="hub-game-tab-list" role="tablist" aria-label="Available games">
+      <nav className="hub-game-tabs" aria-label={t("Game practice")}>
+        <span className="hub-game-tabs-label">{t("Game")}</span>
+        <div className="hub-game-tab-list" role="tablist" aria-label={t("Available games")}>
           {gameTabs.map((game) => {
             const available = game.status === 'available';
             const active = selectedGame === game.id;
@@ -108,8 +111,8 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
                   if (available && !disabled) setSelectedGame(game.id);
                 }}
               >
-                <span>{game.label}</span>
-                {!available && <small className="hub-game-tab-status">Coming soon</small>}
+                <span>{t(game.label)}</span>
+                {!available && <small className="hub-game-tab-status">{t("Coming soon")}</small>}
               </button>
             );
           })}
@@ -117,7 +120,7 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
       </nav>
 
       <div className="hub-focused-instructions">
-        <h4>What to do</h4>
+        <h4>{t("What to do")}</h4>
         <ol>
           {instructionsFor(activity).map((instruction, index) => <li key={`${instruction}-${index}`}>{instruction}</li>)}
         </ol>
@@ -125,7 +128,7 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
 
       {!view && (
         <button className="hub-primary-button" type="button" disabled={disabled || busy} onClick={startPractice}>
-          {busy ? 'Opening Orion Stars…' : 'Open focused Orion Stars view'}
+          {busy ? t("Opening Orion Stars…") : t("Open focused Orion Stars view")}
         </button>
       )}
 
@@ -134,16 +137,14 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
           <section
             className="hub-game-surface"
             id="hub-game-panel-orion-stars"
-            aria-label={`${view.game} balance page`}
+            aria-label={t("{0} balance page", [view.game])}
           >
             <header>
               <strong>{view.game}</strong>
-              <span>Balance / User Management</span>
+              <span>{t("Balance / User Management")}</span>
             </header>
-            <div className="hub-game-surface-toolbar">Player account lookup</div>
-            <label>
-              Player account
-              <select value={selectedAccount?.id || ''} disabled={disabled || busy} onChange={(event) => {
+            <div className="hub-game-surface-toolbar">{t("Player account lookup")}</div>
+            <label>{t("Player account")}<select value={selectedAccount?.id || ''} disabled={disabled || busy} onChange={(event) => {
                 setSelectedAccountId(event.target.value);
                 setObservedCredit('');
               }}>
@@ -154,35 +155,31 @@ export default function HubFocusedBalanceActivity({ activity, disabled, onComple
             </label>
             {selectedAccount && (
               <div className="hub-game-surface-values">
-                <div><span>Account</span><strong>{selectedAccount.gameUsername}</strong></div>
-                <div><span>Credit</span><strong>{selectedAccount.credit}</strong></div>
-                <div><span>Available Balance</span><strong>{view.availableBalance}</strong></div>
+                <div><span>{t("Account")}</span><strong>{selectedAccount.gameUsername}</strong></div>
+                <div><span>{t("Credit")}</span><strong>{selectedAccount.credit}</strong></div>
+                <div><span>{t("Available Balance")}</span><strong>{view.availableBalance}</strong></div>
               </div>
             )}
-            <p className="hub-game-surface-note">This is a focused game surface. It does not start the timed simulator.</p>
+            <p className="hub-game-surface-note">{t("This is a focused game surface. It does not start the timed simulator.")}</p>
           </section>
 
           {!activity.completed && (
             <form className="hub-backend-update" onSubmit={submit}>
-              <h4>Trez Backend update</h4>
-              <p>Enter the values you observed in the game page. The server verifies them before completing this activity.</p>
-              <label>
-                Observed Credit
-                <input type="number" min="0" step="any" value={observedCredit} disabled={disabled || busy} onChange={(event) => setObservedCredit(event.target.value)} />
+              <h4>{t("Trez Backend update")}</h4>
+              <p>{t("Enter the values you observed in the game page. The server verifies them before completing this activity.")}</p>
+              <label>{t("Observed Credit")}<input type="number" min="0" step="any" value={observedCredit} disabled={disabled || busy} onChange={(event) => setObservedCredit(event.target.value)} />
               </label>
-              <label>
-                Observed Available Balance
-                <input type="number" min="0" step="any" value={observedAvailableBalance} disabled={disabled || busy} onChange={(event) => setObservedAvailableBalance(event.target.value)} />
+              <label>{t("Observed Available Balance")}<input type="number" min="0" step="any" value={observedAvailableBalance} disabled={disabled || busy} onChange={(event) => setObservedAvailableBalance(event.target.value)} />
               </label>
               <button className="hub-primary-button" type="submit" disabled={disabled || busy || !selectedAccount || observedCredit === '' || observedAvailableBalance === ''}>
-                {busy ? 'Verifying…' : 'Update Trez Backend'}
+                {busy ? t("Verifying…") : t("Update Trez Backend")}
               </button>
             </form>
           )}
         </>
       )}
 
-      {error && <p className="hub-inline-error" role="alert">{error}</p>}
+      {error && <p className="hub-inline-error" role="alert">{t(error)}</p>}
     </div>
   );
 }
