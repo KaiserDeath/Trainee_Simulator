@@ -342,3 +342,43 @@ and existing backup/export copies are outside the operation. Hosted end-user
 disposal/deployment acceptance, broader accessibility, hosted file/backup
 recovery and curriculum publication/acceptance remain open; all four hosted
 evaluations remain draft.
+
+### Accessibility and release acceptance continuation (2026-11-04)
+
+Added axe/keyboard coverage for four Hub roles, section navigation, 320px
+reflow, doubled text, focused errors/retry preservation, assessment transitions
+and timer milestones/expiry. Fixed contrast, skip-link focus, accessible brand
+naming, scrollable history, transition/result focus and reduced-motion support.
+The full foundation passed 242 backend, 12 shared, 61 safety and 66 browser
+checks, including doubled text. Real local Auth/browser
+formal assessment and independent evidence-review/disposal passed with fixture
+cleanup. These checks are not a complete WCAG or human usability certification.
+
+The public hosted sign-in page passed desktop/mobile axe, reflow and keyboard
+checks. A fresh read-only packet contains all 15 modules and four draft policies;
+all four candidate policies pass the canonical validator with verified Orion.
+No evaluation was published and no person's approval was substituted.
+
+The initial curriculum-review/pilot-supervision responsibility is Capacitador,
+configurable in `config/hub-release-acceptance.json`. This configuration does
+not grant roles. `npm run verify:release:acceptance` fails closed for missing
+reviewer assignment, learner roster, actual curriculum decisions, hosted journey
+and supervised pilot evidence. See `docs/HUB_RELEASE_ACCEPTANCE.md` and
+`outputs/hub-release-acceptance-2026-11-04/REPORT.md` for scope and current
+database/file recovery evidence. Real sign-off and supervised learners remain
+required before full release acceptance.
+
+The actual hosted export restored into an isolated local database with all 112
+table hashes, schema/security/grants and public FKs matching; recovered Auth
+credential/identity checks passed. One generated private PNG passed isolated
+copy/public denial, exact owned-source delete/restore and Hub-signed download.
+All temporary resources were cleaned and all five original identities preserved.
+This is a hosted backup/file rehearsal, not a live database replacement, retained
+operational backup, or accepted hosted formal learner journey.
+
+The Hub audience includes new learners and existing employees receiving
+reinforcement. Ten is the initial pilot/tested concurrency target, not a total
+student cap. Release configuration separates population, pilot participation and
+concurrency; current cohorts allow 100 members each. Larger simultaneous use
+requires new capacity evidence. Preserve prior completions/results; use repeat
+practice and controlled TRAINER reassessment for reinforcement.

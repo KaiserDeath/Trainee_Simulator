@@ -18,6 +18,11 @@
 .hub-light-theme.hub-app-shell, .hub-light-theme.hub-state-page { color: var(--hub-ink); background: #f4f6f9; }
 .hub-light-theme .hub-topbar { background: #fff; border-color: var(--hub-border); backdrop-filter: none; padding: 14px 28px; gap: 20px; }
 .hub-light-theme .hub-brand { color: var(--hub-ink); }
+.hub-light-theme .hub-directory-toolbar p { color: var(--hub-muted); }
+.hub-light-theme [tabindex]:focus-visible { outline: 3px solid #0b7169; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+ .hub-light-theme *, .hub-light-theme *::before, .hub-light-theme *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
 .hub-light-theme .hub-brand-mark { background: var(--hub-accent); color: #fff; border: 0; box-shadow: none; border-radius: 10px; }
 .hub-light-theme .hub-brand small, .hub-light-theme .hub-identity small { color: var(--hub-muted); }
 .hub-light-theme .hub-language-switch { background: var(--hub-soft); border-color: var(--hub-border); }

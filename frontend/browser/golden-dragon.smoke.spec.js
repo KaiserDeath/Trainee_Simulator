@@ -58,7 +58,7 @@ test('a changed Golden Dragon password shows the Customer ID only after Reset', 
   await expect(page.getByText('Reset password to Customer ID?')).toBeVisible();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
 
-  expect(resets).toEqual([{ newPassword: customerId }]);
+  await expect.poll(() => resets).toEqual([{ newPassword: customerId }]);
   await expect(page.getByText('Password reset successfully')).toBeVisible();
   // Mobile Password now shows the Customer ID too.
   await expect(page.getByText(customerId, { exact: true })).toHaveCount(2);

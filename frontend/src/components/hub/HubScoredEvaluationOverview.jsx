@@ -61,10 +61,10 @@ export default function HubScoredEvaluationOverview({onActiveChange}) {
     finally { setBusy(false); }
   };
 
-  if(activeAttemptId)return <HubEvaluationRuntime key={activeAttemptId} attemptId={activeAttemptId} onReturn={async()=>{setActiveAttemptId(null);try{await load();}catch{setNotice('Checkpoint results could not be refreshed. Reload to see the recorded result.');}}}/>;
+  if(activeAttemptId)return <HubEvaluationRuntime key={activeAttemptId} attemptId={activeAttemptId} onReturn={async()=>{setActiveAttemptId(null);try{await load();}catch{setNotice('Checkpoint results could not be refreshed. Reload to see the recorded result.');}finally{requestAnimationFrame(()=>document.getElementById('postulante-evaluations-title')?.focus());}}}/>;
   return <section className="hub-scored-evaluations" aria-labelledby="postulante-evaluations-title">
     <p className="hub-eyebrow">Scored evaluations</p>
-    <h2 id="postulante-evaluations-title">Checkpoint and readiness results</h2>
+    <h2 id="postulante-evaluations-title" tabIndex={-1}>Checkpoint and readiness results</h2>
     <p>Each evaluation allows three attempts. You may send the latest numerical result after any completed attempt; attempt three is submitted automatically. Detailed failure evidence is available only to TRAINER and RRHH.</p>
     <div className="hub-evaluation-policy-grid">{evaluations.map((evaluation) => {
       const available = evaluation.publication_status === 'published' && !evaluation.is_provisional;

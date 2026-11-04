@@ -1,0 +1,501 @@
+{
+  "evaluations": [
+    {
+      "candidateFamilyKeys": [
+        "orion-stars"
+      ],
+      "candidatePassesCanonicalValidator": true,
+      "code": "checkpoint-game-platforms",
+      "currentPolicyDigest": "2125983f28619db77901f81cc45c1e8a",
+      "durationMinutes": 30,
+      "id": "10000000-0000-4000-8000-000000000401",
+      "maxAttemptsPerSet": 3,
+      "passScore": 100,
+      "practicalWeight": 80,
+      "prerequisiteEvaluationIds": [],
+      "prerequisiteModuleIds": [
+        "10000000-0000-4000-8000-000000000101",
+        "10000000-0000-4000-8000-000000000102",
+        "10000000-0000-4000-8000-000000000103",
+        "10000000-0000-4000-8000-000000000104",
+        "10000000-0000-4000-8000-000000000105",
+        "10000000-0000-4000-8000-000000000106",
+        "10000000-0000-4000-8000-000000000107",
+        "10000000-0000-4000-8000-000000000108"
+      ],
+      "publicationStatus": "draft",
+      "requiredActions": [
+        "CREATE_ACCOUNT",
+        "SEARCH_USER",
+        "VERIFY_BALANCE",
+        "ADD_CREDITS",
+        "WITHDRAW_CREDITS",
+        "REVIEW_TRANSACTION_RECORDS",
+        "RESET_PASSWORD_EDIT_INFORMATION"
+      ],
+      "revision": 3,
+      "theoryItemCodes": [
+        "verification-first",
+        "no-duplicate-credit",
+        "exact-player",
+        "credential-evidence"
+      ],
+      "theoryWeight": 20,
+      "title": "Checkpoint 1 — Game Platforms"
+    },
+    {
+      "candidateFamilyKeys": [
+        "orion-stars"
+      ],
+      "candidatePassesCanonicalValidator": true,
+      "code": "checkpoint-operations",
+      "currentPolicyDigest": "b6b08fb40f8f1f371ead37b759db62d6",
+      "durationMinutes": 30,
+      "id": "10000000-0000-4000-8000-000000000402",
+      "maxAttemptsPerSet": 3,
+      "passScore": 100,
+      "practicalWeight": 80,
+      "prerequisiteEvaluationIds": [
+        "10000000-0000-4000-8000-000000000401"
+      ],
+      "prerequisiteModuleIds": [
+        "10000000-0000-4000-8000-000000000101",
+        "10000000-0000-4000-8000-000000000102",
+        "10000000-0000-4000-8000-000000000103",
+        "10000000-0000-4000-8000-000000000104",
+        "10000000-0000-4000-8000-000000000105",
+        "10000000-0000-4000-8000-000000000106",
+        "10000000-0000-4000-8000-000000000107",
+        "10000000-0000-4000-8000-000000000108",
+        "10000000-0000-4000-8000-000000000112",
+        "10000000-0000-4000-8000-000000000109"
+      ],
+      "publicationStatus": "draft",
+      "requiredActions": [
+        "CREATE_ACCOUNT",
+        "BACKEND_CREATE_ACCOUNT",
+        "SEARCH_USER",
+        "VERIFY_BALANCE",
+        "BACKEND_REFRESH_BALANCE",
+        "ADD_CREDITS",
+        "BACKEND_ADD_CREDITS",
+        "WITHDRAW_CREDITS",
+        "BACKEND_WITHDRAW_CREDITS",
+        "RESET_PASSWORD_EDIT_INFORMATION",
+        "BACKEND_RESET_PASSWORD"
+      ],
+      "revision": 4,
+      "theoryItemCodes": [
+        "verification-first",
+        "no-duplicate-credit",
+        "exact-player",
+        "credential-evidence"
+      ],
+      "theoryWeight": 20,
+      "title": "Checkpoint 2 — Operations"
+    },
+    {
+      "candidateFamilyKeys": [
+        "orion-stars"
+      ],
+      "candidatePassesCanonicalValidator": true,
+      "code": "checkpoint-movements-customer-experience",
+      "currentPolicyDigest": "c08e78983849458fdcbd5f175ccac6e0",
+      "durationMinutes": 30,
+      "id": "10000000-0000-4000-8000-000000000403",
+      "maxAttemptsPerSet": 3,
+      "passScore": 100,
+      "practicalWeight": 80,
+      "prerequisiteEvaluationIds": [
+        "10000000-0000-4000-8000-000000000402"
+      ],
+      "prerequisiteModuleIds": [
+        "10000000-0000-4000-8000-000000000101",
+        "10000000-0000-4000-8000-000000000102",
+        "10000000-0000-4000-8000-000000000103",
+        "10000000-0000-4000-8000-000000000104",
+        "10000000-0000-4000-8000-000000000105",
+        "10000000-0000-4000-8000-000000000106",
+        "10000000-0000-4000-8000-000000000107",
+        "10000000-0000-4000-8000-000000000108",
+        "10000000-0000-4000-8000-000000000112",
+        "10000000-0000-4000-8000-000000000109",
+        "10000000-0000-4000-8000-000000000113",
+        "10000000-0000-4000-8000-000000000114"
+      ],
+      "publicationStatus": "draft",
+      "requiredActions": [
+        "CREATE_ACCOUNT",
+        "BACKEND_CREATE_ACCOUNT",
+        "SEARCH_USER",
+        "VERIFY_BALANCE",
+        "BACKEND_REFRESH_BALANCE",
+        "ADD_CREDITS",
+        "BACKEND_ADD_CREDITS",
+        "WITHDRAW_CREDITS",
+        "BACKEND_WITHDRAW_CREDITS",
+        "RESET_PASSWORD_EDIT_INFORMATION",
+        "BACKEND_RESET_PASSWORD",
+        "RESOLVE_RECONCILIATION",
+        "CUSTOMER_RESPONSE"
+      ],
+      "revision": 4,
+      "theoryItemCodes": [
+        "verification-first",
+        "no-duplicate-credit",
+        "exact-player",
+        "credential-evidence"
+      ],
+      "theoryWeight": 20,
+      "title": "Checkpoint 3 — Movements and Customer Experience"
+    },
+    {
+      "candidateFamilyKeys": [
+        "orion-stars"
+      ],
+      "candidatePassesCanonicalValidator": true,
+      "code": "final-pretraining-readiness",
+      "currentPolicyDigest": "5e5383b25b39557bd03bc21ad27ffb14",
+      "durationMinutes": 30,
+      "id": "10000000-0000-4000-8000-000000000404",
+      "maxAttemptsPerSet": 3,
+      "passScore": 100,
+      "practicalWeight": 80,
+      "prerequisiteEvaluationIds": [
+        "10000000-0000-4000-8000-000000000403"
+      ],
+      "prerequisiteModuleIds": [
+        "10000000-0000-4000-8000-000000000101",
+        "10000000-0000-4000-8000-000000000102",
+        "10000000-0000-4000-8000-000000000103",
+        "10000000-0000-4000-8000-000000000104",
+        "10000000-0000-4000-8000-000000000105",
+        "10000000-0000-4000-8000-000000000106",
+        "10000000-0000-4000-8000-000000000107",
+        "10000000-0000-4000-8000-000000000108",
+        "10000000-0000-4000-8000-000000000112",
+        "10000000-0000-4000-8000-000000000109",
+        "10000000-0000-4000-8000-000000000113",
+        "10000000-0000-4000-8000-000000000114",
+        "10000000-0000-4000-8000-000000000115",
+        "10000000-0000-4000-8000-000000000110"
+      ],
+      "publicationStatus": "draft",
+      "requiredActions": [
+        "FULL_SHIFT_OPERATION"
+      ],
+      "revision": 4,
+      "theoryItemCodes": [
+        "verification-first",
+        "no-duplicate-credit",
+        "exact-player",
+        "credential-evidence"
+      ],
+      "theoryWeight": 20,
+      "title": "Final Pre-Training Readiness Assessment"
+    }
+  ],
+  "generatedAt": "2026-11-04T12:44:51.017644-05:00",
+  "modules": [
+    {
+      "activities": [
+        {
+          "code": "ecosystem-and-balances",
+          "title": "The Trez operating ecosystem",
+          "type": "article"
+        },
+        {
+          "code": "operator-responsibilities",
+          "title": "Operator responsibilities and standards",
+          "type": "article"
+        },
+        {
+          "code": "foundation-knowledge-check",
+          "title": "Foundation knowledge check",
+          "type": "checklist"
+        }
+      ],
+      "code": "understanding-the-work",
+      "position": 1,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Understanding the Work"
+    },
+    {
+      "activities": [
+        {
+          "code": "backend-and-licensed-access",
+          "title": "Trez Backend and licensed game access",
+          "type": "article"
+        },
+        {
+          "code": "verification-first-walkthrough",
+          "title": "The complete verification-first workflow",
+          "type": "checklist"
+        },
+        {
+          "code": "operation-category-preview",
+          "title": "Operation and skill preview",
+          "type": "article"
+        }
+      ],
+      "code": "complete-workflow-orientation",
+      "position": 2,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Complete Workflow Orientation"
+    },
+    {
+      "activities": [
+        {
+          "code": "account-creation-continuity",
+          "title": "One request, one account, one evidence trail",
+          "type": "article"
+        },
+        {
+          "code": "native-account-id-lab",
+          "title": "Account ID Lab",
+          "type": "interactive_rule_lab"
+        },
+        {
+          "code": "create-linked-training-account",
+          "title": "Create the linked training account",
+          "type": "quick_simulation"
+        }
+      ],
+      "code": "account-creation",
+      "position": 3,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Account Creation"
+    },
+    {
+      "activities": [
+        {
+          "code": "exact-player-search-procedure",
+          "title": "Exact-player search procedure",
+          "type": "article"
+        },
+        {
+          "code": "search-created-account",
+          "title": "Search for the Module 3 player",
+          "type": "focused_practice"
+        }
+      ],
+      "code": "search-for-customer",
+      "position": 4,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Search for Customer"
+    },
+    {
+      "activities": [
+        {
+          "code": "orion-stars-refresh-balance",
+          "title": "Check the Orion Stars balance and update Trez Backend",
+          "type": "focused_practice"
+        }
+      ],
+      "code": "refresh-balance",
+      "position": 5,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Refresh Balance"
+    },
+    {
+      "activities": [
+        {
+          "code": "add-credits-verification-first",
+          "title": "Add Credits: verify before you act",
+          "type": "article"
+        },
+        {
+          "code": "add-credits-preflight-checklist",
+          "title": "Add Credits preflight checklist",
+          "type": "checklist"
+        },
+        {
+          "code": "orion-stars-add-credits",
+          "title": "Perform the Orion Stars Add Credits movement",
+          "type": "focused_practice"
+        }
+      ],
+      "code": "add-credits",
+      "position": 6,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Add Credits"
+    },
+    {
+      "activities": [
+        {
+          "code": "withdraw-credits-verification-first",
+          "title": "Withdraw Credits: verify before you act",
+          "type": "article"
+        },
+        {
+          "code": "withdraw-credits-preflight-checklist",
+          "title": "Withdraw Credits preflight checklist",
+          "type": "checklist"
+        },
+        {
+          "code": "orion-stars-withdraw-credits",
+          "title": "Perform the Orion Stars Withdraw Credits movement",
+          "type": "focused_practice"
+        }
+      ],
+      "code": "withdraw-credits",
+      "position": 7,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Withdraw Credits"
+    },
+    {
+      "activities": [
+        {
+          "code": "reset-password-verification-first",
+          "title": "Reset Password — verify before you act",
+          "type": "article"
+        },
+        {
+          "code": "reset-password-preflight-checklist",
+          "title": "Reset Password preflight checklist",
+          "type": "checklist"
+        },
+        {
+          "code": "reset-password-policy-gated-practice",
+          "title": "Reset Password practice (policy approval required)",
+          "type": "quick_simulation"
+        }
+      ],
+      "code": "reset-password",
+      "position": 8,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Reset Password"
+    },
+    {
+      "activities": [
+        {
+          "code": "official-evaluation-result",
+          "title": "Checkpoint 1 — Game Platforms",
+          "type": "assessment"
+        }
+      ],
+      "code": "checkpoint-game-platforms",
+      "position": 9,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Checkpoint 1 — Game Platforms"
+    },
+    {
+      "activities": [
+        {
+          "code": "exceptional-operations-verification-first",
+          "title": "Exceptional operations — verify and stop safely",
+          "type": "article"
+        },
+        {
+          "code": "exceptional-operations-preflight-checklist",
+          "title": "Exceptional operations preflight checklist",
+          "type": "checklist"
+        },
+        {
+          "code": "exceptional-operations-policy-gated-practice",
+          "title": "Exceptional operations practice (policy approval required)",
+          "type": "quick_simulation"
+        }
+      ],
+      "code": "exceptional-advanced-operations",
+      "position": 10,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Exceptional and Advanced Operations"
+    },
+    {
+      "activities": [
+        {
+          "code": "official-evaluation-result",
+          "title": "Checkpoint 2 — Operations",
+          "type": "assessment"
+        }
+      ],
+      "code": "checkpoint-operations",
+      "position": 11,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Checkpoint 2 — Operations"
+    },
+    {
+      "activities": [
+        {
+          "code": "backend-customer-evidence",
+          "title": "Use Backend evidence to explain a customer outcome",
+          "type": "article"
+        }
+      ],
+      "code": "backend-customer-experience",
+      "position": 12,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Backend and Customer Experience"
+    },
+    {
+      "activities": [
+        {
+          "code": "official-evaluation-result",
+          "title": "Checkpoint 3 — Movements and Customer Experience",
+          "type": "assessment"
+        }
+      ],
+      "code": "checkpoint-movements-customer-experience",
+      "position": 13,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Checkpoint 3 — Movements and Customer Experience"
+    },
+    {
+      "activities": [
+        {
+          "code": "mixed-practice-verification-first",
+          "title": "Mixed operations — preserve the verification sequence",
+          "type": "article"
+        },
+        {
+          "code": "mixed-practice-preflight-checklist",
+          "title": "Mixed-operation preflight checklist",
+          "type": "checklist"
+        },
+        {
+          "code": "mixed-operation-policy-gated-practice",
+          "title": "Mixed-operation practice (policy approval required)",
+          "type": "quick_simulation"
+        }
+      ],
+      "code": "mixed-operation-practice",
+      "position": 14,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Mixed-Operation Practice"
+    },
+    {
+      "activities": [
+        {
+          "code": "final-assessment-readiness",
+          "title": "Final assessment readiness",
+          "type": "article"
+        },
+        {
+          "code": "final-assessment-policy-gated",
+          "title": "Final full-shift assessment",
+          "type": "quick_simulation"
+        }
+      ],
+      "code": "final-full-shift-assessment",
+      "position": 15,
+      "provisional": true,
+      "publicationStatus": "draft",
+      "title": "Final Full-Shift Assessment"
+    }
+  ]
+}

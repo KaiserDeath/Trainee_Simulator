@@ -1,0 +1,11 @@
+{
+  "origin": "https://trainee-simulator.vercel.app",
+  "generatedAt": "2026-11-04T17:53:36.850Z",
+  "scope": "public deployed Hub sign-in; no authenticated staff/assessment coverage",
+  "checks": [
+    "Live sign-in axe scan and horizontal-reflow check passed at 1280px",
+    "Live sign-in axe scan and horizontal-reflow check passed at 320px",
+    "Keyboard moves from username to password"
+  ],
+  "passed": true
+}

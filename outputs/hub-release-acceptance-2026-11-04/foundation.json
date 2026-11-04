@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-11-04T18:01:18.2959262Z",
+  "command": "npm run verify:foundation",
+  "passed": true,
+  "backendTests": 242,
+  "sharedTests": 12,
+  "databaseSafetyTests": 61,
+  "browserTests": 66,
+  "lintPassed": true,
+  "productionBuildPassed": true,
+  "logSha256": "2b6f9a11b60c9067fac9121d821910d46b1f706fbcf2e59881ecbce70ec127b8"
+}

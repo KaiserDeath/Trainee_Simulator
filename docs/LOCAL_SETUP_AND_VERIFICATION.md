@@ -7,7 +7,7 @@ Supabase Auth/governance gate now exist.
 
 ## Prerequisites
 
-- Node.js 20.19.x or 22.12 and newer (the range required by the current Vite dependency).
+- Node.js 22.12 or newer; Node 24 is used by CI and production. The accessibility tooling requires at least 22.12.
 - npm with lockfile support.
 - Docker Desktop running when using the isolated local Supabase stack.
 - Backend environment values in ignored `backend/.env.local`, `backend/.env`, or

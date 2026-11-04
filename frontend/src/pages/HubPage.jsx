@@ -613,7 +613,7 @@ export default function HubPage() {
     <div className={`hub-app-shell hub-light-theme${isTrainer ? ' hub-staff-console' : ''}`} lang={staffLanguage}>
       <a className="hub-skip-link" href="#hub-main-content">Skip to workspace</a>
       <header className="hub-topbar">
-        <a className="hub-brand" href="/hub" aria-label="Trez Training Hub home">
+        <a className="hub-brand" href="/hub">
           <span className="hub-brand-mark" aria-hidden="true">T</span>
           <span><strong>Trez Training Hub</strong><small>{staffCopy.brandSubtitle}</small></span>
         </a>
@@ -661,7 +661,7 @@ export default function HubPage() {
         </nav>
         <p className="hub-sidebar-help">{staffLanguage==='es'?'Selecciona una sección para acceder a tus herramientas.':'Choose a section to focus on the tools you need.'}</p>
       </aside>}
-      <main className="hub-main" id="hub-main-content">
+      <main className="hub-main" id="hub-main-content" tabIndex={-1}>
         {(isAdministrator||canManagePostulantes)&&<div className="hub-workspace-intro"><p className="hub-eyebrow">{staffLanguage==='es'?'FORMACIÓN DE OPERADORES':'OPERATOR TRAINING'}</p><h1>{isAdministrator?(staffLanguage==='es'?'Administración del Hub':'Hub administration'):(staffLanguage==='es'?'Tu espacio de formación':'Your training workspace')}</h1><p>{isAdministrator?(staffLanguage==='es'?'Gestiona el acceso, las reglas y el contenido de formación.':'Manage staff access, account policies and training content.'):(staffLanguage==='es'?'Organiza participantes, revisa evidencias y acompaña su progreso.':'Organize learners, review evidence and support their progress.')}</p></div>}
         {!assessmentOpen&&!isTrainer && !isAuditor && !isAdministrator && <section className="hub-course-hero" aria-labelledby="hub-course-title">
           <div>

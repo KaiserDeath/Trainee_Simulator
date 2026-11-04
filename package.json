@@ -36,10 +36,12 @@
     "verify:foundation": "npm run verify:baseline && npm run test:shared && npm run test:database:safety && npm run test:browser",
     "verify:milestone0": "npm run verify:foundation && npm run test:database:integration",
     "verify:local:formal-browser": "node scripts/run-local-verification.mjs formal-browser",
-    "verify:local:recovery": "node scripts/verify-local-recovery.mjs"
+    "verify:local:recovery": "node scripts/verify-local-recovery.mjs",
+    "verify:release:acceptance": "node scripts/check-hub-release-acceptance.mjs",
+    "verify:hosted:recovery": "node backend/scripts/rehearse-hosted-recovery.mjs"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=22.12.0"
   },
   "devDependencies": {
     "supabase": "2.115.0"
