@@ -1,0 +1,12 @@
+{
+  "target": "active hosted Supabase project",
+  "preview": {
+    "mode": "preview",
+    "candidates": 0,
+    "limit": 100
+  },
+  "originalIdentities": 4,
+  "draftEvaluations": 4,
+  "passed": true,
+  "hostedPhysicalDeletionTested": false
+}

@@ -240,10 +240,10 @@ test('TRAINER edits a question by publishing a new version',async({page})=>{
 });
 
 test('ADMIN uploads a private training asset and cannot approve their own upload',async({page})=>{
-  await staff(page,'ADMIN');let assets=[];let registration;let uploaded=false;
+  await staff(page,'ADMIN');let assets=[];let registration;let uploaded=false;let expiredKey;
   const assetId='10000000-0000-4000-8000-000000008801';
   await page.route('**/api/hub/media',route=>json(route,{assets}));
-  await page.route('**/api/hub/media/uploads',route=>{registration=route.request().postDataJSON();return json(route,{asset:{id:assetId},uploadUrl:`${new URL(route.request().url()).origin}/fixture-media-upload`});});
+  await page.route('**/api/hub/media/uploads',route=>{registration=route.request().postDataJSON();if(!expiredKey){expiredKey=registration.idempotencyKey;return route.fulfill({status:410,contentType:'application/json',body:JSON.stringify({error:{message:'This upload registration expired. Upload a new asset version.'}})});}return json(route,{asset:{id:assetId},uploadUrl:`${new URL(route.request().url()).origin}/fixture-media-upload`});});
   await page.route('**/fixture-media-upload',route=>{uploaded=route.request().method()==='PUT';return json(route,{Key:'private-fixture'});});
   await page.route(`**/api/hub/media/${assetId}/complete`,route=>{assets=[{id:assetId,title:'Account verification guide',version:1,status:'pending_review',file_name:'sample.png',expected_size:13,source_reference:'Approved operator training guide',canReview:false}];return json(route,{asset:assets[0]});});
   await page.goto('/hub');await page.getByRole('link',{name:'Media library',exact:true}).click();await page.getByRole('button',{name:'Open media library',exact:true}).click();
@@ -251,7 +251,11 @@ test('ADMIN uploads a private training asset and cannot approve their own upload
   await page.getByLabel('Training file (25 MB maximum)',{exact:true}).setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from('fixture-image')});
   await page.getByRole('textbox',{name:'Alternative text for images',exact:true}).fill('A training diagram of account verification');await page.getByRole('textbox',{name:'Source and approval reference',exact:true}).fill('Approved operator training guide');
   await page.getByRole('button',{name:'Upload private asset',exact:true}).click();
+  await expect(page.getByText('This upload registration expired. Upload a new asset version.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('textbox',{name:'Asset title',exact:true})).toHaveValue('Account verification guide');
+  await page.getByRole('button',{name:'Upload private asset',exact:true}).click();
   await expect(page.getByText('File stored privately. A different ADMIN must review publication.')).toBeVisible();expect(uploaded).toBe(true);expect(registration.mimeType).toBe('image/png');expect(registration.size).toBe(13);
+  expect(registration.idempotencyKey).not.toBe(expiredKey);
   await page.getByRole('textbox',{name:'Media review reason',exact:true}).fill('Reviewed the training diagram');await expect(page.getByRole('button',{name:'Approve media publication',exact:true})).toBeDisabled();
 });
 

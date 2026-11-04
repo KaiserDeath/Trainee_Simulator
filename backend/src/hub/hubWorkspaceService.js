@@ -53,6 +53,7 @@ function checked(result) {
     ['HUB_IDEMPOTENCY_CONFLICT',409,'The retry key was already used for a different change.'],
     ['HUB_SEPARATE_APPROVER_REQUIRED',409,'A different administrator must review this proposal.'],
     ['HUB_VERIFICATION_EVIDENCE_REQUIRED',409,'Choose a later completed attempt for this learner as verification evidence.'],
+    ['HUB_MEDIA_UPLOAD_EXPIRED',410,'This upload registration expired. Attach a new asset version.'],
     ['HUB_INVALID_INPUT',400,'The requested change is invalid.'],
   ];
   const match = errors.find(([code]) => message.includes(code));

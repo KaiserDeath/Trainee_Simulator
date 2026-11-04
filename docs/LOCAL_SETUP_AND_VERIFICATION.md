@@ -553,6 +553,45 @@ configuration/secrets, another PostgreSQL version or a lost Supabase project.
 Hosted backup availability, offsite/encrypted copies, retention, recovery time
 and full application/file recovery remain separate operational release gates.
 
+## Abandoned private-media maintenance
+
+Uploads must begin within 72 hours of registration. A cleanup worker expires
+only old `awaiting_upload` registrations with no current lesson, content-version
+or historical lesson-snapshot references. Pending review, published, rejected and
+retired assets remain protected. Metadata and append-only cleanup receipts stay
+in the database after bytes are removed. This does not dispose of two-year
+assessment evidence or coaching records.
+
+Every signed-upload request reserves three hours of protection before signing;
+Storage tokens last two hours. The service checks the actual token expiry against
+that reservation and refuses delayed tokens that could outlive it. Migration
+backfill gives existing registrations three hours of grace. Cleanup locks and
+expires the asset before Storage deletion; expired registrations cannot be
+completed, signed again or attached to lessons. Completed-upload retries resume
+without issuing another upload token.
+
+Production starts one bounded batch (100 registrations maximum) one minute after
+backend startup, then daily when idle. Failed/full batches retry after five
+minutes. Multiple instances use database leases and stale-token checks. Storage
+failure retains a retryable job, and a crash after deletion can safely repeat the
+missing-object removal. Sleeping hosting runs maintenance on its next startup;
+this is not a guaranteed daily execution SLA. Set
+`HUB_MEDIA_CLEANUP_DISABLED=true` to stop automatic scheduling. Already claimed
+jobs remain expired and can be resumed safely.
+
+For operations, the backend maintenance command previews by default, using its
+configured backend database credentials:
+
+```powershell
+npm --prefix backend run maintenance:media
+npm --prefix backend run maintenance:media -- --apply --limit=100
+```
+
+Output contains counts only. No user-facing HTTP cleanup endpoint is exposed.
+`npm run verify:local:media` exercises real private Storage, concurrent leases,
+completion racing cleanup, failure/backoff, crash recovery, expired retries and
+all reference protections. Its clock-age fixtures and credentials are local-only.
+
 ## Shared Account ID rule boundary
 
 `shared/account-id-rules` extracts framework-independent normalization, segmented construction, pattern generation, and answer validation. Policies are supplied by the caller. The package contains no default game catalogue, real initials, family assignments, password rules, or approved scoring formulas.

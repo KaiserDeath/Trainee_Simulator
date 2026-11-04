@@ -196,3 +196,48 @@ offsite/encrypted copies, Storage file-byte recovery, configuration/secret
 recovery or an operational recovery-time objective. Those remain release gates,
 alongside retention/disposal, abandoned uploads, accessibility and content
 acceptance. No hosted data or formal publication was changed in this increment.
+
+### Abandoned private-media cleanup (2026-11-03)
+
+Main `259755c` CI passed. Added bounded cleanup for unfinished upload
+registrations, keeping retained assessment/coaching evidence outside this
+increment. A registration becomes eligible after 72 hours only if no current
+lesson, content version or historical lesson snapshot references it. Pending
+review, published, rejected and retired assets are excluded. Metadata and
+append-only job events remain after byte removal.
+
+The database reserves three hours before issuing a two-hour Storage upload
+token; actual token expiry is checked before returning the link. The migration
+protects pre-existing registrations with a three-hour grace period. Expiry locks
+the asset before deleting Storage bytes, blocks cached registration resurrection,
+and prevents new references. New-reference locks serialize against cleanup.
+Completed-upload retries resume without another upload URL; expired retries
+retain form inputs and use a new registration key on the next attempt.
+
+Production maintenance starts a maximum 100-item batch after one minute, then
+daily, with five-minute retries for failed/full batches. Database leases prevent
+duplicate claims; stale completion tokens are rejected. Storage failures remain
+retryable, including a crash after removal but before its receipt. A read-only
+preview is the default CLI operation. Automatic scheduling can be disabled with
+`HUB_MEDIA_CLEANUP_DISABLED=true`; sleeping hosts execute on their next startup.
+
+Fresh local migration/seed replay, real private-Storage verification and local
+database recovery passed. Storage coverage includes current/draft/snapshot
+references, live-link grace, recent registrations, review/retired protection,
+concurrent workers, completion racing cleanup, failure backoff, crash recovery,
+idempotency, expiry and service-role-only maintenance. Full foundation passed
+240 backend, 12 shared-rule, 61 database-safety and 56 browser checks, plus
+lint/build. The existing build-size warning remains.
+
+Applied migration `20261103200000_abandoned_media_cleanup.sql` transactionally
+with its ledger record to the active hosted project. Before and after: zero
+media assets, four original identities, four draft formal evaluations. The real
+hosted service-role REST preview returned zero candidates; authenticated cleanup
+execution and direct use of the old upload command are denied. No hosted bytes
+were deleted. Evidence: `outputs/hub-media-cleanup-2026-11-03/REPORT.md` and
+`hosted-preview.json`. Production scheduling depends on deployment of this
+commit; no hosted deletion or scheduler-log acceptance is claimed here.
+
+Two-year historical evidence/coaching disposal still needs a complete dependency
+and hold policy before enabling deletion. Hosted file/backup recovery and
+accessibility/content acceptance also remain open.

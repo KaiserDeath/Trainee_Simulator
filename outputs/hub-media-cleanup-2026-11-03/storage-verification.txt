@@ -1,0 +1,6 @@
+
+> trez-training-hub-workspace@0.0.0 verify:local:media
+> node scripts/run-local-verification.mjs media
+
+Abandoned media cleanup passed: read-only preview, 72h age and live-link grace, draft/snapshot/pending/retired protection, concurrent leases, crash recovery, Storage-failure backoff, exact retry, expired upload/reference denial and service-role-only maintenance.
+Local private media passed: signed upload/download, immutable file, separate-admin publication, lesson publication dependency, module/identity access, private bucket, and historical-version access. Exact fixtures removed.

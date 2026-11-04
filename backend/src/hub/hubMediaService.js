@@ -6,6 +6,7 @@ export function createHubMediaService({client}){
     if(!result.error)return result.data;
     const message=String(result.error.message||'');
     const mappings=[['HUB_ACCESS_DENIED',403,'This identity cannot access this training asset.'],['HUB_OBJECT_NOT_FOUND',404,'The training asset was not found.'],['HUB_SEPARATE_APPROVER_REQUIRED',409,'A different administrator must review this asset.'],['HUB_MEDIA_STATE_CONFLICT',409,'The asset changed. Reload the library before reviewing it.'],['HUB_IDEMPOTENCY_CONFLICT',409,'The retry key belongs to another change.'],['HUB_MEDIA_UPLOAD_INCOMPLETE',409,'The uploaded file does not yet match the registered size and type.'],['HUB_INVALID_INPUT',400,'Provide a supported file, source, size and accessible description.']];
+    mappings.push(['HUB_MEDIA_UPLOAD_EXPIRED',410,'This upload registration expired. Upload a new asset version.']);
     const match=mappings.find(([code])=>message.includes(code));
     throw match?new HubError(match[1],match[0],match[2]):new HubError(503,'HUB_MEDIA_UNAVAILABLE','Training media is temporarily unavailable.');
   };
@@ -25,8 +26,14 @@ export function createHubMediaService({client}){
       await actor(identity,['admin']);
       if(!Number.isInteger(body.size)||body.size<1||body.size>25000000)throw new HubError(400,'HUB_VALIDATION_ERROR','Choose a file between 1 byte and 25 MB.');
       const metadata={};for(const key of ['key','title','fileName','mimeType','altText','transcript','source']){if(body[key]!==undefined&&typeof body[key]!=='string')throw new HubError(400,'HUB_VALIDATION_ERROR','Asset descriptions must be text.');metadata[key]=body[key]??'';}metadata.size=body.size;
-      const asset=await command(identity,null,'create',metadata,body.idempotencyKey);
+      const registered=await command(identity,null,'create',metadata,body.idempotencyKey);
+      const asset=checked(await client.rpc('hub_media_upload_grant',{p_external_subject:identity.subjectId,p_asset_id:registered.id}));
+      if(asset.status!=='awaiting_upload')return {asset,alreadyUploaded:true};
       const upload=checked(await client.storage.from(asset.bucket).createSignedUploadUrl(asset.object_path,{upsert:false}));
+      // A delayed signer must never return a token outliving the database grace.
+      let expiry;try{expiry=JSON.parse(Buffer.from(upload.token.split('.')[1],'base64url').toString()).exp*1000;}catch{/* Fail closed below. */}
+      const graceUntil=new Date(asset.upload_valid_until).getTime();
+      if(!Number.isFinite(expiry)||!Number.isFinite(graceUntil)||expiry>graceUntil)throw new HubError(503,'HUB_MEDIA_UNAVAILABLE','The upload link could not be issued safely. Retry this upload.');
       return {asset,uploadUrl:upload.signedUrl};
     },
     async transition(identity,id,operation,body){
@@ -38,6 +45,7 @@ export function createHubMediaService({client}){
     async access(identity,id){
       workspaceUuid(id);
       const asset=checked(await client.rpc('hub_media_access',{p_external_subject:identity.subjectId,p_asset_id:id}));
+      if(asset.status==='expired')throw new HubError(410,'HUB_MEDIA_UPLOAD_EXPIRED','This upload registration expired. Upload a new asset version.');
       const signed=checked(await client.storage.from(asset.bucket).createSignedUrl(asset.object_path,900));
       return {asset:{id:asset.id,title:asset.title,version:asset.version,mimeType:asset.mime_type,fileName:asset.file_name,altText:asset.alt_text,transcript:asset.transcript},url:signed.signedUrl,expiresIn:900};
     },

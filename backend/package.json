@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "worker": "node src/engine/simulationWorker.js",
+    "maintenance:media": "node scripts/cleanup-abandoned-media.mjs",
     "test": "node --test \"test/*.test.js\" \"test/characterization/*.test.js\" \"test/database/*.test.js\"",
     "test:characterization": "node --test \"test/characterization/*.test.js\"",
     "test:database:safety": "node --test \"test/database/*.test.js\"",

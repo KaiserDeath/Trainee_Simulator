@@ -9,6 +9,8 @@ import GameMaster from './engine/GameMaster.js';
 import { completeSession } from './engine/SessionEngine.js';
 import { recoverActiveSessions } from './engine/sessionRecovery.js';
 import { startSimulationWorker } from './engine/simulationWorker.js';
+import {createHubMediaCleanup} from './hub/hubMediaCleanup.js';
+import {startHubMediaMaintenance} from './hub/hubMediaMaintenance.js';
 import {
   assertLocalE2EBackendEnvironment
 } from './config/localE2EGuard.js';
@@ -79,6 +81,10 @@ server.listen(PORT, HOST, () => {
   console.log(
     `Server running on ${HOST || 'all interfaces'}:${PORT}`
   );
+  if(process.env.NODE_ENV==='production'&&process.env.HUB_MEDIA_CLEANUP_DISABLED!=='true'){
+    const maintenance=startHubMediaMaintenance({cleanup:createHubMediaCleanup({client:supabase}),onResult:result=>console.log('Abandoned media maintenance:',JSON.stringify(result)),onError:()=>console.error('Abandoned media maintenance failed; retry scheduled.')});
+    server.on('close',()=>maintenance.stop());
+  }
   if(process.env.TREZ_DURABLE_SIMULATION==='true'||process.env.NODE_ENV==='production'){
     const worker=startSimulationWorker();app.locals.simulationWorker=worker;server.on('close',()=>worker.stop());return;
   }

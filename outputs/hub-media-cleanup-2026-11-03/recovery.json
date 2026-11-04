@@ -1,0 +1,14 @@
+{
+  "target": "named isolated local Supabase container; disposable restore database",
+  "generatedAt": "2026-11-04T00:09:18.855Z",
+  "checks": [
+    "Created a real PostgreSQL custom-format database backup inside the local container",
+    "All public table hashes/counts, Auth users, Storage metadata, functions, triggers, constraints, indexes, sequences, RLS and table/function privileges match",
+    "Recovered database passed all eight transactional Hub workspace/evaluation/cohort scenarios; fixtures rolled back",
+    "Second backup/restore preserved nonempty formal results/evidence, coaching revisions, lesson snapshots and an Auth credential record; privacy and snapshot immutability still hold"
+  ],
+  "tableCount": 69,
+  "passed": true,
+  "cleanupPassed": true,
+  "elapsedSeconds": 24.3
+}
