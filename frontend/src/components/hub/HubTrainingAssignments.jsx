@@ -33,6 +33,7 @@ export default function HubTrainingAssignments({learnerId,canEdit=false,mine=fal
     {notice&&<p role="status">{t(notice)}</p>}
     {loaded&&canEdit&&<form className="hub-workspace-form" onSubmit={event=>{event.preventDefault();command(null,'assign',{...form,dueOn:form.dueOn||null,learnerId,expectedRevision:0});}}><fieldset disabled={busy}>
       <legend>{t('Assign focused training')}</legend>
+      <p>{t('Reviewing a completed lesson does not reopen its exercise. Use mixed practice for another practical run, or a trainer-authorized formal reassessment.')}</p>
       <label>{t('Assigned module')}<select required value={form.moduleId} onChange={event=>update('moduleId',event.target.value)}><option value="">{t('Choose a module')}</option>{modules.map(module=><option key={module.id} value={module.id}>{t(module.courseTitle)} / {t(module.title)}</option>)}</select></label>
       {modules.length===200&&<p>{t('Showing up to 200 assigned modules. Contact administration if the required module is missing.')}</p>}
       {!modules.length&&<p>{t('Assign a course to this learner before creating a targeted assignment.')}</p>}

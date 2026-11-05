@@ -1226,5 +1226,6 @@
   "Provide a valid assignment, reason, date and retry key.": "Proporcione una asignación, un motivo, una fecha y una clave de reintento válidos.",
   "Provide a reason of 5–1000 characters, visible to the learner.": "Proporcione un motivo de 5 a 1000 caracteres, visible para el participante.",
   "Choose onboarding or reinforcement.": "Elija formación inicial o refuerzo.",
-  "Training assignments are temporarily unavailable.": "Las asignaciones de formación no están disponibles temporalmente."
+  "Training assignments are temporarily unavailable.": "Las asignaciones de formación no están disponibles temporalmente.",
+  "Reviewing a completed lesson does not reopen its exercise. Use mixed practice for another practical run, or a trainer-authorized formal reassessment.": "Revisar una lección completada no reabre su ejercicio. Utilice la práctica mixta para otra sesión práctica, o una reevaluación formal autorizada por el Capacitador."
 }
