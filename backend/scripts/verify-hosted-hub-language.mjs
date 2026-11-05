@@ -47,6 +47,10 @@ try{
   await page.getByRole('button',{name:'Cerrar sesión',exact:true}).waitFor();
   assert.equal(await page.locator('.hub-app-shell').getAttribute('lang'),'es');
   if(person.role==='postulante'){
+   await page.getByRole('heading',{name:'El siguiente paso, claro.',exact:true}).waitFor();
+   await page.getByRole('link',{name:'Catálogo de módulos',exact:true}).click();
+   await page.getByRole('heading',{name:'Catálogo de módulos',exact:true}).waitFor();
+   await page.getByRole('link',{name:'Espacio de aprendizaje',exact:true}).click();
    phase='wait for deployed private display companions';let learning;
    for(let attempt=0;attempt<40;attempt++){
     const response=await context.request.get(`${origin}/api/hub/learning-path`);if(response.ok())learning=await response.json();
@@ -62,6 +66,7 @@ try{
    await page.setViewportSize({width:390,height:844});
    const imagePath=path.join(path.dirname(reportPath),'hosted-spanish-learner-mobile.png');fs.mkdirSync(path.dirname(imagePath),{recursive:true});await page.screenshot({path:imagePath,fullPage:true});
    report.checks.push('Hosted learner receives authorized Spanish curriculum, no private question bank, and no formal-start controls while policies are draft');
+   report.checks.push('Hosted Spanish learner home, catalog and learning workspace navigation passed');
   }else{
    await page.locator('a[href="#hub-profile"]').click();await page.getByText('Cambiar mi contraseña',{exact:true}).waitFor();
   }

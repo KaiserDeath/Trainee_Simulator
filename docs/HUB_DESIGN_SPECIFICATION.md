@@ -4,7 +4,8 @@ Date: 2026-11-04
 
 Roadmap: [Design and architecture upgrade](HUB_DESIGN_ARCHITECTURE_UPGRADE_PLAN.md)
 
-Phase: 1 — specification and reviewable previews; no production UI changes.
+Phase: 1 — specification and reviewable previews. User approved the visual
+direction on 2026-11-05; implementation follows ADR 0008.
 
 ## Evidence from the existing application
 
@@ -145,6 +146,6 @@ Verify multiple enrollments explicitly before exposing a cross-course catalog.
 Extract one controller/view at a time from `HubPage.jsx`; avoid a simultaneous
 rewrite of the page, repository, assessment engine and authorization.
 
-Review the four previews before broad visual implementation, as specified by
-Phase 1 of the upgrade plan. Product-code work, deployment and schema changes
-have not been started by producing this specification.
+The user reviewed and approved the visual direction on 2026-11-05. The previews
+remain fictional examples; current implementation and verification status are
+recorded separately in the upgrade plan and delivery reports.

@@ -34,7 +34,7 @@ async function fixture(page,role){
  });
 }
 for(const role of ['ADMIN','TRAINER','RRHH','POSTULANTE'])test(`${role} uses a consistent Spanish Hub and retains the selection after reload`,async({page})=>{
- await fixture(page,role);await page.goto('/hub');await page.getByRole('button',{name:'Sign out',exact:true}).waitFor();
+ await fixture(page,role);await page.goto('/hub#/learn');await page.getByRole('button',{name:'Sign out',exact:true}).waitFor();
  await page.getByRole('button',{name:'Español',exact:true}).click();await expect(page.getByRole('button',{name:'Cerrar sesión',exact:true})).toBeVisible();
  await expect(page.locator('.hub-app-shell')).toHaveAttribute('lang','es');
  if(role==='ADMIN'){
@@ -66,7 +66,7 @@ for(const role of ['ADMIN','TRAINER','RRHH','POSTULANTE'])test(`${role} uses a c
 
 test('Spanish login validation and server errors stay readable when the language changes',async({page})=>{
  await page.route('**/api/hub/**',route=>route.fulfill({status:401,json:{error:{message:'Invalid username or password.'}}}));
- await page.goto('/hub');await page.getByRole('button',{name:'Español',exact:true}).click();
+ await page.goto('/hub#/learn');await page.getByRole('button',{name:'Español',exact:true}).click();
  await page.getByRole('button',{name:'Iniciar sesión',exact:true}).click();await expect(page.getByLabel('Usuario',{exact:true})).toBeFocused();
  expect(await page.getByLabel('Usuario',{exact:true}).evaluate(input=>input.validationMessage)).toBe('Complete este campo.');
  await page.getByLabel('Usuario',{exact:true}).fill('ExistingEmployee');await page.getByLabel('Contraseña',{exact:true}).fill('fixture-only');
@@ -84,7 +84,7 @@ test('assessment language switching preserves answer IDs, entered values and the
   if(operation==='theory'){view.theorySubmitted=true;return respond(route,view);}
   return route.fulfill({status:503,json:{error:{message:'The action could not be recorded. Retry this action.'}}});
  });
- await page.goto('/hub');await page.getByRole('button',{name:'Open assessment',exact:true}).click();await page.getByRole('heading',{name:'Formal assessment',exact:true}).waitFor();
+ await page.goto('/hub#/evaluations');await page.getByRole('button',{name:'Open assessment',exact:true}).click();await page.getByRole('heading',{name:'Formal assessment',exact:true}).waitFor();
  await page.getByRole('button',{name:'Español',exact:true}).click();const radio=page.getByRole('radio',{name:translations[view.questions[0].choices[0].label],exact:true});await radio.check();
  await page.getByLabel('ID de juego',{exact:true}).fill('OS_Locale123');await page.getByLabel('Contraseña del juego',{exact:true}).fill('not-stored-fixture');const opened=starts;
  await page.getByRole('button',{name:'English',exact:true}).click();await expect(page.getByRole('radio',{name:view.questions[0].choices[0].label,exact:true})).toBeChecked();expect(starts).toBe(opened);

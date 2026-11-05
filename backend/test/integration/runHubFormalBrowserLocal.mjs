@@ -30,12 +30,15 @@ async function login(person,{spanish=false}={}){
  await page.goto(`${origin}/hub`);await page.getByLabel('Username',{exact:true}).fill(person.username);await page.getByLabel('Password',{exact:true}).fill(person.password);
  if(spanish)await page.getByRole('button',{name:'Español',exact:true}).click();
  const response=page.waitForResponse(r=>r.url().endsWith('/auth/login'));await page.getByRole('button',{name:spanish?'Iniciar sesión':'Sign in',exact:true}).click();assert.equal((await response).status(),200);
- await page.getByRole('button',{name:spanish||person.role==='rrhh'?'Cerrar sesión':'Sign out',exact:true}).waitFor();return {page,context};
+ await page.getByRole('button',{name:spanish||person.role==='rrhh'?'Cerrar sesión':'Sign out',exact:true}).waitFor();
+ if(person.role==='postulante')await page.goto(`${origin}/hub#/learn`);
+ else await page.goto(`${origin}/hub#hub-management`);
+ return {page,context};
 }
 async function post(context,route,data={}){const cookie=(await context.cookies(`${apiOrigin}/api/hub`)).find(c=>c.name==='trez_hub_csrf');return context.request.post(`${apiOrigin}/api/hub/${route}`,{headers:{origin,'x-trez-csrf':cookie?.value||''},data});}
 async function get(context,route){const result=await context.request.get(`${apiOrigin}/api/hub/${route}`);assert.equal(result.status(),200,route);return result.json();}
 async function completePrerequisite(session){await session.page.getByRole('button',{name:'Mark article complete',exact:true}).click();await session.page.getByText('Formal prerequisite progress was saved.',{exact:true}).waitFor();}
-async function start(session){const pending=session.page.waitForResponse(r=>r.url().endsWith(`/scored-evaluations/${evaluationId}/attempts`)&&r.request().method()==='POST');await session.page.getByRole('button',{name:'Start next attempt',exact:true}).click();const response=await pending;assert.equal(response.status(),201);const data=(await response.json()).attempt;const replay=await post(session.context,`scored-evaluations/${evaluationId}/attempts`,response.request().postDataJSON());assert.equal(replay.status(),201);assert.equal((await replay.json()).attempt.attemptId,data.attemptId);return data;}
+async function start(session){await session.page.getByRole('link',{name:'Evaluations',exact:true}).click();const pending=session.page.waitForResponse(r=>r.url().endsWith(`/scored-evaluations/${evaluationId}/attempts`)&&r.request().method()==='POST');await session.page.getByRole('button',{name:'Start next attempt',exact:true}).click();const response=await pending;assert.equal(response.status(),201);const data=(await response.json()).attempt;const replay=await post(session.context,`scored-evaluations/${evaluationId}/attempts`,response.request().postDataJSON());assert.equal(replay.status(),201);assert.equal((await replay.json()).attempt.attemptId,data.attemptId);return data;}
 async function runAttempt(session,correctTheory){
  const {page,context}=session;const started=await start(session);const attemptId=started.attemptId;
  const opened=page.waitForResponse(r=>r.url().endsWith(`/attempts/${attemptId}/runtime/start`));await page.getByRole('button',{name:'Open assessment',exact:true}).click();const startResponse=await opened;assert.equal(startResponse.status(),200);let view=await startResponse.json();

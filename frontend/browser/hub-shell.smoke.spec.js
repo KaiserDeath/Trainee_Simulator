@@ -123,7 +123,7 @@ test('fails closed when the server has no configured identity provider', async (
     body: JSON.stringify({ message: 'Authentication provider is not configured.' }),
   }));
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
 
   await expect(page.getByRole('heading', { name: 'Training Hub is not configured' })).toBeVisible();
   await expect(page.getByText('Training is temporarily unavailable. Try again or contact your trainer.')).toBeVisible();
@@ -145,7 +145,7 @@ test('submits username and password with CSRF when a session is required', async
     await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: { message: 'The username or password is incorrect.' } }) });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByLabel('Username').fill('Jperez');
   await page.getByLabel('Password').fill('Jperez');
   await page.getByRole('button', { name: 'Sign in' }).click();
@@ -178,9 +178,9 @@ test('renders assigned modules, prerequisites, and completes an article through 
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
 
-  await expect(page.getByRole('heading', { name: 'Operator foundations' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Learning workspace', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Español' })).toHaveCount(1);
   await expect(page.getByRole('heading', { name: 'Understanding the work' })).toBeVisible();
   await page.getByRole('button', { name: /Complete workflow orientation/ }).click();
@@ -216,7 +216,7 @@ test('POSTULANTE sees numerical scored results without detailed failure evidence
   });
   page.on('dialog', (dialog) => dialog.accept());
 
-  await page.goto('/hub');
+  await page.goto('/hub#/evaluations');
   await expect(page.getByRole('heading', { name: 'Checkpoint and readiness results' })).toBeVisible();
   await expect(page.getByText('Unsuccessful · 80%')).toBeVisible();
   await expect(page.getByText('Attempts remaining: 2 of 3')).toBeVisible();
@@ -240,7 +240,7 @@ test('POSTULANTE records theory and a game action without sending a client verdi
     if(command==='theory'){expect(body.answers).toEqual({verify:'exact'});return respond(route,{...view,theorySubmitted:true});}
     received=body;return respond(route,{status:'scored',score:100,result:'successful'});
   });
-  await page.goto('/hub');await page.getByRole('button',{name:'Open assessment'}).click();
+  await page.goto('/hub#/evaluations');await page.getByRole('button',{name:'Open assessment'}).click();
   await expect(page.getByRole('heading',{name:'Formal assessment',exact:true})).toBeVisible();
   await page.screenshot({path:'../outputs/hub-formal-assessment-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});
@@ -266,7 +266,7 @@ test('completed mixed practice can be repeated without resetting learning or con
     if(stage===3)return respond(route,{runId,status:'completed',result:true,learningCompletionRecorded:false});
     return respond(route,{runId,status:'in_progress',completedActions:stage-1,totalActions:2,lastStageCorrect:stage===1?null:true,task:{action:stage===1?'ADD_CREDITS':'BACKEND_ADD_CREDITS',worldId,stage,game:'Orion Stars',identifier:'OS_Assess123',customerUsername:'AssessmentPlayer',credit:stage===1?100:150,availableBalance:20000,amount:50,operation:{id:'operation-fixture',type:'ADD CREDITS',amount:50,status:'PENDING'}}});
   });
-  await page.goto('/hub');await page.getByRole('button',{name:'Start another practice run'}).click();
+  await page.goto('/hub#/learn');await page.getByRole('button',{name:'Start another practice run'}).click();
   await page.getByRole('textbox',{name:'Game ID',exact:true}).fill('OS_Assess123');await page.getByRole('spinbutton',{name:'Credits',exact:true}).fill('50');await page.getByRole('button',{name:'Record action'}).click();
   await page.getByRole('combobox',{name:'Backend decision',exact:true}).selectOption('APPROVED');await page.getByRole('textbox',{name:'Decision reason',exact:true}).fill('Verified the recorded movement');await page.getByRole('button',{name:'Record action'}).click();
   await expect(page.getByText('Practice completed successfully.')).toBeVisible();expect(commands.map(([command])=>command)).toEqual(['start','action','action']);
@@ -296,7 +296,7 @@ test('POSTULANTE reuses a scored-attempt start key after an uncertain response',
     return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ attempt: { attemptInSet: 1 } }) });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/evaluations');
   await page.getByRole('button', { name: 'Start next attempt' }).click();
   await expect(page.getByText('The scored attempt could not be started.')).toBeVisible();
   await page.getByRole('button', { name: 'Start next attempt' }).click();
@@ -334,7 +334,7 @@ test('reuses an activity idempotency key after an uncertain completion response'
     return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   const completeButton = page.getByRole('button', { name: 'Mark article complete' });
   await completeButton.click();
   await expect(page.getByText('Completion result is temporarily unavailable.')).toBeVisible();
@@ -363,7 +363,7 @@ test('Module 3 rule lab fails closed without an approved game policy', async ({ 
     })),
   }));
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await expect(page.getByText('Approved game policy required')).toBeVisible();
   await expect(page.getByText('Trez approval is required.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Complete rule practice' })).toHaveCount(0);
@@ -396,7 +396,7 @@ test('Module 3 native rule lab submits only the server-assigned policy version a
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ activityStatus: 'completed' }) });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByLabel('Constructed identifier').fill('Tplayer1');
   await page.getByRole('button', { name: 'Check identifier' }).click();
   await expect(page.getByText('Identifier matches the assigned policy.')).toBeVisible();
@@ -432,7 +432,7 @@ test('Module 4 records application-controlled Ctrl+F and real paste evidence for
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ activityStatus: 'completed' }) });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.locator('.hub-search-practice').press('Control+F');
   await expect(page.getByLabel('Player search')).toBeVisible();
   await page.evaluate(() => navigator.clipboard.writeText('player-42'));
@@ -493,7 +493,7 @@ test('Module 5 uses an embedded untimed Orion balance surface and submits the ob
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ verified: true }) });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByRole('button', { name: /Refresh Balance/ }).click();
   await expect(page.getByRole('tab', { name: 'Orion Stars' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByRole('tab', { name: /Vblink/ })).toBeDisabled();
@@ -571,7 +571,7 @@ test('Module 6 reserves Add Credits, performs one game action, and approves the 
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ operation: { status: 'APPROVED' }, completion: { activityStatus: 'completed' } }) });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByRole('button', { name: 'Add Credits Available' }).click();
   await expect(page.getByRole('tab', { name: /Vblink/ })).toBeDisabled();
   await page.getByRole('button', { name: 'Open focused Orion Stars Add Credits view' }).click();
@@ -600,7 +600,7 @@ test('Module 7 performs one Orion Stars withdrawal and approves the existing Bac
   await page.route('**/api/hub/activities/orion-withdraw-credits/focused-practice/withdraw-credits/start', (route) => route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(state(false)) }));
   await page.route('**/api/hub/activities/orion-withdraw-credits/focused-practice/withdraw-credits/redeem', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(state(true)) }));
   await page.route('**/api/hub/activities/orion-withdraw-credits/focused-practice/withdraw-credits/approve', async (route) => { approvalRequest = route.request().postDataJSON(); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...state(true, true), completion: { activityStatus: 'completed' } }) }); });
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByRole('button', { name: 'Withdraw Credits Available' }).click();
   await expect(page.getByRole('tab', { name: /Vblink/ })).toBeDisabled();
   await page.getByRole('button', { name: 'Open focused Orion Stars Withdraw Credits view' }).click();
@@ -630,7 +630,7 @@ test('ADMIN is limited to debugging and TRAINER account administration', async (
   }));
   await page.route('**/api/hub/admin/accounts', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ accounts: [] }) }));
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await expect(page.getByRole('heading', { name: 'TRAINER account administration' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'All Participant progress' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Participant management' })).toHaveCount(0);
@@ -674,7 +674,7 @@ test('ADMIN creates a TRAINER with the generated username as the initial passwor
     });
   });
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByLabel('First name').fill('Juan');
   await page.getByLabel('First surname').fill('Pérez');
   await page.getByRole('button', { name: 'Create account' }).click();
@@ -702,7 +702,7 @@ test('trainer can switch the progress view to Spanish', async ({ page }) => {
     body: JSON.stringify({ postulantes: [] }),
   }));
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
 
   await page.getByRole('link',{name:'Learner progress',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'All Participant progress' })).toBeVisible();
@@ -719,7 +719,7 @@ test('trainer searches learner progress without changing course totals', async (
     { id: 'juan', displayName: 'Juan Pérez', username: 'Jperez', enrolments: [{ id: 'course-juan', status: 'in_progress', course: { title: 'Operator Foundations' }, modules: [{ activities: [{ status: 'completed' }, { status: 'assigned' }] }] }] },
     { id: 'ana', displayName: 'Ana Torres', username: 'Atorres', enrolments: [] },
   ] } }));
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByRole('link',{name:'Learner progress',exact:true}).click();
   const progress = page.getByRole('region', { name: 'All Participant progress' });
   await expect(progress.getByText('1 / 2', { exact: true })).toBeVisible();
@@ -756,7 +756,7 @@ test('TRAINER manages all Participants, assigns a course, and saves advanced ass
   });
   await page.route('**/api/hub/assessment/report**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ attempts: [], statistics: { attempts: 3, passRate: 67, latestScore: 100, progressOverTime: [{ date: '2026-08-27', attempts: 3, passed: 2 }] } }) }));
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await expect(page.getByRole('heading', { name: 'Participant management' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
   await page.getByRole('button', { name: 'Assign', exact: true }).click();
@@ -805,7 +805,7 @@ test('trainer reports keep account histories separate and expose chronological a
     { ...attempt('attempt-new', 'account-a', 'Jperez', 2, '2026-10-30T12:00:00Z', 75), legacy_trainee_session_id: 'linked-session', operationResults: [{ id: 'result-1', operation_type: 'ADD CREDITS', game: 'Orion Stars', is_correct: false, status: 'APPROVED', failure_points: ['Incorrect amount'] }] },
     { ...attempt('attempt-other', 'account-b', 'Jperez2', 1, '2026-10-30T13:00:00Z', null), status: 'in_progress', completed_at: null },
   ], statistics: { attempts: 3, accuracyByGame: { 'Orion Stars': { correct: 0, total: 1, accuracy: 0 } } } } }));
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await page.getByRole('button', { name: 'Reports Results & performance' }).click();
   const histories = page.locator('.hub-person-history');
   await expect(histories).toHaveCount(2);
@@ -851,7 +851,7 @@ test('ADMIN does not request TRAINER Participant visibility', async ({ page }) =
   page.on('request', (request) => { if (request.url().includes('/api/hub/trainer/postulantes')) trainerVisibilityRequests += 1; });
   await page.route('**/api/hub/admin/accounts', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ accounts: [] }) }));
 
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await expect(page.getByRole('heading', { name: 'TRAINER account administration' })).toBeVisible();
   expect(trainerVisibilityRequests).toBe(0);
 });

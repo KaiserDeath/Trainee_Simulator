@@ -19,6 +19,7 @@ Architecture decision records (ADRs) capture the durable engineering choices for
 | [0005](0005-account-id-lab-native-integration.md) | Accepted | Native Hub activity backed by a shared pure rule package |
 | [0006](0006-training-media-storage-and-delivery.md) | Proposed | Provider-neutral media metadata and controlled delivery; provider pending |
 | [0007](0007-simulator-ledgers-balances-and-seed-queue.md) | Accepted | Separate histories and balances with atomic reservations and seed-safe queue slots |
+| [0008](0008-hub-navigation-and-module-contract.md) | Accepted | Approved learner views, stable module links and explicit built-in activity handlers |
 
 ## Guardrail
 

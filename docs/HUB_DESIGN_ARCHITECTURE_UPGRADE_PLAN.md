@@ -6,10 +6,12 @@ Status: Planned; this document does not start product implementation.
 
 Scope: The shared Hub that holds current and future training modules.
 
-Execution update: Phase 1 inventory, specification and four bilingual responsive
-previews are complete. See [design specification](HUB_DESIGN_SPECIFICATION.md)
-and `outputs/hub-design-phase1-2026-11-04/index.html`. Preview verification passed;
-visual review remains the Phase 2 entry gate. No production UI changes yet.
+Execution update (2026-11-05): The user approved the Phase 1 design direction.
+Phase 2 learner views, multi-course navigation and the Capacitador snapshot are
+implemented, together with the first Phase 3 activity contract and deferred
+workspace panels. See [ADR 0008](adr/0008-hub-navigation-and-module-contract.md)
+and `outputs/hub-navigation-2026-11-05/REPORT.md` for verification and delivery
+status. Phases 4–6 and the separate release acceptance gates remain open.
 
 ## Outcome
 

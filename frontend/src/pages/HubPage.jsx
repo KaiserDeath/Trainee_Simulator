@@ -1,3 +1,4 @@
+import HubWorkspacePanel from '../components/hub/HubWorkspacePanel';
 import {hubText} from '../i18n/hubLocale';
 import {hubServerMessage} from '../i18n/hubLocale';
 import {hubMessage} from '../i18n/hubLocale';
@@ -26,10 +27,11 @@ import HubAdminAccounts from '../components/hub/HubAdminAccounts';
 import HubAdministratorConfiguration from '../components/hub/HubAdministratorConfiguration';
 import HubAssessmentManagement from '../components/hub/HubAssessmentManagement';
 import HubAuditorOverview from '../components/hub/HubAuditorOverview';
-import HubLearningPath, { ProgressBar } from '../components/hub/HubLearningPath';
+import HubLearnerWorkspace from '../components/hub/HubLearnerWorkspace';
+import {normaliseLearningPaths} from '../components/hub/hubLearningModel';
 import HubPasswordPanel from '../components/hub/HubPasswordPanel';
-import HubScoredEvaluationOverview from '../components/hub/HubScoredEvaluationOverview';
 import HubTrainerOverview from '../components/hub/HubTrainerOverview';
+import HubStaffHome from '../components/hub/HubStaffHome';
 import HubContentStudio from '../components/hub/HubContentStudio';
 import HubCoachingWorkspace from '../components/hub/HubCoachingWorkspace';
 import HubPolicyStudio from '../components/hub/HubPolicyStudio';
@@ -96,60 +98,6 @@ const normaliseContext = (data) => ({
   message: data?.message,
 });
 
-const completeStatus = (status) => status === 'completed';
-
-const normalisePath = (data) => {
-  const directPath = data?.learningPath || data?.path;
-  if (directPath) return directPath;
-  if (data?.course || data?.modules) return data;
-
-  const enrolment = data?.enrolments?.find((item) => item.status !== 'withdrawn') || data?.enrolments?.[0];
-  if (!enrolment) return { course: null, modules: [], progress: {} };
-  const rawModules = enrolment.modules || [];
-  const moduleById = new Map(rawModules.map((module) => [module.id, module]));
-  const modules = rawModules.map((module) => {
-    const activities = (module.activities || []).map((activity) => ({
-      ...activity,
-      completed: completeStatus(activity.status),
-      readOnly:completeStatus(module.status)&&(module.activities||[]).some(item=>item.content?.executionKind==='official_evaluation'),
-    }));
-    const completedActivities = activities.filter((activity) => activity.completed).length;
-    return {
-      ...module,
-      order: module.order ?? module.position,
-      locked: module.locked ?? module.available === false,
-      completed: completeStatus(module.status),
-      prerequisites: (module.prerequisiteModuleIds || []).map((id) => {
-        const prerequisite = moduleById.get(id);
-        return {
-          id,
-          title: prerequisite?.title || 'Assigned prerequisite',
-          completed: completeStatus(prerequisite?.status),
-        };
-      }),
-      progress: {
-        completedActivities,
-        totalActivities: activities.length,
-        percentage: activities.length ? Math.round((completedActivities / activities.length) * 100) : 0,
-      },
-      activities,
-    };
-  });
-  const allActivities = modules.flatMap((module) => module.activities);
-  const completedActivities = allActivities.filter((activity) => activity.completed).length;
-
-  return {
-    enrolment,
-    course: enrolment.course,
-    modules,
-    progress: {
-      completedActivities,
-      totalActivities: allActivities.length,
-      percentage: allActivities.length ? Math.round((completedActivities / allActivities.length) * 100) : 0,
-    },
-  };
-};
-
 const identityRoles = (identity) => {
   const roles = identity?.roles || (identity?.role ? [identity.role] : []);
   return roles.map((role) => String(role).toUpperCase());
@@ -164,11 +112,12 @@ function HubScreen() {
   const [context, setContext] = useState(null);
   const [staffSection,setStaffSection]=useState(()=>window.location.hash.replace('#hub-',''));
   useEffect(()=>{const change=()=>{if(window.location.hash!=='#hub-main-content')setStaffSection(window.location.hash.replace('#hub-',''));};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change);},[]);
-  const [path, setPath] = useState(null);
+  const [paths, setPaths] = useState([]);
   const [assessmentOpen,setAssessmentOpen]=useState(false);
-  const [selectedModuleId, setSelectedModuleId] = useState(null);
   const [busyActivityId, setBusyActivityId] = useState(null);
   const [trainerLearners, setTrainerLearners] = useState(null);
+  const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState(null);
+  const [snapshotBusy, setSnapshotBusy] = useState(false);
   const [trainerUnavailable, setTrainerUnavailable] = useState('');
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState('');
@@ -224,9 +173,7 @@ function HubScreen() {
 
   const loadPath = useCallback(async () => {
     const response = await getHubLearningPath();
-    const nextPath = normalisePath(response.data);
-    setPath(nextPath);
-    setSelectedModuleId((current) => current || nextPath?.modules?.[0]?.id || null);
+    setPaths(normaliseLearningPaths(response.data));
   }, []);
 
   const loadAuditorOverview = useCallback(async (cursors = {}) => {
@@ -260,7 +207,7 @@ function HubScreen() {
         } else if (roles.includes(TRAINER_ROLE) || roles.includes(RRHH_ROLE)) {
           try {
             const learnersResponse = await getHubTrainerLearners();
-            if (!cancelled) setTrainerLearners(learnersResponse.data.postulantes || learnersResponse.data || []);
+            if (!cancelled) {setTrainerLearners(learnersResponse.data.postulantes || learnersResponse.data || []); setSnapshotUpdatedAt(new Date().toISOString());}
           } catch (trainerError) {
             if (trainerError?.response?.status === 404 || trainerError?.response?.status === 501) {
               if (!cancelled) {
@@ -495,12 +442,14 @@ function HubScreen() {
       await loadPath();
       pendingCompletionKeys.current.delete(activity.id);
       setNotice(hubMessage("{0} progress was saved.", [hubText(activity.title)]));
+      return true;
     } catch (completionError) {
       setNotice(
         hubServerMessage(completionError?.response?.data?.error?.message ||
         completionError?.response?.data?.message ||
         hubMessage("Progress could not be saved. Retry will safely reuse the same request."), hubMessage("Progress could not be saved. Retry will safely reuse the same request."))
       );
+      return false;
     } finally {
       setBusyActivityId(null);
     }
@@ -587,9 +536,13 @@ function HubScreen() {
   const staffLanguage = locale;
   const staffCopy = STAFF_VIEW_COPY.en;
   const displayedRoles = roles.map(role=>t(role));
-  const course = path?.course || {};
-  const availableSections=isAdministrator?['people','policies','curriculum','media','profile']:isTrainer?['curriculum','media','coaching','groups','progress','management','profile']:['coaching','groups','management','auditor-title','profile'];
-  const activeSection=availableSections.includes(staffSection)?staffSection:(isAdministrator?'people':'management');
+  const availableSections=isAdministrator?['people','policies','curriculum','media','profile']:isTrainer?['home','curriculum','media','coaching','groups','progress','management','profile']:['coaching','groups','management','auditor-title','profile'];
+  const activeSection=availableSections.includes(staffSection)?staffSection:(isAdministrator?'people':isTrainer&&['','#/staff/home'].includes(staffSection)?'home':'management');
+  async function refreshSnapshot(){
+    setSnapshotBusy(true);setTrainerUnavailable('');
+    try{const response=await getHubTrainerLearners();setTrainerLearners(response.data.postulantes||response.data||[]);setSnapshotUpdatedAt(new Date().toISOString());}
+    catch{setTrainerUnavailable({unavailable:true});}finally{setSnapshotBusy(false);}
+  }
   function chooseSection(event,section){
     event.preventDefault();setStaffSection(section);window.history.pushState(null,'',`#hub-${section}`);
     window.scrollTo(0,0);
@@ -618,6 +571,7 @@ function HubScreen() {
       {(isAdministrator||canManagePostulantes)&&<aside className="hub-sidebar" aria-label={t("Workspace navigation")}>
         <p className="hub-sidebar-label">{t("WORKSPACE")}</p>
         <nav aria-label={t("Hub tools")}>
+          {isTrainer&&<a href="#hub-home" aria-current={activeSection==='home'?'page':undefined} onClick={event=>chooseSection(event,'home')}>{t('Workspace overview')}</a>}
           {isAdministrator&&<a href="#hub-people" aria-current={activeSection==='people'?'page':undefined} onClick={event=>chooseSection(event,'people')}>{t("People & access")}</a>}
           {isAdministrator&&<a href="#hub-policies" aria-current={activeSection==='policies'?'page':undefined} onClick={event=>chooseSection(event,'policies')}>{t("Account policies")}</a>}
           {(isAdministrator||isTrainer)&&<a href="#hub-curriculum" aria-current={activeSection==='curriculum'?'page':undefined} onClick={event=>chooseSection(event,'curriculum')}>{t("Training content")}</a>}
@@ -633,28 +587,18 @@ function HubScreen() {
       </aside>}
       <main className="hub-main" id="hub-main-content" tabIndex={-1}>
         {(isAdministrator||canManagePostulantes)&&<div className="hub-workspace-intro"><p className="hub-eyebrow">{t("OPERATOR TRAINING")}</p><h1>{isAdministrator?(t("Hub administration")):(t("Your training workspace"))}</h1><p>{isAdministrator?(t("Manage staff access, account policies and training content.")):(t("Organize learners, review evidence and support their progress."))}</p></div>}
-        {!assessmentOpen&&!isTrainer && !isAuditor && !isAdministrator && <section className="hub-course-hero" aria-labelledby="hub-course-title">
-          <div>
-            <p className="hub-eyebrow">{t("Assigned course")}</p>
-            <h1 id="hub-course-title">{t(course.title || t("Operator foundations"))}</h1>
-            {course.description && <p>{t(course.description)}</p>}
-          </div>
-          <ProgressBar progress={path?.progress} label={t("Course progress")} />
-          {(course.provisional || course.scored === false) && (
-            <p className="hub-course-classification">{t("Provisional · Non-scored foundation")}</p>
-          )}
-        </section>}
+
 
         {notice && <p className="hub-page-notice" role="status">{t(notice)}</p>}
-        {!assessmentOpen&&roles.includes(POSTULANTE_ROLE) && <p><a className="hub-secondary-link" href="/simulator">{t("Open free operator simulator")}</a></p>}
+        {isTrainer&&<HubWorkspacePanel id="hub-home" active={activeSection==='home'} className="hub-section-anchor"><HubStaffHome learners={trainerLearners} updatedAt={snapshotUpdatedAt} busy={snapshotBusy} unavailable={Boolean(trainerUnavailable)} onRefresh={refreshSnapshot}/></HubWorkspacePanel>}
         {isTrainer && <p><a className="hub-secondary-link" href="/trainer">{t("Open simulator session reports")}</a></p>}
 
-        {isAdministrator && <div id="hub-people" hidden={activeSection!=='people'} className="hub-section-anchor"><HubAdministratorConfiguration onSaved={(displayName)=>setContext(current=>({...current,identity:{...current.identity,displayName}}))}/><HubAdminAccounts /></div>}
-        {isAdministrator && <div id="hub-policies" hidden={activeSection!=='policies'} className="hub-section-anchor"><HubPolicyStudio locale={staffLanguage} /></div>}
-        {(isAdministrator || isTrainer) && <div id="hub-curriculum" hidden={activeSection!=='curriculum'} className="hub-section-anchor"><HubContentStudio canEdit={isAdministrator} locale={staffLanguage} /></div>}
-        {(isAdministrator||isTrainer)&&<div id="hub-media" hidden={activeSection!=='media'} className="hub-section-anchor"><HubMediaLibrary canEdit={isAdministrator}/></div>}
-        {canManagePostulantes && <div id="hub-coaching" hidden={activeSection!=='coaching'} className="hub-section-anchor"><HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} /></div>}
-        {!assessmentOpen&&(canManagePostulantes||roles.includes(POSTULANTE_ROLE))&&<div id="hub-groups" hidden={canManagePostulantes&&activeSection!=='groups'} className="hub-section-anchor"><HubCohorts canManage={canManagePostulantes} locale={staffLanguage}/></div>}
+        {isAdministrator && <HubWorkspacePanel id="hub-people" active={activeSection==='people'} className="hub-section-anchor"><HubAdministratorConfiguration onSaved={(displayName)=>setContext(current=>({...current,identity:{...current.identity,displayName}}))}/><HubAdminAccounts /></HubWorkspacePanel>}
+        {isAdministrator && <HubWorkspacePanel id="hub-policies" active={activeSection==='policies'} className="hub-section-anchor"><HubPolicyStudio locale={staffLanguage} /></HubWorkspacePanel>}
+        {(isAdministrator || isTrainer) && <HubWorkspacePanel id="hub-curriculum" active={activeSection==='curriculum'} className="hub-section-anchor"><HubContentStudio canEdit={isAdministrator} locale={staffLanguage} /></HubWorkspacePanel>}
+        {(isAdministrator||isTrainer)&&<HubWorkspacePanel id="hub-media" active={activeSection==='media'} className="hub-section-anchor"><HubMediaLibrary canEdit={isAdministrator}/></HubWorkspacePanel>}
+        {canManagePostulantes && <HubWorkspacePanel id="hub-coaching" active={activeSection==='coaching'} className="hub-section-anchor"><HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} /></HubWorkspacePanel>}
+        {canManagePostulantes&&<HubWorkspacePanel id="hub-groups" active={activeSection==='groups'} className="hub-section-anchor"><HubCohorts canManage={canManagePostulantes} locale={staffLanguage}/></HubWorkspacePanel>}
 
         {isTrainer && (
           <section id="hub-progress" hidden={activeSection!=='progress'} className="hub-trainer-section hub-section-anchor" aria-labelledby="hub-trainer-title">
@@ -670,7 +614,7 @@ function HubScreen() {
           </section>
         )}
 
-        {canManagePostulantes && <div id="hub-management" hidden={activeSection!=='management'} className="hub-section-anchor"><HubAssessmentManagement canEditEvaluations={isTrainer} /></div>}
+        {canManagePostulantes && <HubWorkspacePanel id="hub-management" active={activeSection==='management'} className="hub-section-anchor"><HubAssessmentManagement canEditEvaluations={isTrainer} /></HubWorkspacePanel>}
 
         {isAuditor && (
           <section hidden={activeSection!=='auditor-title'} className="hub-trainer-section" aria-labelledby="hub-auditor-title">
@@ -705,20 +649,9 @@ function HubScreen() {
           </section>
         )}
 
-        {!isTrainer && !isAuditor && !isAdministrator && (
-          <>
-            {!assessmentOpen&&<HubLearningPath
-              path={path}
-              selectedModuleId={selectedModuleId}
-              onSelectModule={setSelectedModuleId}
-              busyActivityId={busyActivityId}
-              onCompleteActivity={handleCompleteActivity}
-            />}
-            <HubScoredEvaluationOverview onActiveChange={setAssessmentOpen}/>
-          </>
-        )}
+        {!isTrainer && !isAuditor && !isAdministrator && <HubLearnerWorkspace paths={paths} busyActivityId={busyActivityId} onCompleteActivity={handleCompleteActivity} assessmentOpen={assessmentOpen} onActiveChange={setAssessmentOpen}/ >}
 
-        {(isTrainer || isAuditor || isAdministrator) && <div id="hub-profile" hidden={activeSection!=='profile'} className="hub-section-anchor"><HubPasswordPanel /></div>}
+        {(isTrainer || isAuditor || isAdministrator) && <HubWorkspacePanel id="hub-profile" active={activeSection==='profile'} className="hub-section-anchor"><HubPasswordPanel /></HubWorkspacePanel>}
       </main>
       </div>
       <footer className="hub-footer">

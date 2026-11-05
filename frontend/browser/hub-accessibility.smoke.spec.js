@@ -26,7 +26,7 @@ async function scan(page){
   expect(result.violations.map(({id,nodes})=>({id,targets:nodes.map(node=>node.target)}))).toEqual([]);
 }
 for(const role of ['ADMIN','TRAINER','RRHH','POSTULANTE'])test(`${role} Hub accessibility and 400-percent-equivalent reflow`,async({page})=>{
-  await fixture(page,role);await page.goto('/hub');await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
+  await fixture(page,role);await page.goto('/hub#/learn');await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
   await scan(page);
   await page.setViewportSize({width:320,height:900});await scan(page);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -38,7 +38,7 @@ for(const role of ['ADMIN','TRAINER','RRHH','POSTULANTE'])test(`${role} Hub acce
 });
 
 test('keyboard skip link reaches the workspace and hidden tools do not receive focus',async({page})=>{
-  await fixture(page,'TRAINER');await page.goto('/hub');
+  await fixture(page,'TRAINER');await page.goto('/hub#/learn');
   await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
   await page.keyboard.press('Tab');await expect(page.getByRole('link',{name:'Skip to workspace',exact:true})).toBeFocused();await page.keyboard.press('Enter');
   await expect(page.locator('#hub-main-content')).toBeFocused();
@@ -47,7 +47,7 @@ test('keyboard skip link reaches the workspace and hidden tools do not receive f
 });
 
 test('Hub remains usable with doubled text and reduced motion',async({page})=>{
-  await page.emulateMedia({reducedMotion:'reduce'});await fixture(page,'ADMIN');await page.goto('/hub');
+  await page.emulateMedia({reducedMotion:'reduce'});await fixture(page,'ADMIN');await page.goto('/hub#/learn');
   await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
   await page.evaluate(()=>{const sizes=[...document.querySelectorAll('.hub-light-theme, .hub-light-theme *')].map(element=>[element,parseFloat(getComputedStyle(element).fontSize)]);for(const [element,size] of sizes)element.style.fontSize=`${size*2}px`;});
   await page.setViewportSize({width:1280,height:900});
@@ -71,7 +71,7 @@ test('assessment keyboard transitions and readable retry errors retain entered d
     if(failures++===0)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'The action was not saved. Retry the same action.'}})});
     return answer(route,{...view,completedActions:1,task:{...view.task,action:'VERIFY_BALANCE'}});
   });
-  await page.goto('/hub');await page.getByRole('button',{name:'Open assessment',exact:true}).focus();await page.keyboard.press('Enter');
+  await page.goto('/hub#/evaluations');await page.getByRole('button',{name:'Open assessment',exact:true}).focus();await page.keyboard.press('Enter');
   await expect(page.getByRole('heading',{name:'Formal assessment',exact:true})).toBeFocused();
   await page.keyboard.press('Tab');await expect(page.getByRole('radio',{name:'Exact assigned player',exact:true})).toBeFocused();await page.keyboard.press('Space');
   await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'Record theory responses',exact:true})).toBeFocused();await page.keyboard.press('Enter');
@@ -85,7 +85,7 @@ test('assessment keyboard transitions and readable retry errors retain entered d
 test('deadline warnings are announced at milestones and expiry cannot submit extra actions',async({page})=>{
   const start=new Date('2026-11-04T12:00:00Z');await page.clock.install({time:start});const view=await assessment(page,start);let writes=0;
   await page.route(`**/api/hub/scored-evaluations/attempts/${attemptId}/runtime/*`,route=>{if(!route.request().url().endsWith('/start'))writes++;return answer(route,view);});
-  await page.goto('/hub');await page.getByRole('button',{name:'Open assessment',exact:true}).click();await expect(page.getByRole('timer')).toHaveAttribute('aria-live','off');
+  await page.goto('/hub#/evaluations');await page.getByRole('button',{name:'Open assessment',exact:true}).click();await expect(page.getByRole('timer')).toHaveAttribute('aria-live','off');
   await page.clock.fastForward('25:01');await expect(page.getByText('Five minutes or less remain in this assessment.',{exact:true})).toBeVisible();
   await page.clock.fastForward('04:00');await expect(page.getByText('One minute or less remains in this assessment.',{exact:true})).toBeVisible();
   await page.clock.fastForward('01:00');await expect(page.getByText('Time has expired. Return to checkpoint results.',{exact:true})).toBeVisible();

@@ -1,4 +1,5 @@
 import {useHubLocale} from '../../i18n/HubLocaleContext';
+import {hubActivityHandler} from './hubModuleContract';
 import { useMemo, useState } from 'react';
 
 import HubAccountIdLabActivity from './HubAccountIdLabActivity';
@@ -151,6 +152,7 @@ function PolicyBlockedContent({ activity }) {
 export default function HubActivityRenderer({ activity, busy, onComplete }) {
   const {t} = useHubLocale();
   const type = activity.type?.toLowerCase();
+  const handler = hubActivityHandler(activity);
   const disabled = busy || activity.completed || activity.readOnly;
 
   return (
@@ -173,9 +175,9 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
 
       {activity.summary && <p className="hub-activity-summary">{t(activity.summary)}</p>}
       {(activity.content?.mediaAssetIds||[]).map((id,index)=><HubMediaItem key={id} assetId={id} label={t("Open training asset {0}", [index+1])}/>)}
-      {activity.content?.executionKind==='official_evaluation'&&<p className="hub-inline-notice">{t("Open the corresponding assessment in Checkpoint and readiness results. This module completes after an official successful result is submitted.")}</p>}
+      {handler==='official'&&<p className="hub-inline-notice">{t("Open the corresponding assessment in Checkpoint and readiness results. This module completes after an official successful result is submitted.")}</p>}
 
-      {type === 'article' && (
+      {handler === 'article' && (
         <>
           <ArticleContent content={activity.content} />
           {!activity.completed && (
@@ -183,32 +185,32 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
           )}
         </>
       )}
-      {type === 'checklist' && (
+      {handler === 'checklist' && (
         <ChecklistContent activity={activity} disabled={disabled} onComplete={onComplete} />
       )}
-      {type === 'acknowledgement' && (
+      {handler === 'acknowledgement' && (
         <AcknowledgementContent activity={activity} disabled={disabled} onComplete={onComplete} />
       )}
-      {['account_id_lab','account_creation'].includes(activity.content?.executionKind) && <HubAccountPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
-      {activity.content?.executionKind === 'reset_current_account' && <HubPasswordResetActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
-      {activity.content?.executionKind === 'exception_decision' && <HubExceptionPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
-      {activity.content?.executionKind==='mixed_practice'&&<HubMixedPracticeActivity activity={activity} busy={busy} onComplete={onComplete}/>}
-      {type === 'interactive_rule_lab' && activity.content?.executionKind !== 'account_id_lab' && (
+      {handler === 'account' && <HubAccountPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
+      {handler === 'password' && <HubPasswordResetActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
+      {handler === 'exception' && <HubExceptionPracticeActivity activity={activity} disabled={disabled} onComplete={onComplete} />}
+      {handler === 'mixed'&&<HubMixedPracticeActivity activity={activity} busy={busy} onComplete={onComplete}/>}
+      {handler === 'ruleLab' && (
         <HubAccountIdLabActivity activity={activity} disabled={disabled} onComplete={onComplete} />
       )}
-      {type === 'focused_practice' && (
-        activity.content?.surface === 'balance'
+      {['balance','addCredits','withdrawCredits','search'].includes(handler) && (
+        handler === 'balance'
           ? <HubFocusedBalanceActivity activity={activity} disabled={disabled} onComplete={onComplete} />
-          : activity.content?.surface === 'add_credits'
+          : handler === 'addCredits'
             ? <HubAddCreditsActivity activity={activity} disabled={disabled} onComplete={onComplete} />
-            : activity.content?.surface === 'withdraw_credits'
+            : handler === 'withdrawCredits'
               ? <HubWithdrawCreditsActivity activity={activity} disabled={disabled} onComplete={onComplete} />
             : <HubExactPlayerSearchActivity activity={activity} disabled={disabled} onComplete={onComplete} />
       )}
-      {type === 'quick_simulation' && activity.content?.policyStatus === 'required' && (
+      {handler === 'policyBlocked' && (
         <PolicyBlockedContent activity={activity} />
       )}
-      {activity.content?.executionKind!=='official_evaluation'&&!['article', 'checklist', 'acknowledgement', 'interactive_rule_lab', 'focused_practice', 'quick_simulation'].includes(type) && (
+      {handler === 'unsupported' && (
         <p className="hub-inline-notice" role="status">{t("This assigned activity type is not available in the current Hub foundation.")}</p>
       )}
       {busy && <p className="hub-saving" role="status">{t("Saving progress…")}</p>}

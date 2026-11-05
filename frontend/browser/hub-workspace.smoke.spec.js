@@ -40,7 +40,7 @@ for(const role of ['ADMIN','TRAINER'])test(`${role} workspace uses readable ligh
   await staff(page,role);
   await page.route('**/api/hub/admin/accounts',route=>json(route,{accounts:[{id:'staff',username:'Admin',displayName:'Admin account',roles:['ADMIN'],status:'active'}]}));
   await page.route('**/api/hub/admin/profile',route=>json(route,{firstName:'Admin',surname:'Account',username:'Admin'}));
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await expect(page.getByRole('navigation',{name:'Hub tools',exact:true})).toBeVisible();
   const target=role==='ADMIN'?'People & access':'People, evaluations & reports';
   await page.getByRole('link',{name:target,exact:true}).click();
@@ -66,7 +66,7 @@ for(const role of ['ADMIN','TRAINER'])test(`${role} workspace uses readable ligh
 test('learner lessons use readable surfaces on desktop and mobile',async({page})=>{
   await staff(page,'POSTULANTE');
   await page.route('**/api/hub/learning-path',route=>json(route,{enrolments:[{id:'enrolment',status:'assigned',course:{title:'Operator foundations',description:'Learn, practise and prepare for your evaluation.'},modules:[{id:'module',title:'Understanding the work',position:1,status:'in_progress',available:true,activities:[{id:activityId,type:'article',title:'Verification comes first',status:'not_started',content:{paragraphs:['Confirm the exact customer and account before changing a balance.']}}]}]}]}));
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   await expect(page.getByRole('heading',{name:'Verification comes first'})).toBeVisible();
   await expectReadableWorkspace(page);
   await page.screenshot({path:'../outputs/hub-light-learner-desktop.png',fullPage:true});
@@ -80,7 +80,7 @@ test('mobile administrator can reach staff password controls without horizontal 
   await staff(page,'ADMIN');let reset=false;
   await page.route('**/api/hub/admin/accounts',route=>json(route,{accounts:[{id:learnerId,username:'Ttrainer',displayName:'Training supervisor',roles:['TRAINER'],status:'active'}]}));
   await page.route(`**/api/hub/admin/identities/${learnerId}/password-reset`,route=>{reset=true;return json(route,{});});
-  await page.setViewportSize({width:390,height:844});await page.goto('/hub');
+  await page.setViewportSize({width:390,height:844});await page.goto('/hub#/learn');
   const directory=page.locator('#hub-people .hub-mobile-directory');
   await expect(directory.getByText('Training supervisor',{exact:true})).toBeVisible();
   expect(await directory.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
@@ -99,7 +99,7 @@ test('mobile trainer assigns a course and retries an inline name edit without lo
     patched=route.request().postDataJSON();if(fail){fail=false;return json(route,{error:{message:'Try saving again.'}},503);}
     account={...account,...patched,displayName:`${patched.firstName} ${patched.surname}`};return json(route,{identity:account});
   });
-  await page.setViewportSize({width:390,height:844});await page.goto('/hub');
+  await page.setViewportSize({width:390,height:844});await page.goto('/hub#/learn');
   const directory=page.locator('.hub-assessment-admin .hub-mobile-directory');
   await expect(directory.getByText('Fixture Learner',{exact:true})).toBeVisible();
   expect(await directory.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
@@ -130,7 +130,7 @@ test('TRAINER creates a cohort and safely revises its date after reload',async({
       return json(route,{cohort:cohorts[0]});
     }return json(route,{cohorts,nextCursor:null});
   });
-  await page.goto('/hub');
+  await page.goto('/hub#/learn');
   expect(submissions).toHaveLength(0);
   await page.getByRole('link',{name:'Cohorts & dates',exact:true}).click();await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
   await page.getByLabel('Cohort name', {exact:true}).fill('November operators');
@@ -154,7 +154,7 @@ test('learner sees own cohort date on mobile without membership or assignment co
   await staff(page,'POSTULANTE');
   await page.route('**/api/hub/learning-path',route=>json(route,{course:{title:'Operator foundations'},modules:[]}));
   await page.route('**/api/hub/cohorts',route=>json(route,{cohorts:[{id:'cohort',title:'November operators',courseTitle:'Operator foundations',dueOn:'2026-11-30',members:null}],nextCursor:null}));
-  await page.setViewportSize({width:390,height:844});await page.goto('/hub');
+  await page.setViewportSize({width:390,height:844});await page.goto('/hub#/groups');
   await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
   await expect(page.getByText('November operators',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Save cohort',exact:true})).toHaveCount(0);
@@ -168,7 +168,7 @@ test('cohort dates follow the selected Hub language across browser locale and ti
   try{
     const page=await context.newPage();await staff(page,'TRAINER');
     await page.route('**/api/hub/cohorts',route=>json(route,{cohorts:[{id:'date-fixture',title:'December group',courseTitle:'Foundations',dueOn:'2026-12-15',revision:1,members:[]}],nextCursor:null}));
-    await page.goto('/hub');await page.getByRole('link',{name:'Cohorts & dates',exact:true}).click();await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
+    await page.goto('/hub#/learn');await page.getByRole('link',{name:'Cohorts & dates',exact:true}).click();await page.getByRole('button',{name:'Open cohorts',exact:true}).click();
     await expect(page.getByText(/December 15, 2026/)).toBeVisible();
     await page.getByRole('button',{name:'Español',exact:true}).click();
     await expect(page.getByText(/15 de diciembre de 2026/)).toBeVisible();
@@ -183,7 +183,7 @@ test('ADMIN edits an instruction draft and submits it through the publication wo
     return json(route,{versions});
   });
   await page.route('**/api/hub/admin/content-versions/version-fixture/submit',route=>{versions[0].status='pending_review';return json(route,{contentVersion:versions[0]});});
-  await page.goto('/hub');await page.getByRole('link',{name:'Training content',exact:true}).click();await page.getByRole('button',{name:'Open content catalog'}).click();
+  await page.goto('/hub#/learn');await page.getByRole('link',{name:'Training content',exact:true}).click();await page.getByRole('button',{name:'Open content catalog'}).click();
   await page.getByRole('combobox',{name:'Activity',exact:true}).selectOption(activityId);
   await page.getByLabel('Lesson title').fill('Revised lesson');await page.getByLabel('Lesson text').fill('First paragraph\n\nSecond paragraph');
   await page.getByLabel('Reason for change').fill('Clarify operational verification');
@@ -202,7 +202,7 @@ test('TRAINER saves a private note, reloads it, and starts a versioned revision'
       submitted=route.request().postDataJSON();notes=[{id:'note-fixture',attempt_id:null,retention_until:'2028-11-02T12:00:00Z',revisions:[{id:'revision-fixture',revision:1,status:submitted.status,body:submitted.body,created_at:'2026-11-02T12:00:00Z'}]}];return json(route,{note:notes[0]});
     }return json(route,{notes,nextCursor:null});
   });
-  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
+  await page.goto('/hub#/learn');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
   await page.getByRole('textbox',{name:'Coaching note',exact:true}).fill('Review the game history before acting.');await page.getByRole('button',{name:'Save private note'}).click();
   await expect(page.getByText('Private note saved.')).toBeVisible();expect(submitted.expectedRevision).toBe(0);expect(submitted.idempotencyKey).toBeTruthy();
   await page.reload();await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
@@ -225,7 +225,7 @@ for(const own of [true,false])test(`coaching retention ${own?'prevents self-appr
     }
     return json(route,{viewerId:own?author:reviewer,notes:disposed?[]:[{noteId,latestRevision:1,retainUntil:'2025-01-01T12:00:00Z',eligible:true,blockers:[]}],holds:[],requests:disposed?[]:[{id:requestId,note_id:noteId,requested_by:author,reason:'Closed note beyond retention'}],receipts:disposed?[{id:requestId,note_id:noteId,status:'disposed',disposed_revisions:1}]:[],nextCursor:null});
   });
-  await page.goto('/hub');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
+  await page.goto('/hub#/learn');await page.getByRole('link',{name:'Coaching',exact:true}).click();await page.getByRole('button',{name:'Open coaching workspace'}).click();await page.getByRole('combobox',{name:'Participant',exact:true}).selectOption(learnerId);
   await page.getByRole('button',{name:'Open retention preview',exact:true}).click();
   if(own){await expect(page.getByRole('button',{name:'Review disposal',exact:true})).toBeDisabled();await expect(page.getByText('Another TRAINER must approve this request.',{exact:true})).toBeVisible();return;}
   await page.getByRole('button',{name:'Review disposal',exact:true}).click();
@@ -244,7 +244,7 @@ test('TRAINER publishes a replacement evaluation policy with a reason and revisi
   const policy={id:'10000000-0000-4000-8000-000000000401',title:'Orion checkpoint',position:1,revision:3,publication_status:'published',duration_minutes:30,theory_weight:20,practical_weight:80,history_review_days:7,history_record_limit:null,selected_game_family_keys:['orion-stars'],theory_item_codes:['verification-first'],required_action_codes:['CREATE_ACCOUNT'],practical_item_weights:{CREATE_ACCOUNT:80}};
   await page.route('**/api/hub/assessment/evaluations',route=>json(route,{evaluations:[policy],gameFamilies:[{stable_key:'orion-stars',display_name:'Orion Stars',adapter_status:'verified'}],attemptSets:[],attempts:[],itemResults:[],reopenEvents:[]}));
   await page.route('**/api/hub/assessment/evaluations/*/publish-version',route=>{submitted=route.request().postDataJSON();return json(route,{evaluation:{...policy,revision:4,duration_minutes:45}},201);});
-  await page.goto('/hub');await page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
+  await page.goto('/hub#/learn');await page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
   await page.getByRole('button',{name:'Create policy version'}).click();
   await page.getByRole('spinbutton',{name:'Duration in minutes',exact:true}).fill('45');
   await page.getByRole('textbox',{name:'Publication reason',exact:true}).fill('Allow additional time for future attempts');
@@ -260,7 +260,7 @@ test('TRAINER edits a question by publishing a new version',async({page})=>{
     if(route.request().method()==='POST'){submitted=route.request().postDataJSON();return json(route,{question:{...question,id:'question-version-2',version:2,question:submitted.question}},201);}
     return json(route,{questions:[question]});
   });
-  await page.goto('/hub');await page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
+  await page.goto('/hub#/learn');await page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
   await page.getByRole('button',{name:'Open question bank'}).click();await page.getByRole('combobox',{name:'Question version',exact:true}).selectOption('question-fixture');
   await page.getByRole('textbox',{name:'Question text',exact:true}).fill('Which verified evidence must be checked before acting?');
   await page.getByRole('textbox',{name:'Question change reason',exact:true}).fill('Clarify the required verification');
@@ -276,7 +276,7 @@ test('ADMIN uploads a private training asset and cannot approve their own upload
   await page.route('**/api/hub/media/uploads',route=>{registration=route.request().postDataJSON();if(!expiredKey){expiredKey=registration.idempotencyKey;return route.fulfill({status:410,contentType:'application/json',body:JSON.stringify({error:{message:'This upload registration expired. Upload a new asset version.'}})});}return json(route,{asset:{id:assetId},uploadUrl:`${new URL(route.request().url()).origin}/fixture-media-upload`});});
   await page.route('**/fixture-media-upload',route=>{uploaded=route.request().method()==='PUT';return json(route,{Key:'private-fixture'});});
   await page.route(`**/api/hub/media/${assetId}/complete`,route=>{assets=[{id:assetId,title:'Account verification guide',version:1,status:'pending_review',file_name:'sample.png',expected_size:13,source_reference:'Approved operator training guide',canReview:false}];return json(route,{asset:assets[0]});});
-  await page.goto('/hub');await page.getByRole('link',{name:'Media library',exact:true}).click();await page.getByRole('button',{name:'Open media library',exact:true}).click();
+  await page.goto('/hub#/learn');await page.getByRole('link',{name:'Media library',exact:true}).click();await page.getByRole('button',{name:'Open media library',exact:true}).click();
   await page.getByRole('textbox',{name:'Resource code',exact:true}).fill('account-verification');await page.getByRole('textbox',{name:'Asset title',exact:true}).fill('Account verification guide');
   await page.getByLabel('Training file (25 MB maximum)',{exact:true}).setInputFiles({name:'sample.png',mimeType:'image/png',buffer:Buffer.from('fixture-image')});
   await page.getByRole('textbox',{name:'Alternative text for images',exact:true}).fill('A training diagram of account verification');await page.getByRole('textbox',{name:'Source and approval reference',exact:true}).fill('Approved operator training guide');
@@ -295,7 +295,7 @@ test('ADMIN attaches a published media version to a lesson draft',async({page})=
   await page.route('**/api/hub/workspace/catalog',route=>json(route,{courses:[],modules:[{id:'module',title:'Foundations'}],activities:[{id:activityId,module_id:'module',title:'Media lesson',activity_type:'article',content:{summary:'Lesson'}}]}));
   await page.route(`**/api/hub/workspace/activities/${activityId}/versions`,route=>{if(route.request().method()==='POST'){draft=route.request().postDataJSON();return json(route,{contentVersion:{id:'media-version',status:'draft'}});}return json(route,{versions:[]});});
   await page.route('**/api/hub/media',route=>json(route,{assets:[{id:assetId,title:'Approved guide',version:2,status:'published'}]}));
-  await page.goto('/hub');await page.getByRole('link',{name:'Training content',exact:true}).click();await page.getByRole('button',{name:'Open content catalog',exact:true}).click();await page.getByRole('combobox',{name:'Activity',exact:true}).selectOption(activityId);
+  await page.goto('/hub#/learn');await page.getByRole('link',{name:'Training content',exact:true}).click();await page.getByRole('button',{name:'Open content catalog',exact:true}).click();await page.getByRole('combobox',{name:'Activity',exact:true}).selectOption(activityId);
   await page.getByRole('button',{name:'Choose published training assets',exact:true}).click();await page.getByRole('checkbox',{name:'Approved guide · v2',exact:true}).check();
   await page.getByRole('textbox',{name:'Reason for change',exact:true}).fill('Attach the approved reference guide');await page.getByRole('button',{name:'Create new draft',exact:true}).click();
   await expect(page.getByText('Draft created. Submit it for review.')).toBeVisible();expect(draft.instruction.mediaAssetIds).toEqual([assetId]);
@@ -309,7 +309,7 @@ test('reports and audit policies load on demand and CSV exports the applied repo
     reportCalls++;return json(route,{attempts:[],statistics:{attempts:0},filters:{status:'passed'}});
   });
   await page.route('**/api/hub/assessment/evaluations',route=>{policyCalls++;return json(route,{evaluations:[],gameFamilies:[],attemptSets:[],attempts:[],itemResults:[],reopenEvents:[]});});
-  await page.goto('/hub');await expect(page.getByRole('heading',{name:'Trainer workspace',exact:true})).toBeVisible();expect(reportCalls).toBe(0);expect(policyCalls).toBe(0);
+  await page.goto('/hub#/learn');await expect(page.getByRole('heading',{name:'Trainer workspace',exact:true})).toBeVisible();expect(reportCalls).toBe(0);expect(policyCalls).toBe(0);
   await page.getByRole('button',{name:'Reports Results & performance',exact:true}).click();await expect(page.getByRole('button',{name:'Export filtered report CSV',exact:true})).toBeEnabled();expect(reportCalls).toBe(1);expect(policyCalls).toBe(0);
   const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Export filtered report CSV',exact:true}).click();expect((await downloaded).suggestedFilename()).toBe('training-assessment-report.csv');expect(csvQuery.get('status')).toBe('passed');
 });
