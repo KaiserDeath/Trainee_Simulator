@@ -82,7 +82,7 @@ try{
     await new Promise(resolve=>setTimeout(resolve,5000));
    }
    const modules=checked(await client.from('hub_modules').select('id').eq('course_id',course.id).order('position').limit(1),'Owned course module');assert.equal(modules.length,1);
-   const csrf=(await context.cookies(origin)).find(cookie=>cookie.name==='trez_hub_csrf');assert.ok(csrf);
+   const csrf=(await context.cookies(`${origin}/api/hub`)).find(cookie=>cookie.name==='trez_hub_csrf');assert.ok(csrf);
    const reason=`Temporary reinforcement verification ${token}`;
    const created=await context.request.post(`${origin}/api/hub/training-assignments`,{headers:{origin,'x-trez-csrf':csrf.value},data:{learnerId:people[0].id,moduleId:modules[0].id,purpose:'reinforcement',reason,expectedRevision:0,idempotencyKey:`assign-${token}`}});
    assert.equal(created.status(),200);const assigned=(await created.json()).assignment;assert.equal(assigned.status,'assigned');
@@ -95,7 +95,7 @@ try{
   }
   if(person.role==='rrhh'){
    const visible=await context.request.get(`${origin}/api/hub/training-assignments?learnerId=${people[0].id}`);assert.equal(visible.status(),200);assert.equal((await visible.json()).assignments[0].status,'acknowledged');
-   const csrf=(await context.cookies(origin)).find(cookie=>cookie.name==='trez_hub_csrf');assert.ok(csrf);
+   const csrf=(await context.cookies(`${origin}/api/hub`)).find(cookie=>cookie.name==='trez_hub_csrf');assert.ok(csrf);
    const denied=await context.request.post(`${origin}/api/hub/training-assignments`,{headers:{origin,'x-trez-csrf':csrf.value},data:{}});assert.equal(denied.status(),403);
    report.checks.push('Hosted HR read the fixture assignment and was denied assignment creation');
   }
