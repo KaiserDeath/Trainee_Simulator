@@ -4,6 +4,7 @@ import {useHubLocale} from '../../i18n/HubLocaleContext';
 import { useRef,useState } from 'react';
 import { getHubPostulanteAccounts,getHubCoachingNotes,getHubCoachingEvidence,saveHubCoachingNote } from '../../api/client';
 import HubCoachingRetention from './HubCoachingRetention';
+import HubTrainingAssignments from './HubTrainingAssignments';
 
 const blank={noteId:null,attemptId:'',expectedRevision:0,body:'',status:'open',verificationAttemptId:''};
 export default function HubCoachingWorkspace({ canEdit }){
@@ -62,5 +63,6 @@ export default function HubCoachingWorkspace({ canEdit }){
     </li>;})}</ul>
     {cursor&&<button type="button" disabled={busy} onClick={more}>{t("Load more notes")}</button>}
     {learnerId&&<HubCoachingRetention key={learnerId} learnerId={learnerId} canEdit={canEdit} locale={locale} onDisposed={id=>{setNotes(current=>current.filter(note=>note.id!==id));setForm(current=>current.noteId===id?blank:current);retry.current=null;}}/>}
+    {learnerId&&<HubTrainingAssignments key={`training-${learnerId}`} learnerId={learnerId} canEdit={canEdit} attempts={attempts}/>}
   </section>;
 }

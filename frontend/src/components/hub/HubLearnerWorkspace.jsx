@@ -4,6 +4,7 @@ import {courseKey, learnerRoute, moduleHref, moduleState, nextLearningModule} fr
 import HubLearningPath, {ProgressBar} from './HubLearningPath';
 import HubScoredEvaluationOverview from './HubScoredEvaluationOverview';
 import HubCohorts from './HubCohorts';
+import HubTrainingAssignments from './HubTrainingAssignments';
 
 const stateText = {available: 'Available', completed: 'Completed', locked: 'Prerequisite required'};
 const selectionFor = (paths, route) => {
@@ -87,6 +88,7 @@ export default function HubLearnerWorkspace({paths, busyActivityId, onCompleteAc
         <div>
           <section className="hub-home-card"><h2>{t('Learning progress')}</h2><p className="hub-home-metric">{modules.filter(({module}) => module.completed).length}<small> / {modules.length} {t('modules completed')}</small></p><p>{t('Learning progress is separate from formal evaluation results.')}</p><a href="#/evaluations">{t('View evaluation status')}</a></section>
           <section className="hub-home-card"><h2>{t('Already working?')}</h2><p>{t('Ask your Capacitador for targeted reinforcement. Your previous results stay in your history.')}</p></section>
+          <HubTrainingAssignments mine paths={paths}/>
           <p><a className="hub-secondary-link" href="/simulator">{t('Open free operator simulator')}</a></p>
         </div>
       </div>

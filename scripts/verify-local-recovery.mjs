@@ -82,7 +82,7 @@ try {
     sql(restoredDatabase, readHubIntegrationCase(file));
   }
   assert.deepEqual(manifest(restoredDatabase), before, 'Transactional recovery fixtures left changes behind');
-  report.checks.push('Recovered database passed all ten transactional Hub workspace/evaluation/cohort/retention scenarios; fixtures rolled back');
+  report.checks.push(`Recovered database passed all ${hubIntegrationCases.length} transactional Hub workspace/evaluation/cohort/assignment/retention scenarios; fixtures rolled back`);
 
   // A clean developer stack may have no learner history. Build real retained
   // records only in the restored copy, then prove a second backup recovers them.

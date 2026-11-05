@@ -64,6 +64,8 @@ export const getHubContext = async () => {
 
 export const getHubWorkspaceCatalog = () => api.get('/hub/workspace/catalog');
 export const getHubInstructionVersions = (id) => api.get(`/hub/workspace/activities/${id}/versions`);
+export const getHubTrainingAssignments = ({learnerId, cursor} = {}) => api.get('/hub/training-assignments', {params: {learnerId, cursor}});
+export const commandHubTrainingAssignment = async (id, command, body) => api.post(id ? `/hub/training-assignments/${id}/${command}` : '/hub/training-assignments', body, await withHubCsrf());
 export const createHubInstruction = async (id,body) => api.post(`/hub/workspace/activities/${id}/versions`,body,await withHubCsrf());
 export const submitHubContentVersion = async (id) => api.post(`/hub/admin/content-versions/${id}/submit`,{},await withHubCsrf());
 export const reviewHubContentVersion = async (id,body) => api.post(`/hub/admin/content-versions/${id}/review`,body,await withHubCsrf());

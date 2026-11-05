@@ -11,7 +11,11 @@ Phase 2 learner views, multi-course navigation and the Capacitador snapshot are
 implemented, together with the first Phase 3 activity contract and deferred
 workspace panels. See [ADR 0008](adr/0008-hub-navigation-and-module-contract.md)
 and `outputs/hub-navigation-2026-11-05/REPORT.md` for verification and delivery
-status. Phases 4–6 and the separate release acceptance gates remain open.
+status. Phase 4 targeted assignment implementation and local verification are
+recorded in [ADR 0009](adr/0009-targeted-training-and-configurable-responsibilities.md)
+and `outputs/hub-training-assignments-2026-11-05/REPORT.md`. Hosted delivery is
+tracked separately. Phase 5 bilingual authoring, Phase 6 and the human release
+acceptance gates remain open.
 
 ## Outcome
 

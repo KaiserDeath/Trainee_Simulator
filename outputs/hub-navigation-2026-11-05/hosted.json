@@ -1,0 +1,21 @@
+{
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "origin": "https://trainee-simulator.vercel.app",
+  "generatedAt": "2026-11-05T17:38:27.782Z",
+  "checks": [
+    "Hosted learner receives authorized Spanish curriculum, no private question bank, and no formal-start controls while policies are draft",
+    "Hosted Spanish learner home, catalog and learning workspace navigation passed",
+    "Real postulante Spanish login/reload and English switch passed",
+    "Real admin Spanish login/reload and English switch passed",
+    "Real trainer Spanish login/reload and English switch passed",
+    "Real rrhh Spanish login/reload and English switch passed"
+  ],
+  "scope": "Disposable hosted roles; language and assigned lesson reads only. No activity completion, policy publication or assessment start.",
+  "learningPayloadBytes": {
+    "canonical": 32839,
+    "withTranslations": 65268
+  },
+  "passed": true,
+  "originalIdentitiesPreserved": 5,
+  "cleanupPassed": true
+}

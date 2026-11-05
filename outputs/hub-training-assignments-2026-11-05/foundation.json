@@ -1,0 +1,10 @@
+{
+  "command": "npm run verify:foundation",
+  "passed": true,
+  "backend": 254,
+  "shared": 12,
+  "databaseSafety": 61,
+  "languageAndModelUnit": 7,
+  "browser": 82,
+  "logSha256": "58fe5f4f70a125c665fd225705c4d62ddcad039ffba506251edcc00628fd1b13"
+}

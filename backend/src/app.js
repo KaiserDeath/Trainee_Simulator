@@ -34,6 +34,7 @@ import { createSimulatorAccess } from './auth/simulatorAccess.js';
 import { createHubEvaluationRuntimeService } from './hub/hubEvaluationRuntimeService.js';
 import {createHubMediaService} from './hub/hubMediaService.js';
 import {createHubCohortService} from './hub/hubCohortService.js';
+import {createHubTrainingAssignmentService} from './hub/hubTrainingAssignmentService.js';
 import { buildSessionReport } from './engine/SessionEngine.js';
 import { getSessionActionLog } from './engine/AuditLogger.js';
 
@@ -194,6 +195,7 @@ export function createApp(options = {}) {
       evaluationRuntimeService: options.hubEvaluationRuntimeService || createHubEvaluationRuntimeService({ client: supabase }),
       mediaService:options.hubMediaService||createHubMediaService({client:supabase}),
       cohortService:options.hubCohortService||createHubCohortService({client:supabase}),
+      trainingAssignmentService:options.hubTrainingAssignmentService||createHubTrainingAssignmentService({client:supabase}),
     })
   );
 
