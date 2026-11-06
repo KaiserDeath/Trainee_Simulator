@@ -67,6 +67,7 @@ trabajo. No incluya contraseñas, preguntas/respuestas privadas ni datos persona
 en informes del repositorio. Ejecute npm run verify:release:acceptance para listar
 los campos pendientes. El estado pendiente es intencional hasta realizar estas acciones.
 
-User decision, 2026-11-06: leave the actual reviewer and supervisor unassigned and
-choose the pilot cohort/roster later. These remain pending acceptance records;
-continue technical delivery without inventing a person's approval or attendance.
+User assignment, 2026-11-06: Edwin Galvez, Hub username Egalvez, is the
+Capacitador responsible for curriculum review and pilot supervision. The hosted
+account was verified active with the existing TRAINER role. The pilot cohort/roster
+will be chosen later. Assignment does not record curriculum approval or pilot completion.

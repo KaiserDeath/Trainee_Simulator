@@ -232,6 +232,7 @@ work does not require prematurely publishing the four draft evaluations.
 Plan completion means the roadmap exists. Product completion means its delivered
 slices and the separate release acceptance gates have passed.
 
-User decision (2026-11-06): keep reviewer/supervisor usernames unassigned and choose
-the pilot cohort/roster later. These human gates remain pending; technical delivery
-continues. See [the bilingual review packet](HUB_CAPACITADOR_REVIEW_PACKET.md).
+User assignment (2026-11-06): Egalvez (Edwin Galvez) is the Capacitador for
+curriculum review and pilot supervision; his hosted account is active with TRAINER
+access. Choose the pilot cohort/roster later. Actual approval and pilot evidence
+remain pending; technical delivery continues. See [the bilingual review packet](HUB_CAPACITADOR_REVIEW_PACKET.md).

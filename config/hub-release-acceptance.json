@@ -16,8 +16,8 @@
     "training": {"label": "Capacitador", "requiredHubRole": "TRAINER"}
   },
   "responsibilities": {
-    "curriculumReview": {"position": "training", "assignedUsername": null},
-    "pilotSupervision": {"position": "training", "assignedUsername": null}
+    "curriculumReview": {"position": "training", "assignedUsername": "Egalvez"},
+    "pilotSupervision": {"position": "training", "assignedUsername": "Egalvez"}
   },
   "pilot": {"maximumLearners": 10, "maximumConcurrentLearners": 10, "capacityEvidence": null, "cohortId": null, "learnerUsernames": []},
   "acceptance": {
