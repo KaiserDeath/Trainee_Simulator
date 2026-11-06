@@ -3,7 +3,7 @@ import { useState } from 'react';
 const COPY = {
   en: {
     empty: 'No Postulante progress is available.',
-    caption: 'Progress for all Postulantes',
+    caption: 'Progress for loaded learners',
     learner: 'Postulante',
     course: 'Course',
     completed: 'Completed',
@@ -32,6 +32,7 @@ export default function HubTrainerOverview({ learners, locale = 'en', onSearch }
 
   return (
     <div>
+      <p className="hub-meta-label">{t("Summary of loaded learners only.")}</p>
       <div className="hub-progress-summary">
         {[
           [locale === 'es' ? 'Participantes' : 'Postulantes', learners.length],

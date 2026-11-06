@@ -632,7 +632,7 @@ test('ADMIN is limited to debugging and TRAINER account administration', async (
 
   await page.goto('/hub#/learn');
   await expect(page.getByRole('heading', { name: 'TRAINER account administration' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'All Participant progress' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Learner progress' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Participant management' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Español' }).click();
   await expect(page.getByText('Nombre provisional del producto — sujeto a validación de Trez')).toBeVisible();
@@ -705,10 +705,10 @@ test('trainer can switch the progress view to Spanish', async ({ page }) => {
   await page.goto('/hub#/learn');
 
   await page.getByRole('link',{name:'Learner progress',exact:true}).click();
-  await expect(page.getByRole('heading', { name: 'All Participant progress' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Learner progress' })).toBeVisible();
   await expect(page.getByText('Trainer view')).toBeVisible();
   await page.getByRole('button', { name: 'Español' }).click();
-  await expect(page.getByRole('heading', { name: 'Progreso de todos los participantes' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Progreso de participantes' })).toBeVisible();
   await expect(page.getByText('Vista de capacitador')).toBeVisible();
   await expect(page.locator('.hub-app-shell')).toHaveAttribute('lang', 'es');
 });
@@ -721,7 +721,7 @@ test('trainer searches learner progress without changing course totals', async (
   ] } }));
   await page.goto('/hub#/learn');
   await page.getByRole('link',{name:'Learner progress',exact:true}).click();
-  const progress = page.getByRole('region', { name: 'All Participant progress' });
+  const progress = page.getByRole('region', { name: 'Learner progress' });
   await expect(progress.getByText('1 / 2', { exact: true })).toBeVisible();
   await page.getByLabel('Search learner progress').fill('atorres');
   await expect(progress.getByRole('rowheader', { name: 'Ana Torres' })).toBeVisible();

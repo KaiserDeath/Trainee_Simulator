@@ -53,7 +53,7 @@ const STAFF_VIEW_COPY = {
     signOut: 'Sign out',
     administratorView: 'ADMIN view',
     trainerView: 'Trainer view',
-    progressTitle: 'All Postulante progress',
+    progressTitle: 'Learner progress',
     visibilityUnavailable: 'Postulante progress could not be loaded.',
     languageLabel: 'Language / Idioma',
     footerStatus: 'Working product name — subject to Trez validation',

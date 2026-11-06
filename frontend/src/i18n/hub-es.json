@@ -1274,5 +1274,7 @@
   "Load more": "Cargar más",
   "Loaded {0} of {1} matching learners.": "Se cargaron {0} de {1} participantes coincidentes.",
   "Loaded {0} of {1} matching accounts.": "Se cargaron {0} de {1} cuentas coincidentes.",
-  "The directory could not be loaded. Try again.": "No se pudo cargar el directorio. Inténtelo de nuevo."
+  "The directory could not be loaded. Try again.": "No se pudo cargar el directorio. Inténtelo de nuevo.",
+  "Progress for loaded learners": "Progreso de los participantes cargados",
+  "Summary of loaded learners only.": "Resumen solo de los participantes cargados."
 }
