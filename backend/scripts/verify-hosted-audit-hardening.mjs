@@ -26,7 +26,10 @@ async function login(username,secret,temporary=false){
   await page.getByRole('heading',{name:'Choose your own password'}).waitFor();
   assert.equal((await context.request.get(`${origin}/api/hub/learning-path`)).status(),403);
   await page.getByLabel('Current password',{exact:true}).fill(secret);await page.getByLabel('New password',{exact:true}).fill(randomBytes(24).toString('base64url'));
+  const changed=page.waitForResponse(response=>response.url().endsWith('/api/hub/auth/password')&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Change password',exact:true}).click();
+  assert.equal((await changed).status(),200,'Password replacement request failed');
+  await page.getByRole('heading',{name:'Choose your own password'}).waitFor({state:'hidden'});
  }
  await page.getByRole('button',{name:'Sign out',exact:true}).waitFor();await page.reload();await page.getByRole('button',{name:'Sign out',exact:true}).waitFor();
  violations.push(...await page.evaluate(()=>window.__cspViolations));assert.equal(violations.length,0,'CSP blocked application resources');
@@ -49,7 +52,7 @@ try{
  const staff=await staffResponse.json();assert.ok(staff.initialPassword?.length>=24);assert.notEqual(staff.initialPassword,staff.identity.username);
  const trainer=await login(staff.identity.username,staff.initialPassword,true);report.checks.push('New staff random temporary credential; mandatory replacement; persisted login');
  phase='new learner account';
- const learnerResponse=await post(trainer,'/staff/postulantes',{firstName:'Audit',surname:`${token}learner`});assert.equal(learnerResponse.status(),201);const learner=await learnerResponse.json();
+ const learnerResponse=await post(trainer,'/staff/postulantes',{firstName:'Audit',surname:`${token}learner`});assert.equal(learnerResponse.status(),201,`Learner creation HTTP ${learnerResponse.status()}`);const learner=await learnerResponse.json();
  const learnerSession=await login(learner.identity.username,learner.initialPassword,true);report.checks.push('Learner temporary password replacement and reload');
  phase='directory and diagnostics';
  const directory=await trainer.context.request.get(`${origin}/api/hub/trainer/postulantes?search=${token}&limit=1`);assert.equal(directory.status(),200);assert.match(directory.headers()['cache-control'],/no-store/);

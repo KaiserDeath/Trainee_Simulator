@@ -41,6 +41,8 @@ jobs:
         working-directory: frontend
       - run: npm run verify:foundation
       - run: npm --prefix frontend run test:production:auth
+        env:
+          NODE_ENV: production
 
   isolated-database:
     runs-on: ubuntu-latest
