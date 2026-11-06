@@ -65,3 +65,43 @@ Four formal evaluation policies remain draft. Named Capacitador curriculum and
 policy approval, a designated hosted approved-policy assessment journey and a
 supervised pilot are still required. The Hub supports existing employees and new
 learners; no total-user cap is introduced by these changes.
+
+### Delivery verification, 2026-11-06
+
+Implementation commits b7817b4 and 53ff92c reached main. Main CI run 42242927252
+passed both foundation and isolated-database jobs. An earlier media fixture failed
+because it lacked the newly required Spanish lesson companion; the corrected fixture
+passed locally and in the fresh main run. The duplicate branch workflow was canceled
+after the main run passed.
+
+Hosted preview and delivery named only migration 20261105001000, with no seeds,
+vault or role updates. Post-migration hashes preserved original question content
+and all four draft evaluation definitions; five identities remain and policy heads
+remain empty. Vercel production deployment 7603775423 serves 53ff92c.
+
+The fresh hosted recovery rehearsal passed 114 public/Auth/Storage/ledger tables
+and one generated private file, including source stability, restored hashes,
+permissions, Auth credentials, private file bytes and actual Hub signed download.
+Five original identities were preserved and cleanup passed. This is a rehearsal,
+not a retained operational backup or a production cutover.
+
+The user chose to leave reviewer/supervisor identities unassigned and select the
+pilot group later. The bilingual review packet is docs/HUB_CAPACITADOR_REVIEW_PACKET.md;
+no human acceptance record was fabricated.
+
+### Final hosted application proof
+
+The hosted bilingual probe passed paired lesson publication through the actual
+API, missing-Spanish and self-approval denial, Spanish rendering after reload,
+English switching, learner denial of private bank/author writes, and TRAINER
+publication of a new private bilingual question with unchanged answer IDs. Its
+lesson and question were disposable verification content, not real curriculum.
+All five original identities remained. Hashes for the eight existing question and
+evaluation records matched exactly; owned cleanup passed.
+See hosted.json and hosted-spanish-owned-lesson.png.
+
+Earlier probe assertions were corrected to reload after an enrollment created
+later in the session and to use distinct temporary course/question codes. No
+application bypass was added. Every failed probe also passed owned cleanup.
+The hosted check starts no formal assessment and makes no human acceptance claim;
+the full runtime/score/history journey is covered by the separate real local gate.

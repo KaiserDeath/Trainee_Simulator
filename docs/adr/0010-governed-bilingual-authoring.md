@@ -2,7 +2,7 @@
 
 Date: 2026-11-05
 
-Status: Accepted within existing roles; implemented and locally verified. Hosted delivery and human content/release approval are separate.
+Status: Accepted within existing roles; implemented, deployed and verified with disposable hosted records. Human content/release approval remains separate.
 
 ## Lesson instructions
 

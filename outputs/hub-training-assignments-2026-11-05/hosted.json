@@ -1,0 +1,24 @@
+{
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "origin": "https://trainee-simulator.vercel.app",
+  "generatedAt": "2026-11-06T15:13:33.166Z",
+  "checks": [
+    "Hosted learner receives authorized Spanish curriculum, no private question bank, and no formal-start controls while policies are draft",
+    "Hosted Spanish learner home, catalog and learning workspace navigation passed",
+    "Real postulante Spanish login/reload and English switch passed",
+    "Real admin Spanish login/reload and English switch passed",
+    "Hosted TRAINER created an owned reinforcement assignment; learner saw it, acknowledged review and recovered the acknowledgment after reload without competency verification",
+    "Real trainer Spanish login/reload and English switch passed",
+    "Hosted HR read the fixture assignment and was denied assignment creation",
+    "Real rrhh Spanish login/reload and English switch passed"
+  ],
+  "scope": "Disposable hosted roles; create one targeted assignment for the owned learner, acknowledge review and verify HR read-only access. No activity completion, competency verification, policy publication or assessment start.",
+  "learningPayloadBytes": {
+    "canonical": 32839,
+    "withTranslations": 65268
+  },
+  "passed": true,
+  "originalIdentitiesPreserved": 5,
+  "originalAssignmentsPreserved": 0,
+  "cleanupPassed": true
+}

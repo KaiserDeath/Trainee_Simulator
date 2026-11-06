@@ -21,7 +21,6 @@ Architecture decision records (ADRs) capture the durable engineering choices for
 | [0007](0007-simulator-ledgers-balances-and-seed-queue.md) | Accepted | Separate histories and balances with atomic reservations and seed-safe queue slots |
 | [0008](0008-hub-navigation-and-module-contract.md) | Accepted | Approved learner views, stable module links and explicit built-in activity handlers |
 | [0009](0009-targeted-training-and-configurable-responsibilities.md) | Accepted | Targeted assignments preserve original results; position labels do not grant permissions |
-
 | [0010](0010-governed-bilingual-authoring.md) | Accepted | Exact-source bilingual lesson approval and private question versions preserve historical snapshots |
 
 ## Guardrail

@@ -55,3 +55,13 @@ limit; this is not a learner cap. New authored translations, broader metadata
 discovery and hosted concurrency expansion remain separate work. Four formal
 evaluations remain draft pending actual bilingual curriculum/policy approval,
 followed by the approved hosted assessment journey and supervised pilot.
+
+### Verified hosted delivery, 2026-11-06
+
+The production frontend reached ed4c779 and the hosted assignment probe passed.
+A TRAINER created an assignment for its own disposable learner; the learner
+acknowledged review, reloaded and recovered the acknowledgment with competency
+still unverified. HR could read it and received 403 for creation. Spanish login,
+reload and English switching passed for learner, administrator, trainer and HR.
+All temporary records were removed; five existing identities and the original
+assignment baseline were preserved. See hosted.json and its synthetic screenshot.

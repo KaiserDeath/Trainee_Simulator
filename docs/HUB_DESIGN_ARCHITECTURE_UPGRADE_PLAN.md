@@ -6,16 +6,16 @@ Status: Executing the approved direction; human release acceptance remains open.
 
 Scope: The shared Hub that holds current and future training modules.
 
-Execution update (2026-11-05): The user approved the Phase 1 design direction.
+Execution update (2026-11-06): The user approved the Phase 1 design direction.
 Phase 2 learner views, multi-course navigation and the Capacitador snapshot are
 implemented, together with the first Phase 3 activity contract and deferred
 workspace panels. See [ADR 0008](adr/0008-hub-navigation-and-module-contract.md)
 and `outputs/hub-navigation-2026-11-05/REPORT.md` for verification and delivery
 status. Phase 4 targeted assignment implementation and local verification are
 recorded in [ADR 0009](adr/0009-targeted-training-and-configurable-responsibilities.md)
-and `outputs/hub-training-assignments-2026-11-05/REPORT.md`. Hosted delivery is
-tracked separately. Phase 5 governed bilingual authoring is implemented and locally
-verified; see [ADR 0010](adr/0010-governed-bilingual-authoring.md) and
+and `outputs/hub-training-assignments-2026-11-05/REPORT.md`. Hosted assignment
+creation, acknowledgment persistence and HR write denial passed with exact cleanup. Phase 5 governed bilingual authoring is implemented, deployed and verified locally
+and with disposable hosted records; see [ADR 0010](adr/0010-governed-bilingual-authoring.md) and
 `outputs/hub-bilingual-authoring-2026-11-05/REPORT.md`. Fresh CI and hosted delivery
 are recorded separately from local checks. Phase 6 and human release acceptance
 remain open.
@@ -231,3 +231,7 @@ work does not require prematurely publishing the four draft evaluations.
 
 Plan completion means the roadmap exists. Product completion means its delivered
 slices and the separate release acceptance gates have passed.
+
+User decision (2026-11-06): keep reviewer/supervisor usernames unassigned and choose
+the pilot cohort/roster later. These human gates remain pending; technical delivery
+continues. See [the bilingual review packet](HUB_CAPACITADOR_REVIEW_PACKET.md).

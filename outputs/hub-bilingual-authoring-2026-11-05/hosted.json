@@ -1,0 +1,22 @@
+{
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "origin": "https://trainee-simulator.vercel.app",
+  "generatedAt": "2026-11-06T15:33:14.666Z",
+  "runId": "121cc8a5-15e2-4fb0-8539-730fa8396d32",
+  "checks": [
+    "Actual hosted author and separate administrator published an owned bilingual lesson; missing Spanish and self approval were denied",
+    "Learner saw owned Spanish lesson after reload and English after switching; private bank and author writes were denied",
+    "Actual hosted TRAINER published an owned English/Spanish private question version with identical answer IDs; authorized bank returned the Spanish companion"
+  ],
+  "scope": "Own disposable lesson, question and identities only. No existing curriculum edits, activity completion, evaluation publication, assessment starts or competency acceptance.",
+  "ownedLearningProjection": {
+    "found": true,
+    "sourceMatches": true,
+    "spanishMatches": true,
+    "status": "ready"
+  },
+  "passed": true,
+  "originalIdentitiesPreserved": 5,
+  "originalProtectedRecordsPreserved": 8,
+  "cleanupPassed": true
+}
