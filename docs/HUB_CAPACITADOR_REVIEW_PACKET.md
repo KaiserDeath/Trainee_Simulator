@@ -71,3 +71,46 @@ User assignment, 2026-11-06: Edwin Galvez, Hub username Egalvez, is the
 Capacitador responsible for curriculum review and pilot supervision. The hosted
 account was verified active with the existing TRAINER role. The pilot cohort/roster
 will be chosen later. Assignment does not record curriculum approval or pilot completion.
+
+## Hosted review baseline / Base publicada para revisión
+
+Verified 2026-11-06 against the hosted database. Main commit 008b0d3 passed CI
+(run 42244862507). All four evaluations remain draft and have no published policy
+head. The saved draft snapshots are in
+outputs/hub-bilingual-authoring-2026-11-05/capacitador-evaluation-review.json.
+Their SHA-256 values identify the reviewed draft rows; they are not published
+policy-version digests. Re-read the current policy if its revision changes.
+
+Verificado el 06/11/2026 contra la base alojada. El commit 008b0d3 pasó CI.
+Las cuatro evaluaciones siguen en borrador, sin versión de política publicada.
+Los SHA-256 del archivo indicado identifican las filas de borrador consultadas;
+no son resúmenes de versiones publicadas. Si cambia una revisión, revísela de nuevo.
+
+| Evaluation / Evaluación | Draft revision / Revisión | Required modules / Módulos previos |
+| --- | --- | --- |
+| Checkpoint 1 — Game Platforms | 3 | 8 |
+| Checkpoint 2 — Operations | 4 | 10 |
+| Checkpoint 3 — Movements and Customer Experience | 4 | 12 |
+| Final Pre-Training Readiness Assessment | 4 | 14 |
+
+Each draft currently specifies 30 minutes, three attempts, 100% passing,
+20% theory / 80% practical, four theory items and the Orion Stars family only.
+This does not approve other game families. Review these constraints against
+actual training needs before publishing, and record a versioned decision for changes.
+
+Cada borrador indica actualmente 30 minutos, tres intentos, aprobación al 100%,
+20% teoría / 80% práctica, cuatro preguntas teóricas y únicamente Orion Stars.
+Esto no aprueba otras familias de juegos. Compruebe estas condiciones contra las
+necesidades reales antes de publicar y registre cualquier cambio por versión.
+
+Egalvez should sign in at https://trainee-simulator.vercel.app/hub using his own
+account, review the 15-module curriculum and the four evaluation configurations
+in both languages, and record the decision and date. His assignment alone is not
+that decision. After actual approval/publication, verify the hosted assessment
+journey with designated accounts; choose the pilot cohort separately.
+
+Egalvez debe entrar con su cuenta en el enlace anterior, revisar los 15 módulos
+y las cuatro configuraciones en ambos idiomas, y registrar su decisión y fecha.
+Su asignación al puesto no equivale a esa aprobación. Después de la aprobación y
+publicación reales, se verifica el recorrido de evaluación con cuentas designadas;
+el grupo piloto se elige por separado.
