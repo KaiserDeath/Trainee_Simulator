@@ -31,6 +31,8 @@ const emptyFilters = { postulanteId: '', from: '', to: '', status: '', result: '
 export default function HubAssessmentManagement({ canEditEvaluations = false }) {
   const {locale,t} = useHubLocale();
   const [accounts, setAccounts] = useState([]);
+  const [accountPage,setAccountPage]=useState(null);
+  const [appliedAccountFilter,setAppliedAccountFilter]=useState({});
   const [courses, setCourses] = useState([]);
   const [courseSelections, setCourseSelections] = useState({});
   const [settings, setSettings] = useState(null);
@@ -51,9 +53,9 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
 
   const load = useCallback(async () => {
     const [accountResponse, courseResponse, settingsResponse, reportResponse, policyResponse] = await Promise.all([
-      getHubPostulanteAccounts(), getHubAssignableCourses(), getHubAssessmentSettings(), workspace==='reports'?getHubAssessmentReport(filters):null, workspace==='evaluations'?getHubScoredEvaluationPolicies():null,
+      getHubPostulanteAccounts({}), getHubAssignableCourses(), getHubAssessmentSettings(), workspace==='reports'?getHubAssessmentReport(filters):null, workspace==='evaluations'?getHubScoredEvaluationPolicies():null,
     ]);
-    setAccounts(accountResponse.data.postulantes || []);
+    setAccounts(accountResponse.data.postulantes || []);setAccountPage(accountResponse.data.page);setAppliedAccountFilter({});
     setCourses(courseResponse.data.courses || []);
     setSettings(settingsResponse.data.settings);
     if(reportResponse)setReport(reportResponse.data);
@@ -62,10 +64,10 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
 
   useEffect(() => {
     let active = true;
-    Promise.all([getHubPostulanteAccounts(), getHubAssignableCourses(), getHubAssessmentSettings()])
+    Promise.all([getHubPostulanteAccounts({}), getHubAssignableCourses(), getHubAssessmentSettings()])
       .then(([accountResponse, courseResponse, settingsResponse]) => {
         if (!active) return;
-        setAccounts(accountResponse.data.postulantes || []);
+        setAccounts(accountResponse.data.postulantes || []);setAccountPage(accountResponse.data.page);
         setCourses(courseResponse.data.courses || []);
         setSettings(settingsResponse.data.settings);
       })
@@ -81,9 +83,10 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
     }catch(error){if(request===workspaceRequest.current)setNotice(hubServerMessage(error?.response?.data?.error?.message||hubMessage("This workspace could not be loaded."), hubMessage("This workspace could not be loaded.")));}finally{if(request===workspaceRequest.current)setBusy(false);}
   };
 
+  const findAccounts=async(append=false)=>{setBusy(true);try{const response=await getHubPostulanteAccounts({... (append?appliedAccountFilter:{search:accountSearch,status:accountStatus==='all'?'':accountStatus}),cursor:append?accountPage?.nextCursor:undefined});setAccounts(current=>append?[...new Map([...current,...response.data.postulantes].map(row=>[row.id,row])).values()]:response.data.postulantes);setAccountPage(response.data.page);if(!append)setAppliedAccountFilter({search:accountSearch,status:accountStatus==='all'?'':accountStatus});}catch{setNotice(hubMessage("Accounts could not be loaded."));}finally{setBusy(false);}};
   const create = async (event) => {
     event.preventDefault(); setBusy(true); setNotice('');
-    try { const response = await createHubPostulante(newAccount); setNotice(hubMessage("Postulante created. Username and initial password: {0}", [response.data.identity.username])); setNewAccount({ firstName: '', surname: '' }); await load(); }
+    try { const response = await createHubPostulante(newAccount); setNotice(hubMessage("Account created. Username: {0}. Temporary password: {1}. Share it securely; it is shown only now.", [response.data.identity.username, response.data.initialPassword])); setNewAccount({ firstName: '', surname: '' }); await load(); }
     catch (error) { setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("The Postulante could not be created."), hubMessage("The Postulante could not be created."))); }
     finally { setBusy(false); }
   };
@@ -237,6 +240,9 @@ export default function HubAssessmentManagement({ canEditEvaluations = false }) 
         <label>{t("Account status")}<select value={accountStatus} onChange={(event) => setAccountStatus(event.target.value)}><option value="active">{t("Active")}</option><option value="">{t("All statuses")}</option><option value="deactivated">{t("Deactivated")}</option></select></label>
         <p>{visibleAccounts.length}{t(" of ")}{accounts.length}{t(" Postulantes")}</p>
       </div>
+      <button type="button" disabled={busy} onClick={()=>findAccounts()}>{t("Search directory")}</button>
+      {accountPage&&<p>{t("Loaded {0} of {1} matching accounts.",[accounts.length,accountPage.total])}</p>}
+      {accountPage?.nextCursor&&<button type="button" disabled={busy} onClick={()=>findAccounts(true)}>{t("Load more")}</button>}
       <div className="hub-account-table-wrap hub-mobile-directory" tabIndex={0} role="region" aria-label={t("Table data")}><table className="hub-trainer-table"><thead><tr><th>{t("Username")}</th><th>{t("Full name")}</th><th>{t("Status")}</th><th>{t("Course assignment")}</th><th>{t("Actions")}</th></tr></thead><tbody>{visibleAccounts.map((account) => <tr key={account.id}><td data-label={t("Username")}>{account.username}</td><td data-label={t("Full name")}>{account.displayName}</td><td data-label={t("Status")}>{t(account.status)}</td><td data-label={t("Course assignment")} className="hub-directory-actions"><select aria-label={t("Course for {0}", [account.displayName])} value={courseSelections[account.id] || courses[0]?.id || ''} onChange={(event) => setCourseSelections((current) => ({ ...current, [account.id]: event.target.value }))}>{courses.map((course) => <option value={course.id} key={course.id}>{t(course.title)}{course.is_provisional ? t(" (provisional)") : ''}</option>)}</select> <button type="button" onClick={() => assignCourse(account)} disabled={busy || account.status !== 'active' || courses.length === 0}>{t("Assign")}</button></td><td data-label={t("Actions")} className="hub-directory-actions"><button type="button" onClick={() => edit(account)} disabled={busy || account.status !== 'active'}>{t("Edit")}</button> <button type="button" onClick={() => deactivate(account)} disabled={busy || account.status !== 'active'}>{t("Deactivate")}</button></td></tr>)}{visibleAccounts.length === 0 && <tr><td colSpan="5" className="hub-empty-state">{t("No Postulantes match. Try another name or account status.")}</td></tr>}</tbody></table></div>
     </section>
 

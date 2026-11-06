@@ -43,7 +43,19 @@ export const loginHub = async (username, password) => {
 export const changeHubPassword = async (currentPassword, newPassword) =>
   api.post('/hub/auth/password', { currentPassword, newPassword }, await withHubCsrf());
 
-export const getHubAdminAccounts = async () => api.get('/hub/admin/accounts');
+// Selectors request every bounded page; directory screens pass filters for one page.
+const directory = async (url, key, params) => {
+  if(params) return api.get(url,{params});
+  const first = await api.get(url); const rows = [...(first.data[key] || [])];
+  let cursor = first.data.page?.nextCursor; const seen = new Set();
+  while(cursor){
+    if(seen.has(cursor) || seen.size >= 2000) throw new Error('Directory pagination did not complete.');
+    seen.add(cursor); const next=await api.get(url,{params:{cursor}});
+    rows.push(...(next.data[key]||[]));cursor=next.data.page?.nextCursor;
+  }
+  return {...first,data:{...first.data,[key]:[...new Map(rows.map(row=>[row.id,row])).values()],page:{...first.data.page,nextCursor:null}}};
+};
+export const getHubAdminAccounts = params => directory('/hub/admin/accounts','accounts',params);
 
 export const getHubAdministratorProfile = () => api.get('/hub/admin/profile');
 export const updateHubAdministratorProfile = async (payload) =>
@@ -153,11 +165,9 @@ export const approveHubWithdrawCreditsPractice = async (activityId, payload) =>
 export const cancelHubWithdrawCreditsPractice = async (activityId, payload) =>
   api.post(`/hub/activities/${activityId}/focused-practice/withdraw-credits/cancel`, payload, await withHubCsrf());
 
-export const getHubTrainerLearners = async () => {
-  return api.get('/hub/trainer/postulantes');
-};
+export const getHubTrainerLearners = (params={}) => api.get('/hub/trainer/postulantes',{params:Object.fromEntries(Object.entries(params).filter(([,value])=>value!==''&&value!=null))});
 
-export const getHubPostulanteAccounts = async () => api.get('/hub/staff/postulantes');
+export const getHubPostulanteAccounts = params => directory('/hub/staff/postulantes','postulantes',params);
 export const createHubPostulante = async (payload) => api.post('/hub/staff/postulantes', payload, await withHubCsrf());
 export const updateHubPostulante = async (identityId, payload) => api.patch(`/hub/staff/postulantes/${identityId}`, payload, await withHubCsrf());
 export const deactivateHubPostulante = async (identityId) => api.post(`/hub/staff/postulantes/${identityId}/deactivate`, {}, await withHubCsrf());

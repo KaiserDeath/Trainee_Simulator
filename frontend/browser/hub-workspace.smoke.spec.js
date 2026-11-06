@@ -79,13 +79,13 @@ test('learner lessons use readable surfaces on desktop and mobile',async({page})
 test('mobile administrator can reach staff password controls without horizontal scrolling',async({page})=>{
   await staff(page,'ADMIN');let reset=false;
   await page.route('**/api/hub/admin/accounts',route=>json(route,{accounts:[{id:learnerId,username:'Ttrainer',displayName:'Training supervisor',roles:['TRAINER'],status:'active'}]}));
-  await page.route(`**/api/hub/admin/identities/${learnerId}/password-reset`,route=>{reset=true;return json(route,{});});
+  await page.route(`**/api/hub/admin/identities/${learnerId}/password-reset`,route=>{reset=true;return json(route,{initialPassword:'Fixture-random-password'});});
   await page.setViewportSize({width:390,height:844});await page.goto('/hub#/learn');
   const directory=page.locator('#hub-people .hub-mobile-directory');
   await expect(directory.getByText('Training supervisor',{exact:true})).toBeVisible();
   expect(await directory.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
-  await directory.getByRole('button',{name:'Reset to username',exact:true}).click();
-  await expect(page.getByText("Ttrainer's password was reset to Ttrainer.")).toBeVisible();expect(reset).toBe(true);
+  await directory.getByRole('button',{name:'Generate temporary password',exact:true}).click();
+  await expect(page.getByText("Temporary password for Ttrainer: Fixture-random-password. Share it securely; it is shown only now.")).toBeVisible();expect(reset).toBe(true);
   await page.screenshot({path:'../outputs/hub-mobile-admin-account-cards.png',fullPage:true});
 });
 

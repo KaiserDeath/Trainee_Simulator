@@ -65,6 +65,7 @@ export function normalizeVerifiedIdentity(value) {
         : null,
     preferredLocale:
       value.preferredLocale === 'es' ? 'es' : 'en',
+    mustChangePassword: value.mustChangePassword === true,
     roles,
     visibilityClaims:
       value.visibilityClaims &&
@@ -81,7 +82,8 @@ export function publicIdentityContext(identity) {
       displayName: identity.displayName,
       username: identity.username,
       preferredLocale: identity.preferredLocale,
-      roles: [...identity.roles]
+      roles: [...identity.roles],
+      mustChangePassword: identity.mustChangePassword === true
     }
   };
 }

@@ -370,7 +370,14 @@ async function passwordLogin(username, password = username) {
   assert.ok(preAuthJar.lastSetCookies.some((cookie) => cookie.startsWith('trez_hub_access=') && /HttpOnly/i.test(cookie)));
   assert.ok(preAuthJar.lastSetCookies.some((cookie) => cookie.startsWith('trez_hub_refresh=') && /HttpOnly/i.test(cookie)));
   assert.ok(!preAuthJar.lastSetCookies.some((cookie) => /Service.Role|service_role/i.test(cookie)));
-  return { jar: preAuthJar, csrf: requested.body.csrfToken };
+  const session={jar:preAuthJar,csrf:requested.body.csrfToken,password};
+  const context=await request('/context',{jar:session.jar});
+  if(context.body.subject.mustChangePassword){
+    const denied=await request('/learning-path',{jar:session.jar});assert.equal(denied.status,403);
+    const next='Changed-local-'+randomUUID();
+    const changed=await request('/auth/password',{jar:session.jar,csrf:session.csrf,method:'POST',body:{currentPassword:password,newPassword:next}});assert.equal(changed.status,200,JSON.stringify(changed.body));return passwordLogin(username,next);
+  }
+  return session;
 }
 
 async function createAccount(adminSession, payload) {
@@ -383,7 +390,7 @@ async function createAccount(adminSession, payload) {
   assert.equal(created.status, 201, JSON.stringify(created.body));
   return {
     identity: created.body.identity,
-    session: await passwordLogin(created.body.identity.username),
+    session: await passwordLogin(created.body.identity.username,created.body.initialPassword),
   };
 }
 
@@ -395,7 +402,7 @@ async function createPostulante(staffSession, payload) {
     body: { firstName: payload.firstName, surname: payload.surname },
   });
   assert.equal(created.status, 201, JSON.stringify(created.body));
-  return { identity: created.body.identity, session: await passwordLogin(created.body.identity.username) };
+  return { identity: created.body.identity, session: await passwordLogin(created.body.identity.username,created.body.initialPassword) };
 }
 
 let server;
@@ -687,9 +694,9 @@ try {
     jar: trainee.session.jar,
     csrf: trainee.session.csrf,
     method: 'POST',
-    body: { currentPassword: trainee.identity.username, newPassword: 'NotAllowed123' },
+    body: { currentPassword: trainee.session.password, newPassword: 'NewLearnerPassword123' },
   });
-  assert.equal(postulantePasswordChange.status, 403);
+  assert.equal(postulantePasswordChange.status, 200);
 
   const reviewer=await createDirectLocalStaff(accountInputs.trainer,'retentionreviewer');
   const notesPath=`/workspace/postulantes/${trainee.identity.id}/notes`;
@@ -730,7 +737,7 @@ try {
     jar: trainer.session.jar,
     csrf: trainer.session.csrf,
     method: 'POST',
-    body: { currentPassword: trainer.identity.username, newPassword: changedTrainerPassword },
+    body: { currentPassword: trainer.session.password, newPassword: changedTrainerPassword },
   });
   assert.equal(trainerPasswordChange.status, 200, JSON.stringify(trainerPasswordChange.body));
   const resetTrainerPassword = await request(`/admin/identities/${trainer.identity.id}/password-reset`, {
@@ -740,7 +747,7 @@ try {
     body: {},
   });
   assert.equal(resetTrainerPassword.status, 200, JSON.stringify(resetTrainerPassword.body));
-  const trainerAfterReset = await passwordLogin(trainer.identity.username);
+  const trainerAfterReset = await passwordLogin(trainer.identity.username,resetTrainerPassword.body.initialPassword);
   assert.equal((await request('/context', { jar: trainerAfterReset.jar })).status, 200);
 
   const deactivated = await request(`/admin/identities/${trainer.identity.id}/deactivate`, {

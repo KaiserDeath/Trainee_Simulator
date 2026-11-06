@@ -38,6 +38,9 @@ export function authenticateHub(identityVerifier) {
       req.hubIdentity = normalizeVerifiedIdentity(
         await identityVerifier.verify(req, res)
       );
+      if (req.hubIdentity.mustChangePassword && !(req.baseUrl === '/api/hub' && ['/context', '/auth/password', '/auth/logout'].includes(req.path))) {
+        throw new HubError(403, 'HUB_PASSWORD_CHANGE_REQUIRED', 'Change your temporary password in the Training Hub before continuing.');
+      }
       next();
     } catch (error) {
       if (isHubError(error)) {

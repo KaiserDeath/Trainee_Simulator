@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { changeHubPassword } from '../../api/client';
 
-export default function HubPasswordPanel() {
+export default function HubPasswordPanel({required = false}) {
   const {t} = useHubLocale();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -17,10 +17,11 @@ export default function HubPasswordPanel() {
     setBusy(true);
     setNotice('');
     try {
-      await changeHubPassword(currentPassword, newPassword);
+      const response=await changeHubPassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
       setNotice(hubMessage("Password changed."));
+      if(required || response.data.signInRequired) window.location.reload();
     } catch (error) {
       setNotice(hubServerMessage(error?.response?.data?.error?.message || hubMessage("Password could not be changed."), hubMessage("Password could not be changed.")));
     } finally {
@@ -28,11 +29,11 @@ export default function HubPasswordPanel() {
     }
   };
 
-  return <details className="hub-password-panel">
+  return <details className="hub-password-panel" open={required || undefined}>
     <summary>{t("Change my password")}</summary>
     <form className="hub-account-form" onSubmit={submit}>
       <label>{t("Current password")}<input type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
-      <label>{t("New password")}<input type="password" autoComplete="new-password" required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
+      <label>{t("New password")}<input type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
       <button className="hub-primary-button" type="submit" disabled={busy}>{busy ? t("Changing…") : t("Change password")}</button>
     </form>
     {notice && <p role="status">{t(notice)}</p>}

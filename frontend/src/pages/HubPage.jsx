@@ -93,6 +93,7 @@ const normaliseContext = (data) => ({
     displayName: data.subject.displayName,
     username: data.subject.username,
     preferredLocale: data.subject.preferredLocale,
+    mustChangePassword: data.subject.mustChangePassword,
     roles: data.subject.roles || [],
   } : null),
   message: data?.message,
@@ -116,6 +117,8 @@ function HubScreen() {
   const [assessmentOpen,setAssessmentOpen]=useState(false);
   const [busyActivityId, setBusyActivityId] = useState(null);
   const [trainerLearners, setTrainerLearners] = useState(null);
+  const [directoryPage,setDirectoryPage]=useState(null);
+  const [directorySearch,setDirectorySearch]=useState('');
   const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState(null);
   const [snapshotBusy, setSnapshotBusy] = useState(false);
   const [translationReloading,setTranslationReloading]=useState(false);
@@ -192,6 +195,7 @@ function HubScreen() {
         const contextResponse = await getHubContext();
         if (cancelled) return;
         const nextContext = normaliseContext(contextResponse.data);
+        if (nextContext.identity?.mustChangePassword) {setContext(nextContext);setLoading(false);return;}
 
         if (!nextContext.available || !nextContext.identity) {
           setError({
@@ -209,7 +213,7 @@ function HubScreen() {
         } else if (roles.includes(TRAINER_ROLE) || roles.includes(RRHH_ROLE)) {
           try {
             const learnersResponse = await getHubTrainerLearners();
-            if (!cancelled) {setTrainerLearners(learnersResponse.data.postulantes || learnersResponse.data || []); setSnapshotUpdatedAt(new Date().toISOString());}
+            if (!cancelled) {setTrainerLearners(learnersResponse.data.postulantes || learnersResponse.data || []);setDirectoryPage(learnersResponse.data.page); setSnapshotUpdatedAt(new Date().toISOString());}
           } catch (trainerError) {
             if (trainerError?.response?.status === 404 || trainerError?.response?.status === 501) {
               if (!cancelled) {
@@ -477,6 +481,14 @@ function HubScreen() {
     window.location.assign('/hub');
   };
 
+  async function searchDirectory(search, append=false){
+    setSnapshotBusy(true);setTrainerUnavailable('');
+    try{const response=await getHubTrainerLearners({search,cursor:append?directoryPage?.nextCursor:undefined});
+      setTrainerLearners(current=>append?[...new Map([...(current||[]),...response.data.postulantes].map(row=>[row.id,row])).values()]:response.data.postulantes);
+      setDirectoryPage(response.data.page);setDirectorySearch(search);setSnapshotUpdatedAt(new Date().toISOString());
+    }catch{setTrainerUnavailable('The directory could not be loaded. Try again.');}finally{setSnapshotBusy(false);}
+  }
+  if (context?.identity?.mustChangePassword) return <main className="hub-state-page"><h1>{t("Choose your own password")}</h1><p>{t("Replace your temporary password before opening training. Use at least 12 characters.")}</p><HubPasswordPanel required/><button type="button" onClick={async()=>{await logoutHub();window.location.reload();}}>{t("Sign out")}</button></main>;
   if (loading) {
     return (
       <main className="hub-state-page hub-light-theme" lang={locale} onInvalidCapture={localizeValidity} onInputCapture={clearValidity}>
@@ -543,7 +555,7 @@ function HubScreen() {
   const activeSection=availableSections.includes(staffSection)?staffSection:(isAdministrator?'people':isTrainer&&['','#/staff/home'].includes(staffSection)?'home':'management');
   async function refreshSnapshot(){
     setSnapshotBusy(true);setTrainerUnavailable('');
-    try{const response=await getHubTrainerLearners();setTrainerLearners(response.data.postulantes||response.data||[]);setSnapshotUpdatedAt(new Date().toISOString());}
+    try{const response=await getHubTrainerLearners({search:directorySearch});setTrainerLearners(response.data.postulantes||response.data||[]);setDirectoryPage(response.data.page);setSnapshotUpdatedAt(new Date().toISOString());}
     catch{setTrainerUnavailable({unavailable:true});}finally{setSnapshotBusy(false);}
   }
   function chooseSection(event,section){
@@ -602,6 +614,7 @@ function HubScreen() {
         {isAdministrator && <HubWorkspacePanel id="hub-policies" active={activeSection==='policies'} className="hub-section-anchor"><HubPolicyStudio locale={staffLanguage} /></HubWorkspacePanel>}
         {(isAdministrator || isTrainer) && <HubWorkspacePanel id="hub-curriculum" active={activeSection==='curriculum'} className="hub-section-anchor"><HubContentStudio canEdit={isAdministrator} locale={staffLanguage} /></HubWorkspacePanel>}
         {(isAdministrator||isTrainer)&&<HubWorkspacePanel id="hub-media" active={activeSection==='media'} className="hub-section-anchor"><HubMediaLibrary canEdit={isAdministrator}/></HubWorkspacePanel>}
+        {isTrainer && ['home','progress'].includes(activeSection) && directoryPage && <div className="hub-inline-notice"><p>{t("Loaded {0} of {1} matching learners.",[trainerLearners?.length||0,directoryPage.total])}</p>{directoryPage.nextCursor&&<button type="button" disabled={snapshotBusy} onClick={()=>searchDirectory(directorySearch,true)}>{t("Load more")}</button>}</div>}
         {canManagePostulantes && <HubWorkspacePanel id="hub-coaching" active={activeSection==='coaching'} className="hub-section-anchor"><HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} /></HubWorkspacePanel>}
         {canManagePostulantes&&<HubWorkspacePanel id="hub-groups" active={activeSection==='groups'} className="hub-section-anchor"><HubCohorts canManage={canManagePostulantes} locale={staffLanguage}/></HubWorkspacePanel>}
 
@@ -614,7 +627,7 @@ function HubScreen() {
                 {t(staffCopy.visibilityUnavailable)}
               </p>
             ) : (
-              <HubTrainerOverview learners={trainerLearners || []} locale={staffLanguage} />
+              <HubTrainerOverview onSearch={search=>searchDirectory(search)} learners={trainerLearners || []} locale={staffLanguage} />
             )}
           </section>
         )}

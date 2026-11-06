@@ -35,9 +35,12 @@ jobs:
             frontend/package-lock.json
             shared/account-id-rules/package-lock.json
       - run: npm run setup
+      - run: npm audit --omit=dev --prefix backend
+      - run: npm audit --omit=dev --prefix frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: npm run verify:foundation
+      - run: npm --prefix frontend run test:production:auth
 
   isolated-database:
     runs-on: ubuntu-latest
@@ -62,6 +65,7 @@ jobs:
           npm run local:prepare
           node node_modules/supabase/dist/supabase.js start -x studio,postgres-meta,edge-runtime,logflare,vector,supavisor,mailpit,imgproxy
           node scripts/write-local-env.mjs
+      - run: npm run verify:local:directories
       - run: npm run verify:local:data
       - run: npm run verify:local:hub
       - run: npm run verify:local:hub:auth

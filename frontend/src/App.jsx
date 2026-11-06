@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense, Component } from "react";
 
-import SessionStartPage from "./pages/SessionStartPage";
-import TraineeDashboard from "./pages/TraineeDashboard";   // renamed from TrainerPage
-import TrainerDashboard from "./pages/DashboardPage";     // renamed alias for clarity
-import OrionStarsPanel from "./components/games/OrionStarsPanel";
-import GoldenDragonPanel from "./components/games/GoldenDragonPanel";
-import VblinkPanel from "./components/games/VblinkPanel";
-import HubPage from "./pages/HubPage";
+const SessionStartPage = lazy(() => import('./pages/SessionStartPage'));
+const TraineeDashboard = lazy(() => import('./pages/TraineeDashboard'));
+const TrainerDashboard = lazy(() => import('./pages/DashboardPage'));
+const OrionStarsPanel = lazy(() => import('./components/games/OrionStarsPanel'));
+const GoldenDragonPanel = lazy(() => import('./components/games/GoldenDragonPanel'));
+const VblinkPanel = lazy(() => import('./components/games/VblinkPanel'));
+const HubPage = lazy(() => import('./pages/HubPage'));
 import SimulatorIdentityBoundary from './components/hub/SimulatorIdentityBoundary';
 
 const SESSION_KEY = "casino_trainer_session";
@@ -119,7 +119,7 @@ function SimulatorApp() {
   return <TraineeDashboard session={session} onSessionEnded={handleSessionEnded} />;
 }
 
-export default function App(){
+function AppContent(){
   const path=window.location.pathname;
   if(AUTH_REQUIRED){
     if(path==='/'||path==='/hub'||path.startsWith('/hub/'))return <HubPage/>;
@@ -127,3 +127,10 @@ export default function App(){
   }
   return <SimulatorApp/>;
 }
+
+class ApplicationBoundary extends Component {
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  render(){return this.state.failed?<main className="hub-state-page"><h1>Workspace could not load</h1><p>Reload to get the latest application files. Saved progress remains on the server.</p><button type="button" onClick={()=>window.location.reload()}>Reload application</button></main>:this.props.children;}
+}
+export default function App(){return <ApplicationBoundary><Suspense fallback={<main aria-busy="true"><p role="status">Loading…</p></main>}><AppContent/></Suspense></ApplicationBoundary>;}

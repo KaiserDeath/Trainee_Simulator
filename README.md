@@ -1,5 +1,20 @@
 # Casino Operator Training Simulator (Sandbox)
 
+## Audit remediation — 2026-11-06
+
+New Hub accounts and staff resets now receive a one-time random temporary password
+and must choose their own password before training. Existing username-password
+accounts enter this flow on their next successful login. Learners can change
+their own Hub password. This supersedes the older credential-policy paragraphs
+below; simulation/game passwords and scoring are unchanged.
+
+Directories now use bounded server-side search and cursor pages, and trainer
+lists load summary counts rather than complete learning histories. Run
+`npm run verify:local:directories` for the 1,005-learner database gate.
+Operational readiness is available at `/api/ready`; authenticated ADMIN runtime
+diagnostics are at `/api/hub/admin/runtime-metrics`. See
+`docs/adr/0011-audit-hardening-and-bounded-directories.md` for rollout and recovery.
+
 ## Training Hub upgrade in progress — 2026-11-02
 
 The user authorized the existing scoring/ID behavior as the starting rules,

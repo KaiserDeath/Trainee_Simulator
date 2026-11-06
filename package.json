@@ -39,7 +39,8 @@
     "verify:local:formal-browser": "node scripts/run-local-verification.mjs formal-browser",
     "verify:local:recovery": "node scripts/verify-local-recovery.mjs",
     "verify:release:acceptance": "node scripts/check-hub-release-acceptance.mjs",
-    "verify:hosted:recovery": "node backend/scripts/rehearse-hosted-recovery.mjs"
+    "verify:hosted:recovery": "node backend/scripts/rehearse-hosted-recovery.mjs",
+    "verify:local:directories": "node scripts/verify-local-hub-directories.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

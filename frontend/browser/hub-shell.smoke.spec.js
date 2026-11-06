@@ -639,7 +639,7 @@ test('ADMIN is limited to debugging and TRAINER account administration', async (
   await expect(page.locator('.hub-app-shell')).toHaveAttribute('lang', 'es');
 });
 
-test('ADMIN creates a TRAINER with the generated username as the initial password', async ({ page }) => {
+test('ADMIN creates a TRAINER and displays a one-time random temporary password', async ({ page }) => {
   let createdAccount;
   await page.route('**/api/hub/context', (route) => route.fulfill({
     status: 200,
@@ -658,7 +658,7 @@ test('ADMIN creates a TRAINER with the generated username as the initial passwor
         status: 201,
         contentType: 'application/json',
         body: JSON.stringify({
-          identity: { id: 'trainer-1', username: 'Jperez', displayName: 'Juan Pérez', status: 'active' },
+          initialPassword:'Fixture-random-password', identity: { id: 'trainer-1', username: 'Jperez', displayName: 'Juan Pérez', status: 'active' },
           roles: ['trainer'],
         }),
       });
@@ -675,14 +675,14 @@ test('ADMIN creates a TRAINER with the generated username as the initial passwor
   });
 
   await page.goto('/hub#/learn');
-  await page.getByLabel('First name').fill('Juan');
-  await page.getByLabel('First surname').fill('Pérez');
+  await page.getByRole('region',{name:'TRAINER account administration'}).getByLabel('First name').fill('Juan');
+  await page.getByRole('region',{name:'TRAINER account administration'}).getByLabel('First surname').fill('Pérez');
   await page.getByRole('button', { name: 'Create account' }).click();
 
-  await expect(page.getByRole('status')).toHaveText('Account created. Username and initial password: Jperez');
+  await expect(page.getByRole('status')).toHaveText('Account created. Username: Jperez. Temporary password: Fixture-random-password. Share it securely; it is shown only now.');
   expect(createdAccount).toEqual({ firstName: 'Juan', surname: 'Pérez', roles: ['trainer'], preferredLocale: 'en' });
   await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Reset to username' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Generate temporary password' })).toBeVisible();
 });
 
 test('trainer can switch the progress view to Spanish', async ({ page }) => {

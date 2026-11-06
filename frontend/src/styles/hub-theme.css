@@ -182,3 +182,6 @@
  .hub-light-theme .hub-mobile-directory button { min-height: 44px; }
  .hub-light-theme .hub-mobile-directory select { width: 100%; margin-bottom: 6px; }
 }
+
+/* The search label is itself .hub-progress-search, rather than its child. */
+.hub-light-theme label.hub-progress-search { color: #334b5b; }

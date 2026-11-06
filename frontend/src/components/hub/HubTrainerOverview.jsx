@@ -19,7 +19,7 @@ const COPY = {
     },
   },
 };
-export default function HubTrainerOverview({ learners, locale = 'en' }) {
+export default function HubTrainerOverview({ learners, locale = 'en', onSearch }) {
   const {t} = useHubLocale();
   const copy = COPY.en;
   const [search, setSearch] = useState('');
@@ -28,9 +28,7 @@ export default function HubTrainerOverview({ learners, locale = 'en' }) {
   );
   const enrolments = (learners || []).flatMap((learner) => learner.enrolments || []);
 
-  if (!learners?.length) {
-    return <p className="hub-empty-state">{t(copy.empty)}</p>;
-  }
+  learners ||= [];
 
   return (
     <div>
@@ -42,7 +40,7 @@ export default function HubTrainerOverview({ learners, locale = 'en' }) {
           [locale === 'es' ? 'Sin curso' : 'Without a course', learners.filter((item) => !item.enrolments?.length).length],
         ].map(([label, value]) => <div key={label}><span>{t(label)}</span><strong>{value}</strong></div>)}
       </div>
-      <label className="hub-progress-search">{t("Search learner progress")}<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Name or username")} /></label>
+      <form onSubmit={event=>{event.preventDefault();onSearch?.(search);}}><label className="hub-progress-search">{t("Search learner progress")}<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Name or username")} /></label><button type="submit">{t("Search directory")}</button></form>
     <div className="hub-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}>
       <table className="hub-trainer-table">
         <caption>{t(copy.caption)}</caption>
@@ -70,12 +68,13 @@ export default function HubTrainerOverview({ learners, locale = 'en' }) {
 
             return enrolments.map((enrolment) => {
               const activities = (enrolment.modules || []).flatMap((module) => module.activities || []);
-              const complete = activities.filter((activity) => activity.status === 'completed').length;
+              const complete = enrolment.completedActivities ?? activities.filter((activity) => activity.status === 'completed').length;
+              const total = enrolment.totalActivities ?? activities.length;
               return (
                 <tr key={`${learner.id}-${enrolment.id}`}>
                   <th scope="row">{learner.displayName}</th>
                   <td>{t(enrolment.course?.title)}</td>
-                  <td><div className="hub-progress-cell"><span>{complete} / {activities.length}</span><progress aria-label={`${learner.displayName}: ${copy.completed}`} value={complete} max={activities.length || 1} /></div></td>
+                  <td><div className="hub-progress-cell"><span>{complete} / {total}</span><progress aria-label={`${learner.displayName}: ${copy.completed}`} value={complete} max={total || 1} /></div></td>
                   <td><span className={`hub-status-pill hub-status-${enrolment.status}`}>{t(copy.statuses[enrolment.status] || enrolment.status)}</span></td>
                 </tr>
               );

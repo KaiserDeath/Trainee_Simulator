@@ -34,6 +34,14 @@ const HOST = process.env.HOST || undefined;
   Create HTTP server
 */
 const server = http.createServer(app);
+let draining=false;
+for(const signal of ['SIGTERM','SIGINT'])process.once(signal,()=>{
+  if(draining)return;draining=true;
+  app.locals.simulationWorker?.stop();
+  io.close();
+  server.close(()=>{process.exitCode=0;});
+  const deadline=setTimeout(()=>process.exit(1),10000);deadline.unref();
+});
 
 /*
   Initialize Socket.IO

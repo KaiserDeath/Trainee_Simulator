@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import {httpSecurity, createLoginLimiter} from './httpSecurity.js';
+import {createReadiness} from './readiness.js';
+import {createHubDirectory} from './hub/hubDirectory.js';
 
 import './config/loadEnv.js';
 
@@ -135,6 +138,8 @@ export function createApp(options = {}) {
   const focusedPracticeRepository = options.focusedPracticeRepository || defaults.focusedPracticeRepository;
   const hubAssessmentService = options.hubAssessmentService || defaults.assessmentService;
   const app = express();
+  app.disable('x-powered-by');
+  app.use(httpSecurity);
   app.locals.hubIdentityVerifier = hubIdentityVerifier;
   app.locals.hubAuthConfig = defaults.authConfig;
   app.locals.simulatorAuthRequired = options.simulatorAuthRequired ?? (process.env.NODE_ENV === 'production' || process.env.TREZ_SIMULATOR_AUTH_REQUIRED === 'true');
@@ -149,7 +154,10 @@ export function createApp(options = {}) {
     })
   );
 
-  app.use(express.json());
+  app.use(express.json({limit:'100kb', inflate:false}));
+  app.use('/api/hub/auth/login', createLoginLimiter());
+  const readiness = createReadiness({client:supabase,worker:()=>app.locals.simulationWorker,required:process.env.NODE_ENV==='production'||process.env.TREZ_DURABLE_SIMULATION==='true'});
+  app.get(['/ready', '/api/ready'], readiness);
 
   app.get('/health', (req, res) => {
     res.json({
@@ -183,6 +191,8 @@ export function createApp(options = {}) {
   app.use(
     '/api/hub',
     createHubRouter({
+      directory: options.hubDirectory || (options.hubRepository ? undefined : createHubDirectory(supabase)),
+      queueHealth: async identity => {const result=await supabase.rpc('hub_runtime_queue_health',{p_external_subject:identity.subjectId});if(result.error)throw new HubError(503,'HUB_RUNTIME_UNAVAILABLE','Runtime diagnostics are unavailable.');return result.data;},
       identityVerifier: hubIdentityVerifier,
       repository: hubRepository,
       csrfProtection: hubCsrfProtection,

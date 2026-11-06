@@ -231,7 +231,8 @@ test('context exposes only identity data returned by the server verifier', async
           displayName: null,
           username: 'Jperez',
           preferredLocale: 'en',
-          roles: ['POSTULANTE']
+          roles: ['POSTULANTE'],
+          mustChangePassword: false
         }
       });
     }

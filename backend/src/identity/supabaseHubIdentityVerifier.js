@@ -76,6 +76,7 @@ export function createSupabaseHubIdentityVerifier({
         displayName: identity.display_name,
         preferredLocale: identity.preferred_locale,
         roles,
+        mustChangePassword: authUser.app_metadata?.must_change_password === true,
       };
     },
   });

@@ -1,3 +1,4 @@
+import {readAllById} from '../domain/readAllById.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 
 import { HubError } from '../hub/HubError.js';
@@ -88,6 +89,11 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
         await serviceClient.auth.admin.signOut(signedIn.data.session.access_token, 'local').catch(() => {});
         throw authenticationError();
       }
+      // Existing username-password accounts are upgraded when they next sign in.
+      if (password.toLowerCase() === username.toLowerCase() && !signedIn.data.user.app_metadata?.must_change_password) {
+        const marked = await serviceClient.auth.admin.updateUserById(signedIn.data.user.id, {app_metadata:{must_change_password:true}});
+        if (marked.error) throw persistenceError();
+      }
       setHubSessionCookies(response, authConfig, signedIn.data.session);
       return { csrfToken: csrfProtection.issue(null, response) };
     },
@@ -99,11 +105,10 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
     },
 
     async listAccounts() {
-      const result = await serviceClient.from('hub_identities')
-        .select('id, username, first_name, surname, display_name, preferred_locale, status, hub_role_assignments(hub_roles(code))')
-        .order('username', { ascending: true });
-      if (result.error) throw persistenceError();
-      return (result.data || []).map((identity) => ({
+      let accounts;
+      try {accounts=await readAllById(()=>serviceClient.from('hub_identities').select('id, username, first_name, surname, display_name, preferred_locale, status, hub_role_assignments(hub_roles(code))'));}
+      catch {throw persistenceError();}
+      return accounts.sort((a,b)=>(a.username||'').localeCompare(b.username||'')).map((identity) => ({
         id: identity.id,
         username: identity.username,
         firstName: identity.first_name,
@@ -160,10 +165,12 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
         }
         if (!identity) throw new HubError(409, 'HUB_USERNAME_EXHAUSTED', 'A unique username could not be allocated.');
 
+        const initialPassword = randomBytes(18).toString('base64url');
         const finalEmail = internalAuthEmail(identity.username);
         const authUpdate = await serviceClient.auth.admin.updateUserById(authUserId, {
           email: finalEmail,
-          password: identity.username,
+          password: initialPassword,
+          app_metadata: {must_change_password:true},
           email_confirm: true,
           user_metadata: { display_name: identity.display_name, username: identity.username },
         });
@@ -181,6 +188,7 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
             status: identity.status,
           },
           roles,
+          initialPassword,
         };
       } catch (error) {
         if (identityId) {
@@ -259,13 +267,22 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
       return { firstName: result.data.first_name, surname: result.data.surname, username: result.data.username };
     },
 
-    async changeOwnPassword(identity, { currentPassword, newPassword }) {
-      if (identity.roles.includes('POSTULANTE')) throw new HubError(403, 'HUB_ROLE_FORBIDDEN', 'Postulantes cannot change or reset their password.');
+    async changeOwnPassword(identity, { currentPassword, newPassword }, response) {
+
       const username = normalizeUsername(identity.username);
       const verified = await authClientFactory().auth.signInWithPassword({ email: internalAuthEmail(username), password: String(currentPassword || '') });
       if (verified.error || !verified.data.user) throw authenticationError();
-      const updated = await serviceClient.auth.admin.updateUserById(verified.data.user.id, { password: String(newPassword || '') });
+      const nextPassword = String(newPassword || '');
+      if (nextPassword.length < 12 || nextPassword.length > 128 || nextPassword.toLowerCase() === username.toLowerCase() || nextPassword === String(currentPassword || '')) {
+        throw new HubError(400, 'HUB_PASSWORD_REJECTED', 'Choose a new password of 12 to 128 characters, different from your username and current password.');
+      }
+      const updated = await serviceClient.auth.admin.updateUserById(verified.data.user.id, { password: nextPassword, app_metadata:{must_change_password:false} });
       if (updated.error) throw passwordPolicyError();
+      if(response){
+        const signedIn=await authClientFactory().auth.signInWithPassword({email:internalAuthEmail(username),password:nextPassword});
+        if(signedIn.error||!signedIn.data.session){clearHubSessionCookies(response,authConfig);return {changed:true,signInRequired:true};}
+        setHubSessionCookies(response,authConfig,signedIn.data.session);
+      }
       return { changed: true };
     },
 
@@ -283,9 +300,10 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
       if (roles.includes('postulante') || !roles.some((role) => ['admin', 'trainer', 'rrhh'].includes(role))) {
         throw new HubError(403, 'HUB_ROLE_FORBIDDEN', 'Only staff account passwords can be reset.');
       }
-      const updated = await serviceClient.auth.admin.updateUserById(identity.auth_user_id, { password: identity.username });
+      const initialPassword = randomBytes(18).toString('base64url');
+      const updated = await serviceClient.auth.admin.updateUserById(identity.auth_user_id, { password: initialPassword, app_metadata:{must_change_password:true} });
       if (updated.error) throw passwordPolicyError();
-      return { id: identity.id, username: identity.username, reset: true };
+      return { id: identity.id, username: identity.username, initialPassword, reset: true };
     },
 
     async deactivate(identityId) {

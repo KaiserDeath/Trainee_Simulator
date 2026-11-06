@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import {runtimeMetrics} from '../httpSecurity.js';
 import {createHubDisplayTranslationMiddleware} from '../hub/hubDisplayTranslations.js';
 import { HubError } from '../hub/HubError.js';
 
@@ -30,6 +31,8 @@ function asyncRoute(handler) {
 }
 
 export function createHubRouter({
+  directory,
+  queueHealth,
   identityVerifier,
   repository,
   csrfProtection,
@@ -57,6 +60,7 @@ export function createHubRouter({
 
   router.use(authenticateHub(identityVerifier));
   router.use(csrfProtection.middleware);
+  router.get('/admin/runtime-metrics',requireHubRole(HUB_ROLES.ADMIN),asyncRoute(async(req,res)=>res.json({http:runtimeMetrics(),queue:queueHealth?await queueHealth(req.hubIdentity):null})));
   router.use(createHubDisplayTranslationMiddleware({service:contentTranslationService}));
   if(contentTranslationService)router.post('/workspace/activities/:id/translations',requireHubRole('ADMIN'),asyncRoute(async(req,res)=>{res.json(await contentTranslationService.create(req.hubIdentity,req.params.id,req.body||{}));}));
   if(cohortService)router.use('/cohorts',createHubCohortRouter({service:cohortService}));
@@ -324,6 +328,7 @@ export function createHubRouter({
     '/trainer/postulantes',
     requireHubRole(HUB_ROLES.TRAINER, HUB_ROLES.RRHH),
     asyncRoute(async (req, res) => {
+      if(directory) return res.json(await directory(req.hubIdentity,'progress',req.query));
       const learners = await service.listTrainerLearners(req.hubIdentity);
       res.json({ postulantes: learners });
     })
@@ -409,9 +414,9 @@ export function createHubRouter({
 
   router.post(
     '/auth/password',
-    requireHubRole(HUB_ROLES.ADMIN, HUB_ROLES.TRAINER, HUB_ROLES.RRHH),
+    requireHubRole(HUB_ROLES.ADMIN, HUB_ROLES.TRAINER, HUB_ROLES.RRHH, HUB_ROLES.POSTULANTE),
     asyncRoute(async (req, res) => {
-      res.json(await accountService.changeOwnPassword(req.hubIdentity, req.body || {}));
+      res.json(await accountService.changeOwnPassword(req.hubIdentity, req.body || {}, res));
     })
   );
 
@@ -431,7 +436,7 @@ export function createHubRouter({
   router.get(
     '/staff/postulantes',
     requireHubRole(HUB_ROLES.TRAINER, HUB_ROLES.RRHH),
-    asyncRoute(async (_req, res) => res.json({ postulantes: await accountService.listPostulantes() }))
+    asyncRoute(async (req, res) => res.json(directory ? await directory(req.hubIdentity,'learners',req.query) : { postulantes: await accountService.listPostulantes() }))
   );
 
   router.post(
@@ -461,8 +466,8 @@ export function createHubRouter({
   router.get(
     '/admin/accounts',
     requireHubRole(HUB_ROLES.ADMIN),
-    asyncRoute(async (_req, res) => {
-      res.json({ accounts: await accountService.listAccounts() });
+    asyncRoute(async (req, res) => {
+      res.json(directory ? await directory(req.hubIdentity,'accounts',req.query) : { accounts: await accountService.listAccounts() });
     })
   );
 
