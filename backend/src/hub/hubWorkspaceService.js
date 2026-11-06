@@ -110,7 +110,7 @@ export function createHubWorkspaceService({ client }) {
     async versions(identity,activityId) {
       await actor(identity,['admin']);
       workspaceUuid(activityId);
-      return { versions: await readAllById(() => client.from('hub_content_versions').select('*').eq('definition_kind','activity').eq('definition_id',activityId).eq('locale','en'),{maxRows:10000}) };
+      return { versions: await readAllById(() => client.from('hub_content_versions').select('*').eq('definition_kind','activity').eq('definition_id',activityId),{maxRows:10000}) };
     },
     async createInstruction(identity,activityId,body) {
       await actor(identity,['admin']);

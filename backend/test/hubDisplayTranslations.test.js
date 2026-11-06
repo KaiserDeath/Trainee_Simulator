@@ -28,3 +28,7 @@ test('unrelated routes cannot use echoed text to obtain private question transla
   let result;const payload={question:'Which player should receive the assigned account operation?'};
   const res={statusCode:200,json:value=>{result=value;return res;}};hubDisplayTranslationMiddleware({path:'/workspace/catalog'},res,()=>{});res.json(payload);assert.equal(result,payload);
 });
+test('runtime labels outside assigned question nodes do not receive private bank companions',()=>{
+  const translations=hubDisplayTranslations({task:{label:'Which player should receive the assigned account operation?'},title:'Only the displayed customer name'},{includeQuestions:true});
+  assert.deepEqual(Object.keys(translations),[]);
+});

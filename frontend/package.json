@@ -12,7 +12,7 @@
     "test:production:auth": "npm run build && node --test browser/production-auth.test.mjs",
     "test:browser:install": "playwright install chromium",
     "test:review": "node --test browser/trainer-review.unit.test.js",
-    "test:language": "node --test browser/hub-locale.unit.test.mjs browser/hub-learning-model.unit.test.mjs"
+    "test:language": "node --test browser/hub-locale.unit.test.mjs browser/hub-learning-model.unit.test.mjs browser/hub-content.unit.test.mjs"
   },
   "dependencies": {
     "@trez-training/account-id-rules": "file:../shared/account-id-rules",

@@ -1,8 +1,8 @@
 # Training Hub design and architecture upgrade plan
 
-Updated: 2026-11-04
+Updated: 2026-11-06
 
-Status: Planned; this document does not start product implementation.
+Status: Executing the approved direction; human release acceptance remains open.
 
 Scope: The shared Hub that holds current and future training modules.
 
@@ -14,8 +14,11 @@ and `outputs/hub-navigation-2026-11-05/REPORT.md` for verification and delivery
 status. Phase 4 targeted assignment implementation and local verification are
 recorded in [ADR 0009](adr/0009-targeted-training-and-configurable-responsibilities.md)
 and `outputs/hub-training-assignments-2026-11-05/REPORT.md`. Hosted delivery is
-tracked separately. Phase 5 bilingual authoring, Phase 6 and the human release
-acceptance gates remain open.
+tracked separately. Phase 5 governed bilingual authoring is implemented and locally
+verified; see [ADR 0010](adr/0010-governed-bilingual-authoring.md) and
+`outputs/hub-bilingual-authoring-2026-11-05/REPORT.md`. Fresh CI and hosted delivery
+are recorded separately from local checks. Phase 6 and human release acceptance
+remain open.
 
 ## Outcome
 

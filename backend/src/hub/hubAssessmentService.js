@@ -355,9 +355,15 @@ export function createHubAssessmentService({ client }) {
     },
     async publishTheoryQuestion(identity,body={}){
       if(typeof body.code!=='string'||body.code.length>100||!Number.isInteger(body.expectedVersion)||body.expectedVersion<0||typeof body.question!=='string'||body.question.length>3000||!Array.isArray(body.choices)||body.choices.length>8||typeof body.correctOption!=='string'||typeof body.source!=='string'||body.source.length>2000||typeof body.rationale!=='string'||body.rationale.length>2000)throw new HubError(400,'HUB_VALIDATION_ERROR','Provide the question, choices, correct option, source and change reason.');
-      const result=await client.rpc('hub_publish_theory_question',{p_external_subject:identity.subjectId,p_stable_code:body.code,p_expected_version:body.expectedVersion,p_question:body.question,p_choices:body.choices,p_correct_option:body.correctOption,p_source:body.source,p_rationale:body.rationale});
+      const spanish=body.spanish;
+      if(body.reviewedLanguages!==true||!spanish||typeof spanish!=='object'||Array.isArray(spanish)||Object.keys(spanish).some(key=>!['question','choices'].includes(key))
+       ||typeof spanish.question!=='string'||spanish.question.trim().length<5||spanish.question.length>3000||!spanish.choices||typeof spanish.choices!=='object'||Array.isArray(spanish.choices)
+       ||Object.keys(spanish.choices).length!==body.choices.length||body.choices.some(choice=>!choice||typeof choice!=='object'||Array.isArray(choice)||typeof choice.id!=='string'||!Object.hasOwn(spanish.choices,choice.id)||typeof spanish.choices[choice.id]!=='string'||!spanish.choices[choice.id].trim()||spanish.choices[choice.id].length>1000))throw new HubError(400,'HUB_TRANSLATION_INVALID','Review the English and Spanish question and every matching choice before publication.');
+      const result=await client.rpc('hub_publish_bilingual_theory_question',{p_external_subject:identity.subjectId,p_stable_code:body.code,p_expected_version:body.expectedVersion,p_question:body.question,p_choices:body.choices,p_correct_option:body.correctOption,p_source:body.source,p_rationale:body.rationale,p_spanish:spanish});
       if(result.error){
         const message=String(result.error.message||'');
+        if(message.includes('HUB_TRANSLATION_INVALID'))throw new HubError(400,'HUB_TRANSLATION_INVALID','Review the English and Spanish question and every matching choice before publication.');
+        if(message.includes('HUB_ACCESS_DENIED'))throw new HubError(403,'HUB_ACCESS_DENIED','Your identity cannot publish assessment questions.');
         if(message.includes('VERSION_CONFLICT'))throw new HubError(409,'HUB_QUESTION_VERSION_CONFLICT','This question changed. Reload before publishing.');
         if(message.includes('HUB_INVALID_INPUT'))throw new HubError(400,'HUB_VALIDATION_ERROR','Use a unique question code, two to eight choices and a matching correct option.');
         throw persistenceError();

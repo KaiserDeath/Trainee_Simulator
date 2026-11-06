@@ -304,6 +304,7 @@ async function loadLearnerSnapshot(client, identity) {
                       })() }
                       : activityAttempt?.definition_snapshot?.content ?? activity.content,
                     contentSnapshot: activityAttempt?.definition_snapshot ? true : false,
+                    displayTranslation:activityAttempt?.definition_snapshot?.displayTranslation ?? null,
                     publicationStatus: activity.publication_status,
                     provisional: activity.is_provisional,
                     scored: activity.is_scored,

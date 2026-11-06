@@ -1,5 +1,7 @@
 import {useHubLocale} from '../../i18n/HubLocaleContext';
 import {hubActivityHandler} from './hubModuleContract';
+import HubContentScope from '../../i18n/HubContentScope';
+import {useHubContentText} from '../../i18n/HubContentContext';
 import { useMemo, useState } from 'react';
 
 import HubAccountIdLabActivity from './HubAccountIdLabActivity';
@@ -20,6 +22,7 @@ const normaliseItems = (items = []) => items.map((item, index) => ({
 
 function ArticleContent({ content }) {
   const {t}=useHubLocale();
+  const ct=useHubContentText();
   const paragraphs = content?.paragraphs || (content?.body ? [content.body] : []);
   const sections = content?.sections || [];
   const lists = [
@@ -31,25 +34,25 @@ function ArticleContent({ content }) {
 
   return (
     <div className="hub-prose">
-      {paragraphs.map((paragraph, index) => <p key={`paragraph-${index}`}>{t(paragraph)}</p>)}
-      {content?.summary && <p>{t(content.summary)}</p>}
+      {paragraphs.map((paragraph, index) => <p key={`paragraph-${index}`}>{ct(paragraph)}</p>)}
+      {content?.summary && <p>{ct(content.summary)}</p>}
       {lists.map(([title, items]) => (
         <section key={title}>
           <h4>{t(title)}</h4>
-          <ul>{items.map((item, index) => <li key={`${title}-${index}`}>{t(item)}</li>)}</ul>
+          <ul>{items.map((item, index) => <li key={`${title}-${index}`}>{ct(item)}</li>)}</ul>
         </section>
       ))}
       {sections.map((section, index) => (
         <section key={section.id || `section-${index}`}>
-          {section.title && <h4>{t(section.title)}</h4>}
+          {section.title && <h4>{ct(section.title)}</h4>}
           {(section.paragraphs || []).map((paragraph, paragraphIndex) => (
-            <p key={`section-${index}-paragraph-${paragraphIndex}`}>{t(paragraph)}</p>
+            <p key={`section-${index}-paragraph-${paragraphIndex}`}>{ct(paragraph)}</p>
           ))}
           {section.items?.length > 0 && (
             <ul>
               {section.items.map((item, itemIndex) => (
                 <li key={typeof item === 'string' ? `${item}-${itemIndex}` : item.id || itemIndex}>
-                  {t(typeof item === 'string' ? item : item.text || item.label)}
+                  {ct(typeof item === 'string' ? item : item.text || item.label)}
                 </li>
               ))}
             </ul>
@@ -62,6 +65,7 @@ function ArticleContent({ content }) {
 
 function ChecklistContent({ activity, disabled, onComplete }) {
   const {t} = useHubLocale();
+  const ct=useHubContentText();
   const items = useMemo(
     () => normaliseItems(activity.content?.items || activity.content?.prompts || activity.content?.steps || []),
     [activity.content?.items, activity.content?.prompts, activity.content?.steps]
@@ -82,11 +86,11 @@ function ChecklistContent({ activity, disabled, onComplete }) {
     <div>
       {(activity.content?.introduction || activity.content?.instructions || activity.content?.summary) && (
         <p className="hub-activity-intro">
-          {t(activity.content.introduction || activity.content.instructions || activity.content.summary)}
+          {ct(activity.content.introduction || activity.content.instructions || activity.content.summary)}
         </p>
       )}
       <fieldset className="hub-checklist" disabled={disabled}>
-        <legend className="sr-only">{t(activity.title)}{t(" checklist")}</legend>
+        <legend className="sr-only">{ct(activity.title)}{t(" checklist")}</legend>
         {items.map((item) => (
           <label key={item.id}>
             <input
@@ -94,7 +98,7 @@ function ChecklistContent({ activity, disabled, onComplete }) {
               checked={checked.has(item.id)}
               onChange={() => toggleItem(item.id)}
             />
-            <span>{t(item.label)}</span>
+            <span>{ct(item.label)}</span>
           </label>
         ))}
       </fieldset>
@@ -107,13 +111,14 @@ function ChecklistContent({ activity, disabled, onComplete }) {
 
 function AcknowledgementContent({ activity, disabled, onComplete }) {
   const {t} = useHubLocale();
+  const ct=useHubContentText();
   const [acknowledged, setAcknowledged] = useState(false);
 
   return (
     <div>
       {(activity.content?.body || activity.content?.summary || activity.content?.instructions) && (
         <p className="hub-activity-intro">
-          {t(activity.content.body || activity.content.summary || activity.content.instructions)}
+          {ct(activity.content.body || activity.content.summary || activity.content.instructions)}
         </p>
       )}
       {!activity.completed && (
@@ -125,7 +130,7 @@ function AcknowledgementContent({ activity, disabled, onComplete }) {
               disabled={disabled}
               onChange={(event) => setAcknowledged(event.target.checked)}
             />
-            <span>{t(activity.content?.statement || "I acknowledge that I have reviewed this assigned material.")}</span>
+            <span>{ct(activity.content?.statement || "I acknowledge that I have reviewed this assigned material.")}</span>
           </label>
           <button
             className="hub-primary-button"
@@ -149,18 +154,20 @@ function PolicyBlockedContent({ activity }) {
   );
 }
 
-export default function HubActivityRenderer({ activity, busy, onComplete }) {
+export default function HubActivityRenderer(props){return <HubContentScope translation={props.activity.displayTranslation}><HubActivityBody {...props}/></HubContentScope>;}
+function HubActivityBody({ activity, busy, onComplete }) {
   const {t} = useHubLocale();
+  const ct=useHubContentText();
   const type = activity.type?.toLowerCase();
   const handler = hubActivityHandler(activity);
   const disabled = busy || activity.completed || activity.readOnly;
 
   return (
-    <article className="hub-activity-card" aria-labelledby={`activity-${activity.id}-title`}>
+    <article className="hub-activity-card" data-hub-activity-id={activity.id} aria-labelledby={`activity-${activity.id}-title`}>
       <header className="hub-activity-header">
         <div>
           <span className="hub-eyebrow">{t(type || t("Activity"))}</span>
-          <h3 id={`activity-${activity.id}-title`}>{t(activity.title)}</h3>
+          <h3 id={`activity-${activity.id}-title`}>{ct(activity.title)}</h3>
         </div>
         <span className={`hub-status ${activity.completed ? 'is-complete' : ''}`}>
           {activity.completed ? t("Completed") : t("Assigned")}
@@ -173,7 +180,7 @@ export default function HubActivityRenderer({ activity, busy, onComplete }) {
         </p>
       )}
 
-      {activity.summary && <p className="hub-activity-summary">{t(activity.summary)}</p>}
+      {activity.summary && <p className="hub-activity-summary">{ct(activity.summary)}</p>}
       {(activity.content?.mediaAssetIds||[]).map((id,index)=><HubMediaItem key={id} assetId={id} label={t("Open training asset {0}", [index+1])}/>)}
       {handler==='official'&&<p className="hub-inline-notice">{t("Open the corresponding assessment in Checkpoint and readiness results. This module completes after an official successful result is submitted.")}</p>}
 

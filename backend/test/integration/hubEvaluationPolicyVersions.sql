@@ -15,8 +15,9 @@ BEGIN
   UPDATE public.hub_scored_evaluations SET publication_status='published',is_provisional=FALSE,prerequisite_module_ids=ARRAY[module],theory_item_codes=ARRAY['verification-first'] WHERE id=evaluation;
   old_policy:=public.hub_effective_evaluation(evaluation);current_revision:=old_policy.revision;
   result:=public.hub_start_scored_evaluation_attempt('policy-learner',evaluation,'policy-before');first_attempt:=(result->>'attemptId')::uuid;
-  result:=public.hub_publish_theory_question('policy-trainer','verification-first',1,'Which exact evidence must be checked before changing credit?',
-    '[{"id":"verify","label":"The verified customer, licensed access, amount and histories"},{"id":"name","label":"Only the display name"}]','verify','Existing verification-first operator requirements','Clarify the exact evidence required');
+  result:=public.hub_publish_bilingual_theory_question('policy-trainer','verification-first',1,'Which exact evidence must be checked before changing credit?',
+    '[{"id":"verify","label":"The verified customer, licensed access, amount and histories"},{"id":"name","label":"Only the display name"}]','verify','Existing verification-first operator requirements','Clarify the exact evidence required',
+    '{"question":"¿Qué evidencia exacta se debe revisar antes de cambiar créditos?","choices":{"verify":"El cliente verificado, el acceso autorizado, el importe y los historiales","name":"Solo el nombre mostrado"}}');
   BEGIN
     PERFORM public.hub_publish_theory_question('policy-trainer','verification-first',1,'A stale editor should not replace this question',
       '[{"id":"yes","label":"Yes"},{"id":"no","label":"No"}]','yes','Version conflict fixture','Stale editor must be rejected');
@@ -36,6 +37,12 @@ BEGIN
   result:=public.hub_start_scored_evaluation_attempt('policy-second',evaluation,'policy-after');second_attempt:=(result->>'attemptId')::uuid;
   result:=public.hub_evaluation_runtime_command('policy-second',second_attempt,'start','{}','question-pin-after');
   IF NOT EXISTS(SELECT 1 FROM public.hub_evaluation_runtime r CROSS JOIN LATERAL jsonb_array_elements(r.theory_snapshot) q WHERE r.attempt_id=second_attempt AND (q->>'version')::integer=2) THEN RAISE EXCEPTION 'future attempt missed the new question version';END IF;
+  IF hub_runtime_question_translations('policy-second',second_attempt)->0->'displayEs'->'choices'->>'verify'<>'El cliente verificado, el acceso autorizado, el importe y los historiales' THEN RAISE EXCEPTION 'assigned question Spanish counterpart was not pinned';END IF;
+  IF hub_runtime_question_translations('policy-learner',first_attempt)->0->'displayEs'->>'question' IS NOT NULL THEN RAISE EXCEPTION 'old question acquired the new Spanish version';END IF;
+  BEGIN
+    PERFORM hub_runtime_question_translations('policy-learner',second_attempt);RAISE EXCEPTION 'foreign question translation read accepted';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM<>'HUB_ACCESS_DENIED' THEN RAISE;END IF;END;
+  IF hub_runtime_question_translations('policy-second',second_attempt)->0->'displayEs'?'reviewedBy' THEN RAISE EXCEPTION 'unnecessary reviewer identity reached learner translations';END IF;
   IF (SELECT settings_snapshot->>'durationMinutes' FROM public.hub_scored_evaluation_attempts WHERE id=first_attempt)<>'30'
     OR (SELECT settings_snapshot->>'durationMinutes' FROM public.hub_scored_evaluation_attempts WHERE id=second_attempt)<>'45' THEN RAISE EXCEPTION 'policy revision changed an old attempt or missed the future attempt';END IF;
   BEGIN

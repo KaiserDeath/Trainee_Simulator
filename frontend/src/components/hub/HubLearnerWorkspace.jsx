@@ -16,30 +16,32 @@ export default function HubLearnerWorkspace({paths, busyActivityId, onCompleteAc
   const {t, locale} = useHubLocale();
   const [hash, setHash] = useState(() => window.location.hash);
   const [selection, setSelection] = useState(() => selectionFor(paths, learnerRoute(window.location.hash)) || {course: courseKey(paths[0] || {}), module: paths[0]?.modules[0]?.id});
-  const dirty = useRef(false);
-  const navigation = useRef({hash, paths, assessmentOpen, t});
-  useEffect(() => {navigation.current = {hash, paths, assessmentOpen, t};}, [hash, paths, assessmentOpen, t]);
+  const dirty = useRef(new Set());
+  const navigation = useRef({hash, paths, assessmentOpen, t, selection});
+  useEffect(() => {navigation.current = {hash, paths, assessmentOpen, t, selection};}, [hash, paths, assessmentOpen, t, selection]);
   useEffect(() => {
     const change = () => {
       const current = navigation.current;
       const next = window.location.hash;
       if (next === '#hub-main-content') return;
       if (next === current.hash) return;
-      if (current.assessmentOpen || (dirty.current && !window.confirm(current.t('Leave this activity? Unsaved entries will remain in this page until you select another module.')))) {
+      const nextRoute=learnerRoute(next);const currentRoute=learnerRoute(current.hash);const selected=selectionFor(current.paths,nextRoute);
+      const changingModule=selected&&(selected.course!==current.selection.course||selected.module!==current.selection.module);
+      const leavingStudy=['learn','module'].includes(currentRoute.kind)&&!(nextRoute.kind==='learn'||(nextRoute.kind==='module'&&selected));
+      if (current.assessmentOpen || (dirty.current.size>0 && (changingModule||leavingStudy) && !window.confirm(current.t('Leave this activity? Unsaved entries will remain in this page until you select another module.')))) {
         window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${current.hash}`);
         return;
       }
-      const selected = selectionFor(current.paths, learnerRoute(next));
       if (selected) setSelection(selected);
-      dirty.current = false;
-      navigation.current = {...current, hash: next};
+      if(changingModule)dirty.current.clear();
+      navigation.current = {...current, hash: next, selection:selected||current.selection};
       setHash(next);
       requestAnimationFrame(() => {
         const heading = document.querySelector('#hub-main-content [data-learner-view]:not([hidden]) h1');
         if (heading) {heading.tabIndex = -1; heading.focus({preventScroll: true}); window.scrollTo(0, 0);}
       });
     };
-    const leave = event => {if (dirty.current || navigation.current.assessmentOpen) {event.preventDefault(); event.returnValue = '';}};
+    const leave = event => {if (dirty.current.size>0 || navigation.current.assessmentOpen) {event.preventDefault(); event.returnValue = '';}};
     window.addEventListener('hashchange', change); window.addEventListener('popstate', change); window.addEventListener('beforeunload', leave);
     return () => {window.removeEventListener('hashchange', change); window.removeEventListener('popstate', change); window.removeEventListener('beforeunload', leave);};
   }, []);
@@ -104,9 +106,9 @@ export default function HubLearnerWorkspace({paths, busyActivityId, onCompleteAc
       <div className="hub-catalog-grid">{matching.map(({path, module}) => <article className="hub-home-card hub-catalog-card" key={`${courseKey(path)}:${module.id}`}><p className="hub-meta-label">{t(path.course.title || 'Assigned course')} · {t('Module ')}{module.order}</p><span className="hub-module-status">{t(stateText[moduleState(module)])}</span><h2>{t(module.title)}</h2><p>{t(module.summary || '')}</p>{module.locked && <p className="hub-inline-notice">{t('Complete the listed prerequisites to open this module.')}</p>}<a className="hub-secondary-button" href={moduleHref(path, module)}>{t('View module')}</a></article>)}</div>
       {!matching.length && <section className="hub-home-card"><h2>{t('No matching modules')}</h2><p>{t('Try another search or reset the filters.')}</p><a className="hub-secondary-button" href="#/catalog">{t('Reset filters')}</a></section>}
     </div>}
-    <div data-learner-view hidden={assessmentOpen || !studyVisible} onInputCapture={() => {dirty.current = true;}}>
+    <div data-learner-view hidden={assessmentOpen || !studyVisible} onInputCapture={event => {dirty.current.add(event.target.closest?.('[data-hub-activity-id]')?.getAttribute('data-hub-activity-id')||'*');}}>
       <div className="hub-study-heading"><a href="#/catalog">{t('Back to catalog')}</a><h1>{t('Learning workspace')}</h1></div>
-      {selectedPath ? <HubLearningPath path={selectedPath} selectedModuleId={selection.module} onSelectModule={selectModule} busyActivityId={busyActivityId} onCompleteActivity={async (...args) => {if (await onCompleteActivity(...args)) dirty.current = false;}}/> : <p className="hub-empty-state">{t('No learning modules are currently assigned.')}</p>}
+      {selectedPath ? <HubLearningPath path={selectedPath} selectedModuleId={selection.module} onSelectModule={selectModule} busyActivityId={busyActivityId} onCompleteActivity={async (...args) => {if (await onCompleteActivity(...args)) dirty.current.delete(args[0]?.id);}}/> : <p className="hub-empty-state">{t('No learning modules are currently assigned.')}</p>}
     </div>
     <div data-learner-view hidden={assessmentOpen || (route.kind !== 'missing' && validModuleRoute)}><h1>{t('Module unavailable')}</h1><p>{t('This link is not part of your assigned training. Open the catalog to choose an available module.')}</p><a href="#/catalog">{t('Back to catalog')}</a></div>
     {!assessmentOpen && route.kind === 'groups' && <div data-learner-view><h1>{t('My training groups')}</h1><HubCohorts canManage={false} locale={locale}/></div>}

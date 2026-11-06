@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-export const hubIntegrationCases=['hubWorkspace.sql','hubEvaluationRuntime.sql','hubBackendEvaluation.sql','hubCustomerEvaluation.sql','hubEvaluationPolicyVersions.sql','hubFinalEvaluation.sql','hubMixedPractice.sql','hubCohorts.sql','hubTrainingAssignments.sql','hubCoachingRetention.sql','hubFormalRetention.sql'];
+export const hubIntegrationCases=['hubWorkspace.sql','hubBilingualAuthoring.sql','hubEvaluationRuntime.sql','hubBackendEvaluation.sql','hubCustomerEvaluation.sql','hubEvaluationPolicyVersions.sql','hubFinalEvaluation.sql','hubMixedPractice.sql','hubCohorts.sql','hubTrainingAssignments.sql','hubCoachingRetention.sql','hubFormalRetention.sql'];
 const source=name=>readFileSync(new URL(`../backend/test/integration/${name}`,import.meta.url),'utf8');
 export function readHubIntegrationCase(name){
   assert.ok(hubIntegrationCases.includes(name));

@@ -36,6 +36,15 @@ BEGIN
     PERFORM public.hub_review_content_version('workspace-admin-a',version,'approve','Self review');
     RAISE EXCEPTION 'self approval unexpectedly succeeded';
   EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'HUB_SEPARATE_APPROVER_REQUIRED' THEN RAISE; END IF; END;
+  BEGIN
+    PERFORM public.hub_review_content_version('workspace-admin-b',version,'approve','Missing Spanish review');
+    RAISE EXCEPTION 'English instruction published without Spanish';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'HUB_TRANSLATION_REQUIRED' THEN RAISE; END IF; END;
+  replay:=public.hub_create_content_version('workspace-admin-a','activity',activity,'es',jsonb_build_object('displayTranslation',
+    jsonb_build_object('sourceVersionId',version,'sourceFingerprint',public.hub_instruction_source_hash(result->'content'),
+    'es','{"Updated lesson":"Lección actualizada","New instruction":"Instrucción nueva","Approved text":"Texto aprobado"}'::jsonb)),'Reviewed Spanish fixture');
+  PERFORM public.hub_submit_content_version('workspace-admin-a',(replay->>'id')::uuid);
+  PERFORM public.hub_review_content_version('workspace-admin-b',(replay->>'id')::uuid,'approve','Reviewed Spanish independently');
   PERFORM public.hub_review_content_version('workspace-admin-b',version,'approve','Reviewed independently');
   IF NOT EXISTS(SELECT 1 FROM public.hub_activities WHERE id=activity AND title='Updated lesson'
     AND content->>'summary'='New instruction' AND content->>'surface'='protected-execution-config') THEN

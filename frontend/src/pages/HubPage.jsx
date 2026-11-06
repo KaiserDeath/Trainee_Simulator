@@ -106,7 +106,7 @@ const identityRoles = (identity) => {
 export default function HubPage(){return <HubLocaleProvider><HubScreen/></HubLocaleProvider>;}
 
 function HubScreen() {
-  const {t,locale,setIdentity} = useHubLocale();
+  const {t,locale,setIdentity,contentTranslationUnavailable,contentTranslationIssues} = useHubLocale();
   const localizeValidity=event=>event.target.setCustomValidity?.(t(hubValidationMessage(event.target.validity)));
   const clearValidity=event=>event.target.setCustomValidity?.('');
   const [context, setContext] = useState(null);
@@ -118,6 +118,7 @@ function HubScreen() {
   const [trainerLearners, setTrainerLearners] = useState(null);
   const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState(null);
   const [snapshotBusy, setSnapshotBusy] = useState(false);
+  const [translationReloading,setTranslationReloading]=useState(false);
   const [trainerUnavailable, setTrainerUnavailable] = useState('');
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState('');
@@ -173,8 +174,9 @@ function HubScreen() {
 
   const loadPath = useCallback(async () => {
     const response = await getHubLearningPath();
-    setPaths(normaliseLearningPaths(response.data));
+    const nextPaths=normaliseLearningPaths(response.data);setPaths(nextPaths);return nextPaths;
   }, []);
+  async function refreshContentTranslations(){setTranslationReloading(true);try{await loadPath();}catch{setNotice(hubMessage('Translations could not be refreshed. Your entries remain in this view.'));}finally{setTranslationReloading(false);}}
 
   const loadAuditorOverview = useCallback(async (cursors = {}) => {
     const response = await getHubAuditorOverview(cursors);
@@ -439,9 +441,10 @@ function HubScreen() {
           idempotencyKey,
         });
       }
-      await loadPath();
+      const savedPaths=await loadPath();
       pendingCompletionKeys.current.delete(activity.id);
-      setNotice(hubMessage("{0} progress was saved.", [hubText(activity.title)]));
+      const savedActivity=savedPaths.flatMap(path=>path.modules.flatMap(module=>module.activities)).find(item=>item.id===activity.id)||activity;
+      setNotice(hubMessage("{0} progress was saved.", [hubText(savedActivity.title,savedActivity.displayTranslation?.es)]));
       return true;
     } catch (completionError) {
       setNotice(
@@ -590,6 +593,8 @@ function HubScreen() {
 
 
         {notice && <p className="hub-page-notice" role="status">{t(notice)}</p>}
+        {locale==='es'&&contentTranslationUnavailable&&<p className="hub-inline-notice" role="status">{t('Some content may appear in its source language because translations could not be loaded. Your saved actions are unaffected. Refresh the affected view to retry.')}</p>}
+        {locale==='es'&&roles.includes(POSTULANTE_ROLE)&&contentTranslationIssues?.learning&&!assessmentOpen&&<button type="button" className="hub-secondary-button" disabled={translationReloading} onClick={refreshContentTranslations}>{t('Refresh content translations')}</button>}
         {isTrainer&&<HubWorkspacePanel id="hub-home" active={activeSection==='home'} className="hub-section-anchor"><HubStaffHome learners={trainerLearners} updatedAt={snapshotUpdatedAt} busy={snapshotBusy} unavailable={Boolean(trainerUnavailable)} onRefresh={refreshSnapshot}/></HubWorkspacePanel>}
         {isTrainer && <p><a className="hub-secondary-link" href="/trainer">{t("Open simulator session reports")}</a></p>}
 

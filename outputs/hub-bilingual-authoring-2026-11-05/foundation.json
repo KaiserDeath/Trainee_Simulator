@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-11-06T15:15:09.838Z",
+  "command": "npm run verify:foundation",
+  "passed": true,
+  "backend": 263,
+  "sharedRules": 12,
+  "databaseSafety": 61,
+  "languageAndModel": 11,
+  "chromium": 87,
+  "lint": true,
+  "productionBuild": true,
+  "scope": "Local automated checks; synthetic browser fixtures. Separate native Auth/API/database/browser and recovery reports."
+}

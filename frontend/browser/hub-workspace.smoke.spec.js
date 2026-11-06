@@ -188,9 +188,9 @@ test('ADMIN edits an instruction draft and submits it through the publication wo
   await page.getByLabel('Lesson title').fill('Revised lesson');await page.getByLabel('Lesson text').fill('First paragraph\n\nSecond paragraph');
   await page.getByLabel('Reason for change').fill('Clarify operational verification');
   await page.getByRole('button',{name:'Create new draft'}).click();
-  await expect(page.getByText('v1 · Draft',{exact:true})).toBeVisible();
+  await expect(page.getByText('English source · v1 · Draft',{exact:true})).toBeVisible();
   expect(draft.instruction.paragraphs).toEqual(['First paragraph','Second paragraph']);expect(draft.instruction).not.toHaveProperty('surface');
-  await page.getByRole('button',{name:'Submit for review'}).click();await expect(page.getByText('v1 · Pending review',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Submit for review'}).click();await expect(page.getByText('English source · v1 · Pending review',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Approve publication'})).toBeDisabled();
 });
 
@@ -262,11 +262,15 @@ test('TRAINER edits a question by publishing a new version',async({page})=>{
   });
   await page.goto('/hub#/learn');await page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
   await page.getByRole('button',{name:'Open question bank'}).click();await page.getByRole('combobox',{name:'Question version',exact:true}).selectOption('question-fixture');
-  await page.getByRole('textbox',{name:'Question text',exact:true}).fill('Which verified evidence must be checked before acting?');
+  await page.getByRole('textbox',{name:'English question text',exact:true}).fill('Which verified evidence must be checked before acting?');
+  await page.getByRole('textbox',{name:'Spanish question text',exact:true}).fill('¿Qué evidencia verificada debe revisarse antes de actuar?');
+  await page.getByRole('textbox',{name:'Spanish choice 1',exact:true}).fill('La evidencia exacta');await page.getByRole('textbox',{name:'Spanish choice 2',exact:true}).fill('Adivinar por el nombre');
   await page.getByRole('textbox',{name:'Question change reason',exact:true}).fill('Clarify the required verification');
+  await page.getByRole('checkbox',{name:'I reviewed both language versions against the authoritative source.',exact:true}).check();
   await page.getByRole('button',{name:'Publish question version'}).click();
   await expect(page.getByText('Question verification-first version 2 published. Opened assessments keep their captured question.')).toBeVisible();
   expect(submitted.expectedVersion).toBe(1);expect(submitted.correctOption).toBe('verify');expect(submitted.choices).toHaveLength(2);
+  expect(submitted.spanish.choices).toEqual({verify:'La evidencia exacta',guess:'Adivinar por el nombre'});expect(submitted.reviewedLanguages).toBe(true);
 });
 
 test('ADMIN uploads a private training asset and cannot approve their own upload',async({page})=>{

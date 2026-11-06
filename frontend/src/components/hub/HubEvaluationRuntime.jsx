@@ -1,6 +1,7 @@
 import {hubServerMessage} from '../../i18n/hubLocale';
 import {hubMessage} from '../../i18n/hubLocale';
 import {useHubLocale} from '../../i18n/HubLocaleContext';
+import {questionStemText,questionChoiceText} from '../../i18n/hubContent';
 import {useEffect,useRef,useState} from 'react';
 import {commandHubEvaluation} from '../../api/client';
 
@@ -36,7 +37,7 @@ export function HubPracticeActionForm({task,busy,execute,history}){
 }
 
 export default function HubEvaluationRuntime({attemptId,onReturn}){
-  const {locale,t} = useHubLocale();
+  const {locale,t,contentTranslationIssues} = useHubLocale();
   const [view,setView]=useState(null);const [answers,setAnswers]=useState({});const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');
   const [now,setNow]=useState(()=>Date.now());
   const pending=useRef(null);const startKey=useRef(crypto.randomUUID());
@@ -67,13 +68,14 @@ export default function HubEvaluationRuntime({attemptId,onReturn}){
   return <section className="hub-workspace-panel" aria-labelledby="hub-formal-runtime-title">
     <h2 id="hub-formal-runtime-title" ref={heading} tabIndex={-1}>{t("Formal assessment")}</h2>
     {notice&&<p role="alert" ref={errorNotice} tabIndex={-1}>{t(notice)}</p>}
+    {locale==='es'&&contentTranslationIssues?.runtime&&<button type="button" disabled={busy} onClick={()=>execute('read')}>{t('Refresh content translations')}</button>}
     <p role="status" aria-live="polite" aria-atomic="true" id="hub-assessment-time-notice">{t(timeNotice)}</p>
     {!view&&!notice&&<p role="status">{t("Opening assigned assessment…")}</p>}
     {view?.status==='in_progress'&&<>
       <p>{t("Deadline: ")}{new Date(view.expiresAt).toLocaleString(locale==='es'?'es-PE':'en-US')}{t(". Your numerical result appears when both sections are recorded.")}</p>
       <p role="timer" aria-live="off" aria-label={t("Assessment time remaining")}>{expired?t("Time remaining: 0:00"):t("Time remaining: {0}:{1}", [Math.floor(remaining/60), String(remaining%60).padStart(2,'0')])}</p>
       {!view.theorySubmitted&&<form onSubmit={event=>{event.preventDefault();execute('theory',{answers});}}><fieldset disabled={busy||expired}><legend>{t("Theory")}</legend>
-        {view.questions.map(question=><fieldset key={question.code}><legend>{t(question.question)}</legend>{question.choices.map(choice=><label key={choice.id}><input required type="radio" name={question.code} value={choice.id} checked={answers[question.code]===choice.id} onChange={()=>setAnswers(current=>({...current,[question.code]:choice.id}))}/>{t(choice.label)}</label>)}</fieldset>)}
+        {view.questions.map(question=><fieldset key={question.code}><legend>{questionStemText(locale,question,t)}</legend>{question.choices.map(choice=><label key={choice.id}><input required type="radio" name={question.code} value={choice.id} checked={answers[question.code]===choice.id} onChange={()=>setAnswers(current=>({...current,[question.code]:choice.id}))}/>{questionChoiceText(locale,question,choice,t)}</label>)}</fieldset>)}
         <button type="submit">{t("Record theory responses")}</button>
       </fieldset></form>}
       {view.theorySubmitted&&<p>{t("Theory responses recorded.")}</p>}

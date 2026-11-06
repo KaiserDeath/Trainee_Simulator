@@ -28,6 +28,9 @@
 .hub-light-theme .hub-learner-shell [hidden] {display:none!important}
 .hub-light-theme .hub-staff-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .hub-light-theme .hub-staff-metrics h3 {font-size:.9rem;color:var(--hub-muted)}
+.hub-light-theme .hub-translation-editor {padding:20px 0;margin:20px 0;border-top:1px solid var(--hub-border);border-bottom:1px solid var(--hub-border)}
+.hub-light-theme .hub-translation-entry {padding:16px;margin:16px 0;background:var(--hub-soft);border:1px solid var(--hub-border);border-radius:8px;overflow-wrap:anywhere}
+.hub-light-theme .hub-translation-entry p {white-space:pre-wrap}
 @media(max-width:900px){.hub-light-theme .hub-home-grid {grid-template-columns:minmax(0,1fr)}}
 @media(max-width:650px){.hub-light-theme .hub-catalog-grid,.hub-light-theme .hub-catalog-filters,.hub-light-theme .hub-staff-metrics {grid-template-columns:minmax(0,1fr)}.hub-light-theme .hub-learner-nav {gap:4px}.hub-light-theme .hub-learner-nav a {padding:10px;font-size:.8rem}.hub-light-theme .hub-home-card {padding:20px}.hub-light-theme .hub-next-step h2 {font-size:1.35rem}}
 .hub-light-theme {

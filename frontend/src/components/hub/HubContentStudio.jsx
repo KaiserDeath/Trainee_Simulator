@@ -4,6 +4,7 @@ import {useHubLocale} from '../../i18n/HubLocaleContext';
 import { useRef, useState } from 'react';
 import { getHubWorkspaceCatalog,getHubInstructionVersions,createHubInstruction,submitHubContentVersion,reviewHubContentVersion,getHubMediaLibrary } from '../../api/client';
 import HubMediaItem from './HubMediaItem';
+import HubTranslationEditor from './HubTranslationEditor';
 
 const fields = ['summary','body','paragraphs','learningObjectives','keyPoints','topics','steps','sections','items','prompts','instructions','introduction','statement','mediaAssetIds'];
 const message = error => error?.response?.data?.error?.message || 'Content could not be loaded or saved. Please retry.';
@@ -86,10 +87,13 @@ export default function HubContentStudio({ canEdit }) {
       {!canEdit&&<p>{t("Read-only preview. ADMIN manages content versions and publication.")}</p>}
     </form>}
     {canEdit&&selected&&<div>
+      <HubTranslationEditor key={selected.id} activityId={selected.id} versions={versions} onSaved={refreshVersions}/>
+      <p>{t('Publish the independently reviewed Spanish companion before its matching English version. Preparing the next translation keeps the current lesson available.')}</p>
+      <button type="button" disabled={busy} onClick={async()=>{setBusy(true);try{await refreshVersions();}catch(error){setNotice(hubServerMessage(message(error)));}finally{setBusy(false);}}}>{t('Refresh versions')}</button>
       <label>{t("Review rationale")}<input value={reviewReason} onChange={event=>setReviewReason(event.target.value)} maxLength={2000}/></label>
       <ul className="hub-version-list">{versions.map(version=><li key={version.id}>
-        <strong>{t("v")}{version.version_number} · {t(version.status)}</strong><p>{version.change_rationale}</p>
-        <details><summary>{t("Preview version")}</summary><p>{t(version.content.title)}</p><p>{version.content.instruction?.summary}</p>{(version.content.instruction?.paragraphs||[]).map((p,i)=><p key={i}>{p}</p>)}{(version.content.instruction?.mediaAssetIds||[]).map(id=><HubMediaItem key={id} assetId={id}/>)}</details>
+        <strong>{t(version.locale==='es'?'Spanish translation':'English source')} · {t("v")}{version.version_number} · {t(version.status)}</strong><p>{version.change_rationale}</p>
+        <details><summary>{t("Preview version")}</summary>{version.content.displayTranslation?<><p>{t('English source v{0}',[versions.find(source=>source.id===version.content.displayTranslation.sourceVersionId)?.version_number||'—'])}</p>{Object.entries(version.content.displayTranslation.es||{}).map(([english,spanish])=><div className="hub-translation-entry" key={english}><p lang="en">{english}</p><p lang="es">{spanish}</p></div>)}</>:<><p lang="en">{version.content.title}</p><p lang="en">{version.content.instruction?.summary}</p>{(version.content.instruction?.paragraphs||[]).map((p,i)=><p lang="en" key={i}>{p}</p>)}{(version.content.instruction?.mediaAssetIds||[]).map(id=><HubMediaItem key={id} assetId={id}/>)}</>}</details>
         {version.status==='draft'&&<button type="button" disabled={busy} onClick={()=>transition(version,'submit')}>{t("Submit for review")}</button>}
         {version.status==='pending_review'&&<><button type="button" disabled={busy||!reviewReason.trim()} onClick={()=>transition(version,'approve')}>{t("Approve publication")}</button><button type="button" disabled={busy||!reviewReason.trim()} onClick={()=>transition(version,'reject')}>{t("Reject")}</button></>}
       </li>)}</ul>

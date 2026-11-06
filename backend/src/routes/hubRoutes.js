@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import {hubDisplayTranslationMiddleware} from '../hub/hubDisplayTranslations.js';
+import {createHubDisplayTranslationMiddleware} from '../hub/hubDisplayTranslations.js';
 import { HubError } from '../hub/HubError.js';
 
 import {
@@ -44,6 +44,7 @@ export function createHubRouter({
   mediaService,
   cohortService,
   trainingAssignmentService,
+  contentTranslationService,
 }) {
   const router = Router();
   const service = createHubService(repository);
@@ -56,7 +57,8 @@ export function createHubRouter({
 
   router.use(authenticateHub(identityVerifier));
   router.use(csrfProtection.middleware);
-  router.use(hubDisplayTranslationMiddleware);
+  router.use(createHubDisplayTranslationMiddleware({service:contentTranslationService}));
+  if(contentTranslationService)router.post('/workspace/activities/:id/translations',requireHubRole('ADMIN'),asyncRoute(async(req,res)=>{res.json(await contentTranslationService.create(req.hubIdentity,req.params.id,req.body||{}));}));
   if(cohortService)router.use('/cohorts',createHubCohortRouter({service:cohortService}));
   if(trainingAssignmentService)router.use('/training-assignments',createHubTrainingAssignmentRouter({service:trainingAssignmentService}));
   if(mediaService)router.use('/media',createHubMediaRouter({service:mediaService}));

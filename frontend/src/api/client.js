@@ -9,6 +9,11 @@ const api = axios.create({
 api.interceptors.response.use(response=>{
   const translations=response.config.url?.startsWith('/hub/')&&response.data?.displayTranslations?.es;
   if(translations&&typeof translations==='object')window.dispatchEvent(new CustomEvent('trez-hub-translations',{detail:translations}));
+  const status=response.config.url?.startsWith('/hub/')&&response.data?.displayTranslationStatus;
+  if(['ready','unavailable'].includes(status)){
+    const path=response.config.url;const scope=path.includes('/learning-path')?'learning':path.includes('/runtime')?'runtime':path.includes('/evidence')?'evidence':'bank';
+    window.dispatchEvent(new CustomEvent('trez-hub-translation-status',{detail:{scope,unavailable:status==='unavailable'}}));
+  }
   return response;
 });
 
@@ -64,6 +69,7 @@ export const getHubContext = async () => {
 
 export const getHubWorkspaceCatalog = () => api.get('/hub/workspace/catalog');
 export const getHubInstructionVersions = (id) => api.get(`/hub/workspace/activities/${id}/versions`);
+export const createHubInstructionTranslation = async (id,body) => api.post(`/hub/workspace/activities/${id}/translations`,body,await withHubCsrf());
 export const getHubTrainingAssignments = ({learnerId, cursor} = {}) => api.get('/hub/training-assignments', {params: {learnerId, cursor}});
 export const commandHubTrainingAssignment = async (id, command, body) => api.post(id ? `/hub/training-assignments/${id}/${command}` : '/hub/training-assignments', body, await withHubCsrf());
 export const createHubInstruction = async (id,body) => api.post(`/hub/workspace/activities/${id}/versions`,body,await withHubCsrf());

@@ -2,6 +2,8 @@ import { HubError } from './HubError.js';
 
 function dbError(error) {
   const message = String(error?.message || '');
+  if(message.includes('HUB_TRANSLATION_REQUIRED'))return new HubError(409,'HUB_TRANSLATION_REQUIRED','Publish a reviewed Spanish translation for this English source version first.');
+  if(message.includes('HUB_TRANSLATION_INVALID'))return new HubError(400,'HUB_TRANSLATION_INVALID','The Spanish translation no longer matches its English source. Create a new matching translation draft.');
   if (message.includes('HUB_SEPARATE_APPROVER_REQUIRED')) {
     return new HubError(409, 'HUB_SEPARATE_APPROVER_REQUIRED', 'A different administrator must review this content version.');
   }

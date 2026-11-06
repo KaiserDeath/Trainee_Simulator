@@ -35,6 +35,7 @@ import { createHubEvaluationRuntimeService } from './hub/hubEvaluationRuntimeSer
 import {createHubMediaService} from './hub/hubMediaService.js';
 import {createHubCohortService} from './hub/hubCohortService.js';
 import {createHubTrainingAssignmentService} from './hub/hubTrainingAssignmentService.js';
+import {createHubContentTranslationService} from './hub/hubContentTranslationService.js';
 import { buildSessionReport } from './engine/SessionEngine.js';
 import { getSessionActionLog } from './engine/AuditLogger.js';
 
@@ -196,6 +197,7 @@ export function createApp(options = {}) {
       mediaService:options.hubMediaService||createHubMediaService({client:supabase}),
       cohortService:options.hubCohortService||createHubCohortService({client:supabase}),
       trainingAssignmentService:options.hubTrainingAssignmentService||createHubTrainingAssignmentService({client:supabase}),
+      contentTranslationService:options.hubContentTranslationService||createHubContentTranslationService({client:supabase}),
     })
   );
 
