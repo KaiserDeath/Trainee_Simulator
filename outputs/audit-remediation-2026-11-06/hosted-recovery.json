@@ -1,0 +1,16 @@
+{
+  "target": "actual hosted export; isolated local restore; disposable hosted file recovery",
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "generatedAt": "2026-11-06T22:55:10.693Z",
+  "checks": [
+    "Actual hosted public/Auth/Storage/migration-ledger export and file bytes sealed/decrypted with AES-256-GCM; source stayed stable during export",
+    "Actual hosted database restored into a separate local database; table hashes, schema, RLS, grants, all public FKs and recovered Auth credential/identity checks passed",
+    "All archived app files restored to an isolated private hosted bucket with matching hashes and public denial; exact owned source fixture deletion/restoration and Hub-signed download passed, with Storage version reconciliation"
+  ],
+  "manifestDifferences": [],
+  "tables": 114,
+  "files": 1,
+  "passed": true,
+  "originalIdentitiesPreserved": 5,
+  "cleanupPassed": true
+}
