@@ -34,6 +34,7 @@ export function learnerRoute(hash) {
   const parameters = new URLSearchParams(query);
   const filters = {query: parameters.get('q') || '', course: parameters.get('course') || '', state: parameters.get('state') || ''};
   if (pathname === '/catalog') return {kind: 'catalog', ...filters};
+  if (['/practice','/results','/account'].includes(pathname)) return {kind:pathname.slice(1)};
   if (pathname === '/evaluations') return {kind: 'evaluations'};
   if (['/groups', 'hub-groups'].includes(pathname)) return {kind: 'groups'};
   if (['/learn', 'hub-learning'].includes(pathname)) return {kind: 'learn'};

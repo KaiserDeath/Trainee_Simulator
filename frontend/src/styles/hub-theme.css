@@ -185,3 +185,41 @@
 
 /* The search label is itself .hub-progress-search, rather than its child. */
 .hub-light-theme label.hub-progress-search { color: #334b5b; }
+/* Task-oriented Hub navigation and records. */
+.hub-light-theme .hub-menu-toggle {display:none}
+.hub-light-theme .hub-workspace-intro {margin-bottom:16px}
+.hub-light-theme .hub-workspace-intro p {display:none}
+.hub-light-theme .hub-workspace-intro h1 {font-size:1.35rem;margin:0}
+.hub-light-theme .hub-record-link {border:0;background:transparent;color:#075e57;text-align:left;text-decoration:underline;font-weight:650;min-height:44px;padding:4px 0}
+.hub-light-theme .hub-detail-tabs {display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.hub-light-theme .hub-detail-tabs a {padding:10px 14px;border:1px solid var(--hub-border);border-radius:8px;color:#075e57;background:white}
+.hub-light-theme .hub-detail-tabs a[aria-current] {background:#dceee9;font-weight:700}
+.hub-light-theme .hub-attention-list {margin:16px 0;padding:20px;background:#fff;border:1px solid var(--hub-border);border-radius:12px}
+.hub-light-theme .hub-attention-list article {display:flex;align-items:center;flex-wrap:wrap;gap:12px;border-top:1px solid var(--hub-border);padding:12px 0}
+.hub-light-theme .hub-attention-list article strong {flex:1}
+.hub-light-theme .hub-status-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.hub-light-theme .hub-account-link {color:#075e57;white-space:nowrap}
+.hub-light-theme .hub-learner-detail {overflow-wrap:anywhere}
+@media(max-width:1000px){
+ .hub-light-theme .hub-menu-toggle {display:block;min-height:44px}
+ .hub-light-theme .hub-sidebar:not(.hub-menu-open) nav {display:none}
+ .hub-light-theme .hub-sidebar {padding:8px 16px}
+ .hub-light-theme .hub-workspace-layout>.hub-main {padding-top:12px}
+}
+@media(max-width:640px){
+ .hub-light-theme .hub-topbar {padding:10px 16px;gap:8px}
+ .hub-light-theme .hub-brand small,.hub-light-theme .hub-identity>span {display:none}
+ .hub-light-theme .hub-header-actions {gap:8px;flex-wrap:wrap}
+ .hub-light-theme .hub-identity {font-size:.8rem}
+ .hub-light-theme .hub-language-switch button {padding:6px 8px}
+ .hub-light-theme .hub-admin-accounts {padding:12px}
+ .hub-light-theme .hub-admin-accounts>.hub-eyebrow {display:none}
+ .hub-light-theme .hub-directory-toolbar {margin:12px 0;gap:8px}
+ .hub-light-theme .hub-learner-nav {gap:4px;padding:10px 0}
+ .hub-light-theme .hub-learner-nav a {padding:8px;font-size:.85rem}
+}
+@media(max-width:640px){
+ .hub-light-theme .hub-header-actions {flex-direction:row;align-items:center;justify-content:space-between}
+ .hub-light-theme .hub-identity {width:auto;display:flex;flex-direction:column;gap:0}
+ .hub-light-theme .hub-language-switch {flex-shrink:0}
+}

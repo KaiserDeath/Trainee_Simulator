@@ -1,3 +1,5 @@
+import HubPasswordPanel from './HubPasswordPanel';
+import HubLearnerResults from './HubLearnerResults';
 import {useEffect, useRef, useState} from 'react';
 import {useHubLocale} from '../../i18n/HubLocaleContext';
 import {courseKey, learnerRoute, moduleHref, moduleState, nextLearningModule} from './hubLearningModel';
@@ -69,7 +71,7 @@ export default function HubLearnerWorkspace({paths, busyActivityId, onCompleteAc
 
   return <div className="hub-learner-shell">
     <nav className="hub-learner-nav" aria-label={t('Learning navigation')}>
-      {[['#/home', 'My training', 'home'], ['#/catalog', 'Module catalog', 'catalog'], ['#/learn', 'Learning workspace', 'learn'], ['#/evaluations', 'Evaluations', 'evaluations'], ['#/groups', 'My training groups', 'groups']].map(([href, text, kind]) => <a key={kind} href={href} aria-current={(route.kind === kind || (kind === 'learn' && route.kind === 'module')) ? 'page' : undefined} aria-disabled={assessmentOpen || undefined} onClick={event => {if (assessmentOpen) event.preventDefault();}}>{t(text)}</a>)}
+      {[['#/home', 'My training', 'home'], ['#/practice','Practice','practice'], ['#/results','My results','results'], ['#/catalog', 'Module catalog', 'catalog'], ['#/learn', 'Learning workspace', 'learn'], ['#/evaluations', 'Evaluations', 'evaluations'], ['#/groups', 'My training groups', 'groups']].map(([href, text, kind]) => <a key={kind} href={href} aria-current={(route.kind === kind || (kind === 'learn' && route.kind === 'module')) ? 'page' : undefined} aria-disabled={assessmentOpen || undefined} onClick={event => {if (assessmentOpen) event.preventDefault();}}>{t(text)}</a>)}
     </nav>
     {!assessmentOpen && route.kind === 'home' && <div data-learner-view>
       <div className="hub-workspace-intro"><p className="hub-eyebrow">{t('YOUR LEARNING PATH')}</p><h1>{t('A clear next step.')}</h1><p>{t('Continue assigned training or revisit a skill with your Capacitador.')}</p></div>
@@ -89,12 +91,15 @@ export default function HubLearnerWorkspace({paths, busyActivityId, onCompleteAc
         </div>
         <div>
           <section className="hub-home-card"><h2>{t('Learning progress')}</h2><p className="hub-home-metric">{modules.filter(({module}) => module.completed).length}<small> / {modules.length} {t('modules completed')}</small></p><p>{t('Learning progress is separate from formal evaluation results.')}</p><a href="#/evaluations">{t('View evaluation status')}</a></section>
-          <section className="hub-home-card"><h2>{t('Already working?')}</h2><p>{t('Ask your Capacitador for targeted reinforcement. Your previous results stay in your history.')}</p></section>
+
           <HubTrainingAssignments mine paths={paths}/>
           <p><a className="hub-secondary-link" href="/simulator">{t('Open free operator simulator')}</a></p>
         </div>
       </div>
     </div>}
+    {!assessmentOpen&&route.kind==='account'&&<div data-learner-view><h1>{t('My account')}</h1><HubPasswordPanel/></div>}
+    {!assessmentOpen&&route.kind==='results'&&<div data-learner-view><HubLearnerResults paths={paths}/></div>}
+    {!assessmentOpen&&route.kind==='practice'&&<div data-learner-view><h1>{t('Practice')}</h1><p>{t('Practice does not change an official evaluation result.')}</p><a className="hub-primary-button" href="/simulator">{t('Open free operator simulator')}</a><h2>{t('Assigned training')}</h2><a href="#/catalog">{t('Browse modules')}</a><HubTrainingAssignments mine paths={paths}/></div>}
     {!assessmentOpen && route.kind === 'catalog' && <div data-learner-view>
       <div className="hub-workspace-intro"><p className="hub-eyebrow">{t('ASSIGNED TRAINING')}</p><h1>{t('Module catalog')}</h1><p>{t('Explore assigned modules. Prerequisites explain what you can open next.')}</p></div>
       <div className="hub-catalog-filters">

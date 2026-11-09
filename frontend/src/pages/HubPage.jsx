@@ -1,3 +1,5 @@
+import HubLearnerDetail from '../components/hub/HubLearnerDetail';
+import HubSystemStatus from '../components/hub/HubSystemStatus';
 import HubWorkspacePanel from '../components/hub/HubWorkspacePanel';
 import {hubText} from '../i18n/hubLocale';
 import {hubServerMessage} from '../i18n/hubLocale';
@@ -111,6 +113,9 @@ function HubScreen() {
   const localizeValidity=event=>event.target.setCustomValidity?.(t(hubValidationMessage(event.target.validity)));
   const clearValidity=event=>event.target.setCustomValidity?.('');
   const [context, setContext] = useState(null);
+  const [menuOpen,setMenuOpen]=useState(false);
+  const [workspaceRole,setWorkspaceRole]=useState(null);
+  const directoryReturn=useRef({hash:'#hub-management',scroll:0});
   const [staffSection,setStaffSection]=useState(()=>window.location.hash.replace('#hub-',''));
   useEffect(()=>{const change=()=>{if(window.location.hash!=='#hub-main-content')setStaffSection(window.location.hash.replace('#hub-',''));};window.addEventListener('hashchange',change);return()=>window.removeEventListener('hashchange',change);},[]);
   const [paths, setPaths] = useState([]);
@@ -543,7 +548,8 @@ function HubScreen() {
   }
 
   const identity = context.identity;
-  const roles = identityRoles(identity);
+  const roleOptions=identityRoles(identity);
+  const roles = [workspaceRole&&roleOptions.includes(workspaceRole)?workspaceRole:roleOptions.includes(POSTULANTE_ROLE)?POSTULANTE_ROLE:roleOptions.includes(ADMIN_ROLE)?ADMIN_ROLE:roleOptions[0]];
   const isTrainer = roles.includes(TRAINER_ROLE) && !roles.includes(POSTULANTE_ROLE);
   const isAdministrator = roles.includes(ADMIN_ROLE) && !roles.includes(POSTULANTE_ROLE);
   const isAuditor = roles.includes(RRHH_ROLE) && !roles.includes(POSTULANTE_ROLE);
@@ -551,19 +557,22 @@ function HubScreen() {
   const staffLanguage = locale;
   const staffCopy = STAFF_VIEW_COPY.en;
   const displayedRoles = roles.map(role=>t(role));
-  const availableSections=isAdministrator?['people','policies','curriculum','media','profile']:isTrainer?['home','curriculum','media','coaching','groups','progress','management','profile']:['coaching','groups','management','auditor-title','profile'];
-  const activeSection=availableSections.includes(staffSection)?staffSection:(isAdministrator?'people':isTrainer&&['','#/staff/home'].includes(staffSection)?'home':'management');
+  const availableSections=isAdministrator?['people','policies','curriculum','media','system','profile']:isTrainer?['home','curriculum','media','coaching','groups','progress','management','evaluations','reports','profile']:['home','progress','reports','evaluations','coaching','groups','management','auditor-title','profile'];
+  const detailMatch=/^detail\/([^/]+)(?:\/(overview|learning|evaluations|evidence|coaching))?$/.exec(staffSection);
+  const activeSection=detailMatch&&canManagePostulantes?'detail':availableSections.includes(staffSection)?staffSection:(isAdministrator?'people':isTrainer&&['','#/staff/home'].includes(staffSection)?'home':'management');
   async function refreshSnapshot(){
     setSnapshotBusy(true);setTrainerUnavailable('');
     try{const response=await getHubTrainerLearners({search:directorySearch});setTrainerLearners(response.data.postulantes||response.data||[]);setDirectoryPage(response.data.page);setSnapshotUpdatedAt(new Date().toISOString());}
     catch{setTrainerUnavailable({unavailable:true});}finally{setSnapshotBusy(false);}
   }
   function chooseSection(event,section){
-    event.preventDefault();setStaffSection(section);window.history.pushState(null,'',`#hub-${section}`);
+    event.preventDefault();setMenuOpen(false);setStaffSection(section);window.history.pushState(null,'',`#hub-${section}`);
     window.scrollTo(0,0);
     requestAnimationFrame(()=>{const heading=document.getElementById(`hub-${section}`)?.querySelector('h2');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}});
   }
 
+  function openLearner(id,tab='overview'){directoryReturn.current={hash:window.location.hash,scroll:window.scrollY};window.location.hash='hub-detail/'+encodeURIComponent(id)+'/'+tab;window.scrollTo(0,0);}
+  function returnToDirectory(){window.location.hash=directoryReturn.current.hash;requestAnimationFrame(()=>window.scrollTo(0,directoryReturn.current.scroll));}
   return (
     <div className={`hub-app-shell hub-light-theme${isTrainer ? ' hub-staff-console' : ''}`} lang={staffLanguage} onInvalidCapture={localizeValidity} onInputCapture={clearValidity}>
       <a className="hub-skip-link" href="#hub-main-content">{t("Skip to workspace")}</a>
@@ -574,6 +583,8 @@ function HubScreen() {
         </a>
         <div className="hub-header-actions">
           <HubLanguageSwitch/>
+          {roleOptions.length>1&&<label>{t('Workspace')}<select disabled={assessmentOpen} value={workspaceRole||roles[0]} onChange={async event=>{const next=event.target.value;setWorkspaceRole(next);setStaffSection(next==='ADMIN'?'people':'home');window.location.hash=next==='POSTULANTE'?'/home':next==='ADMIN'?'hub-people':'hub-home';if(['TRAINER','RRHH'].includes(next)&&!trainerLearners)await refreshSnapshot();if(next==='RRHH'&&!auditorOverview)await loadAuditorOverview();if(next==='POSTULANTE'&&!paths.length)await loadPath().catch(()=>setNotice(hubMessage('Training is temporarily unavailable. Try again or contact your trainer.')));}}>{roleOptions.map(role=><option key={role} value={role}>{t(role)}</option>)}</select></label>}
+          <a className="hub-account-link" href={canManagePostulantes||isAdministrator?"#hub-profile":"#/account"}>{t("My account")}</a>
           <div className="hub-identity" aria-label={t(staffCopy.currentIdentity)}>
             <span>{identity.displayName || identity.name || staffCopy.serverIdentity}</span>
             <small>{identity.username ? `${identity.username} · ` : ''}{displayedRoles.join(', ')}</small>
@@ -583,20 +594,10 @@ function HubScreen() {
       </header>
 
       <div className={(isAdministrator||canManagePostulantes)?'hub-workspace-layout':'hub-learner-workspace'}>
-      {(isAdministrator||canManagePostulantes)&&<aside className="hub-sidebar" aria-label={t("Workspace navigation")}>
-        <p className="hub-sidebar-label">{t("WORKSPACE")}</p>
-        <nav aria-label={t("Hub tools")}>
-          {isTrainer&&<a href="#hub-home" aria-current={activeSection==='home'?'page':undefined} onClick={event=>chooseSection(event,'home')}>{t('Workspace overview')}</a>}
-          {isAdministrator&&<a href="#hub-people" aria-current={activeSection==='people'?'page':undefined} onClick={event=>chooseSection(event,'people')}>{t("People & access")}</a>}
-          {isAdministrator&&<a href="#hub-policies" aria-current={activeSection==='policies'?'page':undefined} onClick={event=>chooseSection(event,'policies')}>{t("Account policies")}</a>}
-          {(isAdministrator||isTrainer)&&<a href="#hub-curriculum" aria-current={activeSection==='curriculum'?'page':undefined} onClick={event=>chooseSection(event,'curriculum')}>{t("Training content")}</a>}
-          {(isAdministrator||isTrainer)&&<a href="#hub-media" aria-current={activeSection==='media'?'page':undefined} onClick={event=>chooseSection(event,'media')}>{t("Media library")}</a>}
-          {canManagePostulantes&&<a href="#hub-coaching" aria-current={activeSection==='coaching'?'page':undefined} onClick={event=>chooseSection(event,'coaching')}>{t("Coaching")}</a>}
-          {canManagePostulantes&&<a href="#hub-groups" aria-current={activeSection==='groups'?'page':undefined} onClick={event=>chooseSection(event,'groups')}>{t("Cohorts & dates")}</a>}
-          {isTrainer&&<a href="#hub-progress" aria-current={activeSection==='progress'?'page':undefined} onClick={event=>chooseSection(event,'progress')}>{t("Learner progress")}</a>}
-          {canManagePostulantes&&<a href="#hub-management" aria-current={activeSection==='management'?'page':undefined} onClick={event=>chooseSection(event,'management')}>{t("People, evaluations & reports")}</a>}
-          {isAuditor&&<a href="#hub-auditor-title" aria-current={activeSection==='auditor-title'?'page':undefined} onClick={event=>chooseSection(event,'auditor-title')}>{t("RRHH audit")}</a>}
-          <a href="#hub-profile" aria-current={activeSection==='profile'?'page':undefined} onClick={event=>chooseSection(event,'profile')}>{t("Password & security")}</a>
+      {(isAdministrator||canManagePostulantes)&&<aside className={`hub-sidebar${menuOpen?' hub-menu-open':''}`} aria-label={t("Workspace navigation")}>
+        <button type="button" className="hub-menu-toggle" aria-expanded={menuOpen} aria-controls="hub-tools" onClick={()=>setMenuOpen(value=>!value)}>{t("Workspace menu")}</button><p className="hub-sidebar-label">{t("WORKSPACE")}</p>
+        <nav id="hub-tools" aria-label={t("Hub tools")}>
+          {(isAdministrator?[['people','People & access'],['system','System status'],['curriculum','Training content'],['media','Media library'],['policies','Account policies'],['profile','Password & security']]:[['home','Workspace overview'],['management','Learners'],['coaching','Coaching'],['evaluations','Evaluations'],['reports','Reports'],...(isTrainer?[['progress','Learner progress'],['curriculum','Training content'],['media','Media library']]:[['auditor-title','RRHH audit']]),['groups','Cohorts & dates'],['profile','Password & security']]).map(([section,label])=><a key={section} href={`#hub-${section}`} aria-current={activeSection===section?'page':undefined} onClick={event=>chooseSection(event,section)}>{t(label)}</a>)}
         </nav>
         <p className="hub-sidebar-help">{t("Choose a section to focus on the tools you need.")}</p>
       </aside>}
@@ -607,14 +608,14 @@ function HubScreen() {
         {notice && <p className="hub-page-notice" role="status">{t(notice)}</p>}
         {locale==='es'&&contentTranslationUnavailable&&<p className="hub-inline-notice" role="status">{t('Some content may appear in its source language because translations could not be loaded. Your saved actions are unaffected. Refresh the affected view to retry.')}</p>}
         {locale==='es'&&roles.includes(POSTULANTE_ROLE)&&contentTranslationIssues?.learning&&!assessmentOpen&&<button type="button" className="hub-secondary-button" disabled={translationReloading} onClick={refreshContentTranslations}>{t('Refresh content translations')}</button>}
-        {isTrainer&&<HubWorkspacePanel id="hub-home" active={activeSection==='home'} className="hub-section-anchor"><HubStaffHome learners={trainerLearners} updatedAt={snapshotUpdatedAt} busy={snapshotBusy} unavailable={Boolean(trainerUnavailable)} onRefresh={refreshSnapshot}/></HubWorkspacePanel>}
-        {isTrainer && <p><a className="hub-secondary-link" href="/trainer">{t("Open simulator session reports")}</a></p>}
+        {canManagePostulantes&&<HubWorkspacePanel id="hub-home" active={activeSection==='home'} className="hub-section-anchor"><HubStaffHome onOpenLearner={openLearner} learners={trainerLearners} updatedAt={snapshotUpdatedAt} busy={snapshotBusy} unavailable={Boolean(trainerUnavailable)} onRefresh={refreshSnapshot}/></HubWorkspacePanel>}
+        {isTrainer && activeSection==='reports' && <p><a className="hub-secondary-link" href="/trainer">{t("Open simulator session reports")}</a></p>}
 
         {isAdministrator && <HubWorkspacePanel id="hub-people" active={activeSection==='people'} className="hub-section-anchor"><HubAdministratorConfiguration onSaved={(displayName)=>setContext(current=>({...current,identity:{...current.identity,displayName}}))}/><HubAdminAccounts /></HubWorkspacePanel>}
         {isAdministrator && <HubWorkspacePanel id="hub-policies" active={activeSection==='policies'} className="hub-section-anchor"><HubPolicyStudio locale={staffLanguage} /></HubWorkspacePanel>}
         {(isAdministrator || isTrainer) && <HubWorkspacePanel id="hub-curriculum" active={activeSection==='curriculum'} className="hub-section-anchor"><HubContentStudio canEdit={isAdministrator} locale={staffLanguage} /></HubWorkspacePanel>}
         {(isAdministrator||isTrainer)&&<HubWorkspacePanel id="hub-media" active={activeSection==='media'} className="hub-section-anchor"><HubMediaLibrary canEdit={isAdministrator}/></HubWorkspacePanel>}
-        {isTrainer && ['home','progress'].includes(activeSection) && directoryPage && <div className="hub-inline-notice"><p>{t("Loaded {0} of {1} matching learners.",[trainerLearners?.length||0,directoryPage.total])}</p>{directoryPage.nextCursor&&<button type="button" disabled={snapshotBusy} onClick={()=>searchDirectory(directorySearch,true)}>{t("Load more")}</button>}</div>}
+        {canManagePostulantes && ['home','progress'].includes(activeSection) && directoryPage && <div className="hub-inline-notice"><p>{t("Loaded {0} of {1} matching learners.",[trainerLearners?.length||0,directoryPage.total])}</p>{directoryPage.nextCursor&&<button type="button" disabled={snapshotBusy} onClick={()=>searchDirectory(directorySearch,true)}>{t("Load more")}</button>}</div>}
         {canManagePostulantes && <HubWorkspacePanel id="hub-coaching" active={activeSection==='coaching'} className="hub-section-anchor"><HubCoachingWorkspace canEdit={isTrainer} locale={staffLanguage} /></HubWorkspacePanel>}
         {canManagePostulantes&&<HubWorkspacePanel id="hub-groups" active={activeSection==='groups'} className="hub-section-anchor"><HubCohorts canManage={canManagePostulantes} locale={staffLanguage}/></HubWorkspacePanel>}
 
@@ -622,18 +623,19 @@ function HubScreen() {
           <section id="hub-progress" hidden={activeSection!=='progress'} className="hub-trainer-section hub-section-anchor" aria-labelledby="hub-trainer-title">
             <p className="hub-eyebrow">{t(staffCopy.trainerView)}</p>
             <h2 id="hub-trainer-title">{t(staffCopy.progressTitle)}</h2>
-            {trainerUnavailable ? (
+            {trainerUnavailable && (
               <p className="hub-inline-notice" role="status">
                 {t(staffCopy.visibilityUnavailable)}
               </p>
-            ) : (
-              <HubTrainerOverview onSearch={search=>searchDirectory(search)} learners={trainerLearners || []} locale={staffLanguage} />
             )}
+              <HubTrainerOverview onSearch={search=>searchDirectory(search)} onOpenLearner={openLearner} appliedSearch={directorySearch} busy={snapshotBusy} learners={trainerLearners || []} locale={staffLanguage} />
           </section>
         )}
 
-        {canManagePostulantes && <HubWorkspacePanel id="hub-management" active={activeSection==='management'} className="hub-section-anchor"><HubAssessmentManagement canEditEvaluations={isTrainer} /></HubWorkspacePanel>}
+        {canManagePostulantes && <HubWorkspacePanel id="hub-management" active={['management','evaluations','reports'].includes(activeSection)} className="hub-section-anchor"><HubAssessmentManagement section={activeSection==='evaluations'?'evaluations':activeSection==='reports'?'reports':'people'} onOpenLearner={openLearner} canEditEvaluations={isTrainer} /></HubWorkspacePanel>}
 
+        {canManagePostulantes&&activeSection==='detail'&&<HubLearnerDetail key={detailMatch[1]} learnerId={detailMatch[1]} tab={detailMatch[2]||'overview'} canEdit={isTrainer} onBack={returnToDirectory}/>}
+        {isAdministrator&&<HubWorkspacePanel active={activeSection==='system'}><HubSystemStatus/></HubWorkspacePanel>}
         {isAuditor && (
           <section hidden={activeSection!=='auditor-title'} className="hub-trainer-section" aria-labelledby="hub-auditor-title">
             <p className="hub-eyebrow">{t(staffCopy.auditorView)}</p>

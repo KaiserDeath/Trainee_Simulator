@@ -428,3 +428,6 @@ export const updateSimulatorSettings = async (settings) => {
 };
 
 export default api;
+
+export const getHubTrainerLearner=id=>api.get(`/hub/trainer/postulantes/${encodeURIComponent(id)}`);
+export const getHubRuntimeMetrics=()=>api.get('/hub/admin/runtime-metrics');

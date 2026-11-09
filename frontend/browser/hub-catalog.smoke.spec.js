@@ -79,7 +79,7 @@ test('Capacitador home refreshes only on request and keeps the earlier snapshot 
  await page.route('**/api/hub/context',route=>route.fulfill({json:{subject:{id:'catalog-trainer',displayName:'Trainer fixture',roles:['TRAINER']}}}));
  await page.route('**/api/hub/trainer/postulantes',route=>{reads++;return reads===1?route.fulfill({json:{postulantes:[{id:'person',displayName:'Example learner',enrolments:[]}]}}):route.fulfill({status:503,json:{error:{message:'unavailable'}}});});
  // The current client uses the staff endpoint for both TRAINER and RRHH.
- await page.route('**/api/hub/staff/postulantes',route=>{reads++;return reads===1?route.fulfill({json:{postulantes:[{id:'person',displayName:'Example learner',enrolments:[]}]}}):route.fulfill({status:503,json:{error:{message:'unavailable'}}});});
+ await page.route('**/api/hub/staff/postulantes*',route=>{reads++;return reads===1?route.fulfill({json:{postulantes:[{id:'person',displayName:'Example learner',enrolments:[]}]}}):route.fulfill({status:503,json:{error:{message:'unavailable'}}});});
  await page.goto('/hub');await expect(page.getByRole('heading',{name:'Turn progress into guidance.',exact:true})).toBeVisible();
  await expect(page.locator('.hub-staff-metrics')).toContainText('1');expect(reads).toBe(1);
  await page.getByRole('button',{name:'Update snapshot',exact:true}).click();await expect(page.getByText('The snapshot could not be updated. Previously loaded records remain visible; retry Update.',{exact:true})).toBeVisible();

@@ -126,7 +126,7 @@ try{
  record('Learner can retry after attempts one/two; only latest submission allowed; third failed result auto-submits and fourth start is denied');
  const trainer=await login(people[0]);const auditor=await login(people[1]);const reopenPath=`assessment/evaluations/${evaluationId}/postulantes/${people[3].id}/reopen`;
  assert.equal((await post(auditor.context,reopenPath,{reason:'RRHH cannot reopen'})).status(),403);assert.equal((await post(trainer.context,reopenPath,{})).status(),400);
- await trainer.page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();
+ await trainer.page.getByRole('link',{name:'Evaluations',exact:true}).click();
  const row=trainer.page.getByRole('row').filter({hasText:people[3].displayName}).filter({has:trainer.page.getByRole('button',{name:'Reopen with reason',exact:true})});
  trainer.page.once('dialog',dialog=>dialog.accept('Verified remediation and additional practice completed.'));const reopened=trainer.page.waitForResponse(r=>r.url().endsWith('/reopen')&&r.request().method()==='POST');await row.getByRole('button',{name:'Reopen with reason',exact:true}).click();assert.equal((await reopened).status(),201);
  await limited.page.reload();const next=await start(limited);assert.equal(next.attemptInSet,1);assert.equal(next.attemptSetNumber,2);assert.equal(checked(await supabase.from('hub_scored_evaluation_attempts').select('id').in('id',attempts.map(a=>a.attemptId)),'old attempts').length,3);
@@ -141,7 +141,7 @@ try{
  assert.equal((await post(manual.context,retentionPath,proposal)).status(),403);assert.equal((await post(auditor.context,retentionPath,proposal)).status(),403);
  const proposed=await post(trainer.context,retentionPath,proposal);assert.equal(proposed.status(),200,await proposed.text());
  assert.equal((await post(trainer.context,retentionPath,{command:'approve',expectedRevision:1,reason:'Cannot approve my own request',idempotencyKey:randomUUID()})).status(),409);
- const reviewer=await login(people[5]);await reviewer.page.getByRole('button',{name:'Evaluations Rules & attempt reopening',exact:true}).click();await reviewer.page.getByText('Private recorded assessment actions',{exact:true}).click();
+ const reviewer=await login(people[5]);await reviewer.page.getByRole('link',{name:'Evaluations',exact:true}).click();await reviewer.page.getByText('Private recorded assessment actions',{exact:true}).click();
  const packet=reviewer.page.locator(`[data-attempt-id="${successful.attemptId}"]`);await packet.getByRole('button',{name:'Review recorded evidence',exact:true}).click();await packet.getByRole('button',{name:'Open evidence retention',exact:true}).click();
  await packet.getByRole('button',{name:'Review evidence disposal',exact:true}).click();await packet.getByLabel('Brief evidence retention reason (omit private evidence)',{exact:true}).fill('Independent age and dependency review completed');
  const disposing=reviewer.page.waitForResponse(r=>r.url().endsWith(`/attempts/${successful.attemptId}/retention`)&&r.request().method()==='POST');await packet.getByRole('button',{name:'Approve evidence disposal',exact:true}).click();const disposed=await disposing;assert.equal(disposed.status(),200,await disposed.text());

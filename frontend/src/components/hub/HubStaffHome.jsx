@@ -1,6 +1,6 @@
 import {useHubLocale} from '../../i18n/HubLocaleContext';
 
-export default function HubStaffHome({learners, updatedAt, busy, unavailable, onRefresh}) {
+export default function HubStaffHome({learners, updatedAt, busy, unavailable, onRefresh, onOpenLearner}) {
   const {t, formatDate} = useHubLocale();
   const rows = learners || [];
   const enrolments = rows.flatMap(person => person.enrolments || []);
@@ -11,7 +11,7 @@ export default function HubStaffHome({learners, updatedAt, busy, unavailable, on
     {learners && <div className="hub-staff-metrics">
       {[[t('Learners in loaded snapshot'), rows.length], [t('Active course assignments'), enrolments.filter(row => !['completed', 'withdrawn'].includes(row.status)).length], [t('Learners without active assignments'), rows.filter(person => !(person.enrolments || []).some(row => !['completed', 'withdrawn'].includes(row.status))).length]].map(([label, value]) => <div className="hub-home-card" key={label}><h3>{label}</h3><p className="hub-home-metric">{value}</p></div>)}
     </div>}
-    <div className="hub-home-grid">
+    <section className="hub-attention-list"><h3>{t('Needs attention')}</h3><p>{t('Loaded learners with no active course assignment. This is not a failure or an organization-wide total.')}</p>{rows.filter(person=>!(person.enrolments||[]).some(item=>!['completed','withdrawn'].includes(item.status))).map(person=><article key={person.id}><strong>{person.displayName}</strong><span>{t('No active course assignment')}</span><button type="button" onClick={()=>onOpenLearner(person.id)}>{t('Review learner')}</button></article>)}{!rows.some(person=>!(person.enrolments||[]).some(item=>!['completed','withdrawn'].includes(item.status)))&&<p>{t('No matching attention items in this snapshot.')}</p>}</section><div className="hub-home-grid">
       <section className="hub-home-card"><h3>{t('Where to focus next')}</h3><p>{t('Review learner progress, organize training and connect feedback to original evidence.')}</p><div className="hub-home-actions"><a className="hub-primary-button" href="#hub-progress">{t('Learner progress')}</a><a className="hub-secondary-button" href="#hub-coaching">{t('Coaching')}</a><a className="hub-secondary-button" href="#hub-groups">{t('Cohorts & dates')}</a><a className="hub-secondary-button" href="#hub-management">{t('People, evaluations & reports')}</a></div></section>
       <section className="hub-home-card"><h3>{t('Two different decisions')}</h3><p>{t('Reinforcement uses focused learning or repeat practice. Formal reassessment requires permission and a reason, and preserves earlier results.')}</p><p>{t('Formal evaluation publication remains a separate approval step.')}</p></section>
     </div>

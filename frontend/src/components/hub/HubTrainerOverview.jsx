@@ -19,13 +19,11 @@ const COPY = {
     },
   },
 };
-export default function HubTrainerOverview({ learners, locale = 'en', onSearch }) {
+export default function HubTrainerOverview({ learners, locale = 'en', onSearch, onOpenLearner, appliedSearch = '', busy }) {
   const {t} = useHubLocale();
   const copy = COPY.en;
   const [search, setSearch] = useState('');
-  const visibleLearners = (learners || []).filter((learner) =>
-    `${learner.displayName} ${learner.username || ''}`.toLowerCase().includes(search.trim().toLowerCase())
-  );
+  const visibleLearners = learners || [];
   const enrolments = (learners || []).flatMap((learner) => learner.enrolments || []);
 
   learners ||= [];
@@ -41,7 +39,7 @@ export default function HubTrainerOverview({ learners, locale = 'en', onSearch }
           [locale === 'es' ? 'Sin curso' : 'Without a course', learners.filter((item) => !item.enrolments?.length).length],
         ].map(([label, value]) => <div key={label}><span>{t(label)}</span><strong>{value}</strong></div>)}
       </div>
-      <form onSubmit={event=>{event.preventDefault();onSearch?.(search);}}><label className="hub-progress-search">{t("Search learner progress")}<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Name or username")} /></label><button type="submit">{t("Search directory")}</button></form>
+      <form onSubmit={event=>{event.preventDefault();onSearch?.(search);}}><label className="hub-progress-search">{t("Search learner progress")}<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("Name or username")} /></label><button type="submit" disabled={busy}>{t("Search directory")}</button></form>{search!==appliedSearch&&<p role="status">{t("Search changes are not applied yet.")}</p>}
     <div className="hub-table-wrap" tabIndex={0} role="region" aria-label={t("Table data")}>
       <table className="hub-trainer-table">
         <caption>{t(copy.caption)}</caption>
@@ -59,7 +57,7 @@ export default function HubTrainerOverview({ learners, locale = 'en', onSearch }
             if (!enrolments.length) {
               return [(
                 <tr key={`${learner.id}-unassigned`}>
-                  <th scope="row">{learner.displayName}</th>
+                  <th scope="row"><button type="button" className="hub-record-link" onClick={()=>onOpenLearner?.(learner.id)}>{learner.displayName}</button></th>
                   <td>{t(copy.notAssigned)}</td>
                   <td>0 / 0</td>
                   <td>{t(copy.unassigned)}</td>
@@ -73,7 +71,7 @@ export default function HubTrainerOverview({ learners, locale = 'en', onSearch }
               const total = enrolment.totalActivities ?? activities.length;
               return (
                 <tr key={`${learner.id}-${enrolment.id}`}>
-                  <th scope="row">{learner.displayName}</th>
+                  <th scope="row"><button type="button" className="hub-record-link" onClick={()=>onOpenLearner?.(learner.id)}>{learner.displayName}</button></th>
                   <td>{t(enrolment.course?.title)}</td>
                   <td><div className="hub-progress-cell"><span>{complete} / {total}</span><progress aria-label={`${learner.displayName}: ${copy.completed}`} value={complete} max={total || 1} /></div></td>
                   <td><span className={`hub-status-pill hub-status-${enrolment.status}`}>{t(copy.statuses[enrolment.status] || enrolment.status)}</span></td>

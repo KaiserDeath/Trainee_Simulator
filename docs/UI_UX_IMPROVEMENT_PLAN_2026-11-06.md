@@ -1,6 +1,6 @@
 # UI/UX improvement plan — 6 November 2026
 
-Status: Proposed next implementation sequence after the audit hardening increment. This is a plan, not a claim that the redesigned screens are implemented. Extends HUB_DESIGN_ARCHITECTURE_UPGRADE_PLAN.md and preserves its existing learner navigation, targeted training and bilingual authoring work.
+Execution update, 8 November 2026: task navigation, submitted search, explicit creation panels, learner detail/coaching, scoped attention, learner practice/results/account routes and operational diagnostics are implemented. See [ADR 0012](adr/0012-task-oriented-hub-workspaces.md) and the [delivery report](../outputs/ui-ux-2026-11-08/REPORT.md). Observed human usability sessions and release acceptance remain pending; the validation targets below are not measured results. Extends HUB_DESIGN_ARCHITECTURE_UPGRADE_PLAN.md and preserves its existing learner navigation, targeted training and bilingual authoring work.
 
 ## Evidence and diagnosis
 

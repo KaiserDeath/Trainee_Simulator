@@ -81,6 +81,7 @@ export default function HubScoredEvaluationOverview({onActiveChange}) {
           ? <p><strong>{t("Weighting:")}</strong> {evaluation.theory_weight}{t("% theory / ")}{evaluation.practical_weight}{t("% practical · ")}<strong>{t("Required:")}</strong> 100%</p>
           : <p>{t("The evaluation policy and rubric remain hidden until TRAINER publishes this evaluation.")}</p>}
         {evaluation.attempts?.length > 0 && <ol className="hub-attempt-summary">{[...evaluation.attempts].sort((a, b) => a.attempt_in_set - b.attempt_in_set).map((attempt) => <li key={attempt.id}>{t("Attempt ")}{attempt.attempt_in_set}: {attemptLabel(attempt,t)}</li>)}</ol>}
+        {available&&<p>{t('Duration')}: {evaluation.duration_minutes??'—'} {t('minutes')} · {t('Starting an attempt starts the timer. Opening this page does not.')}</p>}
         {evaluation.canSubmit && <button className="hub-primary-button" type="button" disabled={busy} onClick={() => submit(evaluation)}>{t("Send latest result")}</button>}
         {latest?.status==='in_progress'&&<button className="hub-primary-button" type="button" disabled={busy} onClick={()=>setActiveAttemptId(latest.id)}>{t("Open assessment")}</button>}
         {available && evaluation.attemptSet?.status !== 'closed' && !latest?.status?.includes('in_progress') && <button className="hub-primary-button" type="button" disabled={busy || evaluation.attemptsRemaining === 0} onClick={() => start(evaluation)}>{t("Start next attempt")}</button>}

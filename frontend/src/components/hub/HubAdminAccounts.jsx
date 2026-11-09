@@ -1,7 +1,7 @@
 import {hubServerMessage} from '../../i18n/hubLocale';
 import {hubMessage} from '../../i18n/hubLocale';
 import {useHubLocale} from '../../i18n/HubLocaleContext';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   createHubAccount,
@@ -11,6 +11,8 @@ import {
 
 export default function HubAdminAccounts() {
   const {t} = useHubLocale();
+  const [creating,setCreating]=useState(false);
+  const creationButton=useRef(null),creationInput=useRef(null);
   const [accounts, setAccounts] = useState([]);
   const [page,setPage]=useState(null);
   const [search,setSearch]=useState('');
@@ -20,9 +22,9 @@ export default function HubAdminAccounts() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const response = await getHubAdminAccounts({});
-    setAccounts(response.data.accounts || []);setPage(response.data.page);setAppliedSearch('');
-  }, []);
+    const response = await getHubAdminAccounts({search:appliedSearch});
+    setAccounts(response.data.accounts || []);setPage(response.data.page);
+  }, [appliedSearch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,15 +86,17 @@ export default function HubAdminAccounts() {
     <section className="hub-admin-accounts" aria-labelledby="hub-admin-accounts-title">
       <p className="hub-eyebrow">{t("ADMIN")}</p>
       <h2 id="hub-admin-accounts-title">{t("TRAINER account administration")}</h2>
-      <form className="hub-account-form" onSubmit={submit}>
-        <label>{t("First name")}<input required value={form.firstName} onChange={update('firstName')} /></label>
+      <button type="button" ref={creationButton} aria-expanded={creating} onClick={()=>{setCreating(value=>!value);requestAnimationFrame(()=>creationInput.current?.focus());}}>{t("Create staff account")}</button>
+      {creating&&<form className="hub-account-form" onSubmit={submit}>
+        <label>{t("First name")}<input ref={creationInput} required value={form.firstName} onChange={update('firstName')} /></label>
         <label>{t("First surname")}<input required value={form.surname} onChange={update('surname')} /></label>
         <label>{t("Role")}<input value={t("TRAINER")} readOnly /></label>
         <label>{t("Language")}<select value={form.preferredLocale} onChange={update('preferredLocale')}><option value="en">{t("English")}</option><option value="es">{t("Español")}</option></select></label>
         <button className="hub-primary-button" type="submit" disabled={busy}>{busy ? t("Working…") : t("Create account")}</button>
-      </form>
+      <button type="button" onClick={()=>{setCreating(false);requestAnimationFrame(()=>creationButton.current?.focus());}}>{t("Close")}</button></form>}
       {notice && <p className="hub-inline-notice" role="status">{t(notice)}</p>}
       <form onSubmit={event=>{event.preventDefault();void findAccounts();}}><label>{t("Search directory")}<input type="search" value={search} onChange={event=>setSearch(event.target.value)}/></label><button disabled={busy}>{t("Search directory")}</button></form>
+      {search!==appliedSearch&&<p role="status">{t("Search changes are not applied yet.")}</p>}
       {page&&<p>{t("Loaded {0} of {1} matching accounts.",[accounts.length,page.total])}</p>}
       {page?.nextCursor&&<button type="button" disabled={busy} onClick={()=>findAccounts(true)}>{t("Load more")}</button>}
       <div className="hub-account-table-wrap hub-mobile-directory" tabIndex={0} role="region" aria-label={t("Table data")}>

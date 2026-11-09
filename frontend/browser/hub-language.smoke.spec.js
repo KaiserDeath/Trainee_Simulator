@@ -42,7 +42,7 @@ for(const role of ['ADMIN','TRAINER','RRHH','POSTULANTE'])test(`${role} uses a c
   await page.getByLabel('Nombre',{exact:true}).last().fill('Employee');
   await page.getByRole('button',{name:'English',exact:true}).click();await expect(page.getByLabel('First name',{exact:true}).last()).toHaveValue('Employee');
   await page.getByRole('button',{name:'Español',exact:true}).click();
-  for(const id of ['policies','curriculum','media','profile'])await page.locator(`a[href="#hub-${id}"]`).click();
+  for(const id of ['policies','curriculum','media','profile'])await page.locator(`#hub-tools a[href="#hub-${id}"]`).click();
   await page.screenshot({path:new URL('../../outputs/hub-language-2026-11-04/spanish-admin.png',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1'),fullPage:true});
  }else if(role==='POSTULANTE'){
   await expect(page.getByRole('heading',{name:'Comprender el trabajo',exact:true}).first()).toBeVisible();
@@ -50,13 +50,13 @@ for(const role of ['ADMIN','TRAINER','RRHH','POSTULANTE'])test(`${role} uses a c
   await expect(page.getByRole('button',{name:'Marcar artículo como completado',exact:true})).toBeVisible();
   await page.setViewportSize({width:390,height:844});await page.screenshot({path:new URL('../../outputs/hub-language-2026-11-04/spanish-learner-mobile.png',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1'),fullPage:true});
  }else{
-  await expect(page.getByRole('heading',{name:'Espacio del capacitador',exact:true})).toBeVisible();
-  await page.locator('button[aria-controls="hub-workspace-reports"]').click();await expect(page.getByRole('button',{name:'Aplicar filtros',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Administración de participantes',exact:true})).toBeVisible();
+  await page.locator('a[href="#hub-reports"]').click();await expect(page.getByRole('button',{name:'Aplicar filtros',exact:true})).toBeVisible();
   await page.getByRole('combobox',{name:'Estado',exact:true}).selectOption('in_progress');
   const filtered=page.waitForRequest(request=>request.url().includes('/api/hub/assessment/report')&&new URL(request.url()).searchParams.get('status')==='in_progress');
   await page.getByRole('button',{name:'Aplicar filtros',exact:true}).click();await filtered;
   await expect(page.getByRole('combobox',{name:'Estado',exact:true})).toHaveValue('in_progress');
-  await page.locator('button[aria-controls="hub-workspace-evaluations"]').click();await expect(page.getByRole('heading',{name:'Cuatro evaluaciones con control de versiones',exact:true})).toBeVisible();
+  await page.locator('a[href="#hub-evaluations"]').click();await expect(page.getByRole('heading',{name:'Cuatro evaluaciones con control de versiones',exact:true})).toBeVisible();
  }
  await page.setViewportSize({width:320,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  const scan=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']).analyze();expect(scan.violations.map(issue=>issue.id)).toEqual([]);

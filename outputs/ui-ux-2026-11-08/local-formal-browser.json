@@ -1,0 +1,20 @@
+{
+  "target": "isolated loopback Supabase and actual Express/Vite/browser",
+  "checks": [
+    "Real guest Spanish selection survives login/reload; authorized lesson translations arrive without exposing the private question bank",
+    "Actual ADMIN author and separate reviewer published paired lesson versions; missing Spanish and self approval were denied; learner received scoped Spanish content",
+    "Completed lesson retained its pinned Spanish counterpart after a later bilingual publication; new private question versions carry Spanish text with unchanged choice IDs",
+    "Prerequisites enforced; 100% manual submission closes unused attempts; start/action retries are idempotent",
+    "Learner can retry after attempts one/two; only latest submission allowed; third failed result auto-submits and fourth start is denied",
+    "Only TRAINER can reopen with a reason; a fresh three-attempt set opens and original results remain",
+    "TRAINER/RRHH can review formal evidence and reports; learner/private evidence and foreign-attempt reads are denied",
+    "Independent TRAINER browser review disposed an aged packet; detail and cached copies were removed while score, closed budget and result remain; learner runtime replay denied"
+  ],
+  "runId": "1b4c762e-7746-4ddf-8a41-df88af9f3b6f",
+  "fixtureLearningPayloadBytes": {
+    "canonical": 1077,
+    "withTranslations": 1306
+  },
+  "passed": true,
+  "cleanupPassed": true
+}

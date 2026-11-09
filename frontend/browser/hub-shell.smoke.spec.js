@@ -108,7 +108,7 @@ test.beforeEach(async ({ page }) => {
     contentType: 'application/json',
     body: JSON.stringify({ csrfToken: 'browser-test-csrf' }),
   }));
-  await page.route('**/api/hub/staff/postulantes', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ postulantes: [] }) }));
+  await page.route('**/api/hub/staff/postulantes*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ postulantes: [] }) }));
   await page.route('**/api/hub/staff/courses', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ courses: [] }) }));
   await page.route('**/api/hub/assessment/settings', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ settings: { duration_minutes: 30, minimum_operations: 2, maximum_operations: 6, operation_types: ['ADD CREDITS', 'WITHDRAW CREDITS', 'CREATE ACCOUNT', 'REFRESH BALANCE', 'RESET PASSWORD'], advanced_enabled: false, revision: 1 } }) }));
   await page.route('**/api/hub/assessment/report**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ attempts: [], statistics: { attempts: 0, progressOverTime: [] } }) }));
@@ -628,7 +628,7 @@ test('ADMIN is limited to debugging and TRAINER account administration', async (
       },
     }),
   }));
-  await page.route('**/api/hub/admin/accounts', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ accounts: [] }) }));
+  await page.route('**/api/hub/admin/accounts*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ accounts: [] }) }));
 
   await page.goto('/hub#/learn');
   await expect(page.getByRole('heading', { name: 'TRAINER account administration' })).toBeVisible();
@@ -651,7 +651,7 @@ test('ADMIN creates a TRAINER and displays a one-time random temporary password'
     contentType: 'application/json',
     body: JSON.stringify({ postulantes: [] }),
   }));
-  await page.route('**/api/hub/admin/accounts', async (route) => {
+  await page.route('**/api/hub/admin/accounts*', async (route) => {
     if (route.request().method() === 'POST') {
       createdAccount = route.request().postDataJSON();
       return route.fulfill({
@@ -675,6 +675,7 @@ test('ADMIN creates a TRAINER and displays a one-time random temporary password'
   });
 
   await page.goto('/hub#/learn');
+  await page.getByRole('button',{name:'Create staff account',exact:true}).click();
   await page.getByRole('region',{name:'TRAINER account administration'}).getByLabel('First name').fill('Juan');
   await page.getByRole('region',{name:'TRAINER account administration'}).getByLabel('First surname').fill('Pérez');
   await page.getByRole('button', { name: 'Create account' }).click();
@@ -725,9 +726,9 @@ test('trainer searches learner progress without changing course totals', async (
   await expect(progress.getByText('1 / 2', { exact: true })).toBeVisible();
   await page.getByLabel('Search learner progress').fill('atorres');
   await expect(progress.getByRole('rowheader', { name: 'Ana Torres' })).toBeVisible();
-  await expect(progress.getByRole('rowheader', { name: 'Juan Pérez' })).toHaveCount(0);
+  await expect(progress.getByRole('rowheader', { name: 'Juan Pérez' })).toBeVisible();
   await page.getByLabel('Search learner progress').fill('missing');
-  await expect(progress.getByText('No learners match your search.')).toBeVisible();
+  await expect(progress.getByText('Search changes are not applied yet.')).toBeVisible();
   await page.getByLabel('Search learner progress').fill('');
   await expect(progress.getByRole('progressbar')).toHaveAttribute('value', '1');
   await page.screenshot({ path: '../outputs/trainer-progress-desktop.png', fullPage: true });
@@ -741,7 +742,7 @@ test('TRAINER manages all Participants, assigns a course, and saves advanced ass
     status: 200, contentType: 'application/json', body: JSON.stringify({ subject: { id: 'trainer-manager-1', roles: ['TRAINER'] } }),
   }));
   await page.route('**/api/hub/trainer/postulantes', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ postulantes: [] }) }));
-  await page.route('**/api/hub/staff/postulantes', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ postulantes }) }));
+  await page.route('**/api/hub/staff/postulantes*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ postulantes }) }));
   await page.route('**/api/hub/staff/courses', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ courses: [{ id: 'course-1', title: 'Operator Foundations', is_provisional: true }] }) }));
   await page.route('**/api/hub/trainer/postulantes/postulante-1/enrolments', async (route) => {
     assignedCourse = route.request().postDataJSON();
@@ -764,10 +765,11 @@ test('TRAINER manages all Participants, assigns a course, and saves advanced ass
   expect(assignedCourse).toEqual({ courseId: 'course-1' });
 
   await page.getByLabel('Search Participants', { exact: true }).fill('nobody');
-  await expect(page.getByText('No Participants match. Try another name or account status.')).toBeVisible();
+  await expect(page.getByText('Search changes are not applied yet.')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
   await page.getByLabel('Search Participants', { exact: true }).fill('jperez');
   await expect(page.getByRole('cell', { name: 'Jperez' })).toBeVisible();
-  await page.getByRole('button', { name: 'Evaluations Rules & attempt reopening' }).click();
+  await page.getByRole('link', { name: 'Evaluations', exact:true }).click();
   await expect(page.getByRole('heading', { name: 'Participant management' })).not.toBeVisible();
   await page.getByLabel('Duration (minutes)').fill('45');
   await page.getByLabel('Advanced Settings').check();
@@ -777,7 +779,7 @@ test('TRAINER manages all Participants, assigns a course, and saves advanced ass
   expect(settingsUpdate).toMatchObject({ durationMinutes: 45, minimumOperations: 2, maximumOperations: 6, advancedEnabled: true });
   expect(settingsUpdate.operationTypes).not.toContain('RESET PASSWORD');
   await expect(page.getByText(/Configuration revision 2/)).toBeVisible();
-  await page.getByRole('button', { name: 'Reports Results & performance' }).click();
+  await page.getByRole('link', { name: 'Reports', exact:true }).click();
   await expect(page.getByRole('heading', { name: 'Assessment attempts and statistics' })).toBeVisible();
   await expect(page.getByLabel('Minimum score', { exact: true })).not.toBeVisible();
   await page.getByText('More filters', { exact: true }).click();
@@ -787,11 +789,12 @@ test('TRAINER manages all Participants, assigns a course, and saves advanced ass
   await page.getByRole('button', { name: 'Clear filters' }).click();
   await clearRequest;
   await expect(page.getByLabel('Minimum score', { exact: true })).toHaveValue('');
-  await page.getByRole('button', { name: 'Participants Accounts & course assignments' }).click();
+  await page.getByRole('link', { name: 'Learners', exact:true }).click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: '../outputs/trainer-ux-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole('button', { name: 'Participants Accounts & course assignments' })).toBeVisible();
+  await page.getByRole('button',{name:'Workspace menu',exact:true}).click();
+  await expect(page.getByRole('link', { name: 'Learners', exact:true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: '../outputs/trainer-ux-mobile.png', fullPage: true });
 });
@@ -806,7 +809,7 @@ test('trainer reports keep account histories separate and expose chronological a
     { ...attempt('attempt-other', 'account-b', 'Jperez2', 1, '2026-10-30T13:00:00Z', null), status: 'in_progress', completed_at: null },
   ], statistics: { attempts: 3, accuracyByGame: { 'Orion Stars': { correct: 0, total: 1, accuracy: 0 } } } } }));
   await page.goto('/hub#/learn');
-  await page.getByRole('button', { name: 'Reports Results & performance' }).click();
+  await page.getByRole('link', { name: 'Reports', exact:true }).click();
   const histories = page.locator('.hub-person-history');
   await expect(histories).toHaveCount(2);
   const person = histories.filter({ has: page.locator('small', { hasText: /^Jperez · View attempts$/ }) });
@@ -849,7 +852,7 @@ test('ADMIN does not request TRAINER Participant visibility', async ({ page }) =
     body: JSON.stringify({ error: { message: 'This endpoint must not be called by ADMIN.' } }),
   }));
   page.on('request', (request) => { if (request.url().includes('/api/hub/trainer/postulantes')) trainerVisibilityRequests += 1; });
-  await page.route('**/api/hub/admin/accounts', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ accounts: [] }) }));
+  await page.route('**/api/hub/admin/accounts*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ accounts: [] }) }));
 
   await page.goto('/hub#/learn');
   await expect(page.getByRole('heading', { name: 'TRAINER account administration' })).toBeVisible();
