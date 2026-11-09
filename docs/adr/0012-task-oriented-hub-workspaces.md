@@ -1,6 +1,6 @@
 # UX implementation decisions — 8 November 2026
 
-Status: Implemented locally; delivery checks are recorded in `outputs/ui-ux-2026-11-08/REPORT.md`.
+Status: Implemented and deployed; local, CI and hosted delivery checks are recorded in `outputs/ui-ux-2026-11-08/REPORT.md`.
 
 This increment executes the 6 November UI/UX plan using the existing authorization, course, assessment and coaching contracts. It does not change scores, formal submission semantics, identity permissions, draft-policy publication or training histories.
 

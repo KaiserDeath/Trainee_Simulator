@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-11-09T00:53:41.163Z",
+  "revision": "e219e544ed93ecbba1e1dcca461480df76d44dbd",
+  "project": "zvpkiwkvwtdztmeyugdg",
+  "checks": [
+    "Exact backend revision ready; CSP enforced",
+    "New staff random temporary credential; mandatory replacement; persisted login",
+    "Learner temporary password replacement and reload",
+    "Bounded filtered directory, private no-store responses, learner/staff role denials, ADMIN queue diagnostics",
+    "Mobile directory search and visible learner action, real learner detail and scoped coaching, return filter preserved, learner results and account settings",
+    "Staff reset issues a new random credential and requires replacement"
+  ],
+  "readiness": {
+    "status": "ready",
+    "database": "ready",
+    "worker": "ready",
+    "revision": "e219e544ed93ecbba1e1dcca461480df76d44dbd"
+  },
+  "directoryBytes": 435,
+  "queue": {
+    "dead": 0,
+    "ready": 0,
+    "running": 0,
+    "retrievedAt": "2026-11-09T00:54:26.843131+00:00",
+    "expiredLeases": 0,
+    "oldestDueSeconds": 0
+  },
+  "passed": true,
+  "cleanupPassed": true
+}

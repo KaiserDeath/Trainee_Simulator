@@ -18,11 +18,15 @@ No production database migration or scoring change is included. Draft evaluation
 
 The real local formal-assessment browser gate passed with fixture cleanup: [sanitized report](local-formal-browser.json). It covers actual Auth, bilingual authoring and pinned content, prerequisites, submission, idempotent retries, trainer reopening, evidence authorization and retention. These controlled local fixtures are not human curriculum acceptance.
 
-The full local foundation gate passed: 268 backend tests, 12 shared-rule tests, 61 database-safety checks, 11 language checks, frontend lint/build and **92 browser tests**. Production-build cookie authentication and reload passed. Both production dependency audits reported zero vulnerabilities. Hosted/CI delivery results are checked separately before handoff; use the exact commit in [GitHub Actions](https://github.com/KaiserDeath/Trainee_Simulator/actions/workflows/training-hub.yml).
+The full local foundation gate passed: 268 backend tests, 12 shared-rule tests, 61 database-safety checks, 11 language checks, frontend lint/build and **92 browser tests**. Production-build cookie authentication and reload passed. Both production dependency audits reported zero vulnerabilities.
+
+Application commit `e219e544ed93ecbba1e1dcca461480df76d44dbd` was pushed and deployed. Both foundation and isolated-database CI jobs [passed for that exact commit](https://github.com/KaiserDeath/Trainee_Simulator/actions/runs/42542555760). The controlled hosted check completed on 9 November UTC with the exact backend revision, database and worker ready: [sanitized hosted evidence](hosted.json). It verified authentication and credential replacement, role denials, bounded directory responses, mobile search, selected learner detail and scoped coaching, return-filter preservation, learner results and account settings. Temporary fixtures were cleaned successfully. The hosted check did not publish curricula, start assessments or establish human acceptance.
 
 The production build measured about 264.13 kB entry JS (85.92 kB gzip) plus 321.45 kB Hub route JS (80.95 kB gzip). This is bundle measurement, not billed provider egress or a hosted concurrency guarantee.
 
 Local phone screenshot: [trainer directory](trainer-mobile.png). The automated 390×844 task check verifies search and the learner action appear in the first viewport. Screenshots and automated tasks do not establish human task-completion rates.
+
+The hosted screenshot was inspected locally and excluded from the delivery artifacts because the directory also displayed existing learner names. The sanitized hosted JSON records verification without those identities.
 
 ## Remaining human validation
 
