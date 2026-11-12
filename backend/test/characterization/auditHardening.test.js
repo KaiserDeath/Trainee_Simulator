@@ -32,8 +32,8 @@ test('learner password changes verify current credentials and reject weak or reu
  const service=createHubAccountService({authClientFactory:()=>({auth:{signInWithPassword:async({password})=>password==='temporary-secret'?{data:{user:{id:'actor'}}}:{error:{}}}}),serviceClient:{auth:{admin:{updateUserById:async(id,value)=>{update={id,...value};return {};}}}}});
  const identity={username:'Learner',roles:['POSTULANTE']};
  await assert.rejects(()=>service.changeOwnPassword(identity,{currentPassword:'wrong',newPassword:'a-strong-new-password'}));
- for(const password of ['short','temporary-secret'])await assert.rejects(()=>service.changeOwnPassword(identity,{currentPassword:'temporary-secret',newPassword:password}));
- await service.changeOwnPassword(identity,{currentPassword:'temporary-secret',newPassword:'a-strong-new-password'});assert.equal(update.id,'actor');assert.equal(update.app_metadata.must_change_password,false);
+ for(const password of ['1234567','temporary-secret'])await assert.rejects(()=>service.changeOwnPassword(identity,{currentPassword:'temporary-secret',newPassword:password}));
+ await service.changeOwnPassword(identity,{currentPassword:'temporary-secret',newPassword:'Newpass8'});assert.equal(update.password,'Newpass8');assert.equal(update.id,'actor');assert.equal(update.app_metadata.must_change_password,false);
 });
 test('directory rejects invalid cursors before database access and passes only verified subject',async()=>{
  let args;const directory=createHubDirectory({rpc:async(name,parameters)=>{args=parameters;return {data:{rows:[],total:0,nextCursor:null}};}});

@@ -273,8 +273,8 @@ export function createHubAccountService({ authClientFactory, serviceClient, auth
       const verified = await authClientFactory().auth.signInWithPassword({ email: internalAuthEmail(username), password: String(currentPassword || '') });
       if (verified.error || !verified.data.user) throw authenticationError();
       const nextPassword = String(newPassword || '');
-      if (nextPassword.length < 12 || nextPassword.length > 128 || nextPassword.toLowerCase() === username.toLowerCase() || nextPassword === String(currentPassword || '')) {
-        throw new HubError(400, 'HUB_PASSWORD_REJECTED', 'Choose a new password of 12 to 128 characters, different from your username and current password.');
+      if (nextPassword.length < 8 || nextPassword.length > 128 || nextPassword.toLowerCase() === username.toLowerCase() || nextPassword === String(currentPassword || '')) {
+        throw new HubError(400, 'HUB_PASSWORD_REJECTED', 'Choose a new password of 8 to 128 characters, different from your username and current password.');
       }
       const updated = await serviceClient.auth.admin.updateUserById(verified.data.user.id, { password: nextPassword, app_metadata:{must_change_password:false} });
       if (updated.error) throw passwordPolicyError();

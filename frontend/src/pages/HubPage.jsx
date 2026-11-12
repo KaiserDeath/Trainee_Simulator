@@ -493,7 +493,7 @@ function HubScreen() {
       setDirectoryPage(response.data.page);setDirectorySearch(search);setSnapshotUpdatedAt(new Date().toISOString());
     }catch{setTrainerUnavailable('The directory could not be loaded. Try again.');}finally{setSnapshotBusy(false);}
   }
-  if (context?.identity?.mustChangePassword) return <main className="hub-state-page"><h1>{t("Choose your own password")}</h1><p>{t("Replace your temporary password before opening training. Use at least 12 characters.")}</p><HubPasswordPanel required/><button type="button" onClick={async()=>{await logoutHub();window.location.reload();}}>{t("Sign out")}</button></main>;
+  if (context?.identity?.mustChangePassword) return <main className="hub-state-page"><h1>{t("Choose your own password")}</h1><p>{t("Replace your temporary password before opening training. Use at least 8 characters.")}</p><HubPasswordPanel required/><button type="button" onClick={async()=>{await logoutHub();window.location.reload();}}>{t("Sign out")}</button></main>;
   if (loading) {
     return (
       <main className="hub-state-page hub-light-theme" lang={locale} onInvalidCapture={localizeValidity} onInputCapture={clearValidity}>

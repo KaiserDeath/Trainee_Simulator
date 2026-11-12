@@ -33,7 +33,7 @@ export default function HubPasswordPanel({required = false}) {
     <summary>{t("Change my password")}</summary>
     <form className="hub-account-form" onSubmit={submit}>
       <label>{t("Current password")}<input type="password" autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label>
-      <label>{t("New password")}<input type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
+      <label>{t("New password")}<input type="password" autoComplete="new-password" minLength={8} maxLength={128} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label>
       <button className="hub-primary-button" type="submit" disabled={busy}>{busy ? t("Changing…") : t("Change password")}</button>
     </form>
     {notice && <p role="status">{t(notice)}</p>}
